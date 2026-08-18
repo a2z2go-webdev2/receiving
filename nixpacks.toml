@@ -1,0 +1,27 @@
+[build]
+builder = "nixpacks"
+
+[build.env]
+NIXPACKS_PHP_VERSION = "8.4"
+NODE_VERSION = "20"
+
+[phases.setup]
+aptPkgs = ["libargon2-dev", "libpq-dev"]
+
+[phases.install]
+cmds = [
+  "composer install --no-dev --optimize-autoloader --no-interaction",
+  "npm ci"
+]
+
+[phases.build]
+cmds = [
+  "npm run build",
+  "php artisan config:cache",
+  "php artisan route:cache",
+  "php artisan view:cache",
+  "php artisan storage:link || true"
+]
+
+[start]
+cmd = "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"

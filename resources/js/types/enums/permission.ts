@@ -1,0 +1,17 @@
+export enum Permission {
+    AccessAdmin = 'admin.access',
+    AccessUploader = 'uploader.access',
+    AccessWarehouse = 'warehouse.access',
+    ManageWarehouseOperations = 'warehouse.operations.manage',
+    AccessDriver = 'driver.access',
+    ManageDriverOperations = 'driver.operations.manage',
+    ViewWarehouseReports = 'warehouse.reports.view',
+    ViewUsers = 'users.view',
+    ManageUsers = 'users.manage',
+    ManageUploadAccess = 'upload-access.manage',
+    ManageRecipients = 'recipients.manage',
+    ViewUploads = 'uploads.view',
+    RetryOperations = 'operations.retry',
+    ViewActivityLogs = 'activity-logs.view',
+    ManageSettings = 'settings.manage',
+}
