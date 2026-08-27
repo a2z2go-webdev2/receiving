@@ -295,15 +295,12 @@ class UploadRecordController extends Controller
     ): JsonResponse {
         $file->loadMissing('upload');
         $this->authorize('view', $file);
-        abort_if($file->r2_object_key === null, 404);
-
-        if (str_starts_with($file->r2_object_key, 'http://') || str_starts_with($file->r2_object_key, 'https://')) {
-            return response()->json(['url' => $file->r2_object_key]);
-        }
+        $key = $file->resolvedR2ObjectKey();
+        abort_if($key === null, 404);
 
         try {
             $url = Storage::disk((string) config('receiving.disk'))->temporaryUrl(
-                $file->r2_object_key,
+                $key,
                 now()->addMinutes((int) $settings->get('signed_url_expiration_minutes')),
             );
         } catch (Throwable) {
@@ -319,10 +316,11 @@ class UploadRecordController extends Controller
     {
         $file->loadMissing('upload');
         $this->authorize('view', $file);
-        abort_if($file->r2_object_key === null, 404);
+        $key = $file->resolvedR2ObjectKey();
+        abort_if($key === null, 404);
 
         return Storage::disk((string) config('receiving.disk'))->response(
-            $file->r2_object_key,
+            $key,
             $file->sanitized_file_name,
             ['Content-Type' => $file->content_type, 'X-Content-Type-Options' => 'nosniff'],
         );

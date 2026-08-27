@@ -72,4 +72,28 @@ class UploadedFile extends Model
     {
         return $this->hasOne(AiExtraction::class);
     }
+
+    public function resolvedR2ObjectKey(): ?string
+    {
+        if ($this->r2_object_key === null) {
+            return null;
+        }
+
+        $key = (string) $this->r2_object_key;
+        if (str_starts_with($key, 'http://') || str_starts_with($key, 'https://')) {
+            $parsedPath = parse_url($key, PHP_URL_PATH);
+            if ($parsedPath) {
+                $key = rawurldecode(ltrim($parsedPath, '/'));
+            }
+        }
+
+        $bucket = (string) config('filesystems.disks.r2.bucket');
+        if ($bucket !== '' && str_starts_with($key, $bucket.'/')) {
+            $key = substr($key, strlen($bucket) + 1);
+        } elseif (preg_match('#^receiving-[a-z0-9_-]+/(.+)#i', $key, $m)) {
+            $key = $m[1];
+        }
+
+        return $key;
+    }
 }
