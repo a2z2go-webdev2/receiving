@@ -332,7 +332,7 @@ class PingconLegacyImporter implements LegacyDataImporterInterface
                                 'po_number_normalized' => $poNoNormalized,
                                 'po_date' => $poDateStr,
                                 'po_date_value' => $this->parseDate($poDateStr)?->toDateString(),
-                                'arrival_status' => PurchaseOrderArrivalStatus::FullyArrived->value,
+                                'arrival_status' => PurchaseOrderArrivalStatus::Arrived->value,
                                 'vendor_name' => $supplierName,
                                 'total_amount' => $totalAmtStr,
                                 'created_at' => $createdAt,
@@ -343,7 +343,7 @@ class PingconLegacyImporter implements LegacyDataImporterInterface
                             PurchaseOrderDocumentLink::query()->create([
                                 'po_extraction_id' => $poExt->getKey(),
                                 'ai_extraction_id' => $aiExt->getKey(),
-                                'source' => PurchaseOrderLinkSource::Auto->value,
+                                'source' => PurchaseOrderLinkSource::Automatic->value,
                                 'created_at' => $createdAt,
                                 'updated_at' => $createdAt,
                             ]);

@@ -6,6 +6,7 @@ import {
     ClipboardList,
     FileArchive,
     FileBarChart2,
+    FileSpreadsheet,
     FileText,
     KeyRound,
     LayoutGrid,
@@ -58,6 +59,11 @@ export function AppSidebar() {
                       title: 'Reports',
                       href: '/admin/purchase-orders/reports',
                       icon: FileBarChart2,
+                  },
+                  {
+                      title: 'Google Sheets Sync',
+                      href: '/admin/sheets-sync',
+                      icon: FileSpreadsheet,
                   },
               ]
             : []),
