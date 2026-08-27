@@ -4,7 +4,6 @@ import {
     Code2,
     Copy,
     ExternalLink,
-    Key,
     Layers,
     RefreshCw,
     Save,
@@ -12,7 +11,7 @@ import {
     ShieldCheck,
     Webhook,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,7 +26,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-interface SheetConfigItem {
+interface SheetConfig {
     id: number;
     slug: string;
     name: string;
@@ -44,8 +43,8 @@ interface SheetConfigItem {
 interface SheetSettingsModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    sheets: SheetConfigItem[];
-    onSaved: (updatedSheet: SheetConfigItem) => void;
+    sheets: SheetConfig[];
+    onSaved: (updatedSheet: SheetConfig) => void;
 }
 
 export function SheetSettingsModal({
@@ -54,42 +53,30 @@ export function SheetSettingsModal({
     sheets,
     onSaved,
 }: SheetSettingsModalProps) {
-    const [selectedSlug, setSelectedSlug] = useState<string>(() => sheets[0]?.slug || 'a2z2go');
-    const [activeSection, setActiveSection] = useState<'sheet' | 'webhook' | 'script'>('sheet');
-
+    const [selectedSlug, setSelectedSlug] = useState<string>(sheets[0]?.slug || 'a2z2go');
+    const [activeSection, setActiveSection] = useState<'sheet' | 'webhook' | 'script'>('webhook');
     const [configs, setConfigs] = useState<
-        Record<string, { id: string; name: string; secret: string; autoSync: boolean }>
-    >(() => {
-        const initial: Record<
-            string,
-            { id: string; name: string; secret: string; autoSync: boolean }
-        > = {};
-        sheets.forEach((s) => {
+        Record<string, { id: string; secret: string; autoSync: boolean }>
+    >({});
+    const [savingSlug, setSavingSlug] = useState<string | null>(null);
+    const [copiedKey, setCopiedKey] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+    // Initialize configs from sheets props
+    useEffect(() => {
+        const initial: Record<string, { id: string; secret: string; autoSync: boolean }> = {};
+        for (const s of sheets) {
             initial[s.slug] = {
                 id: s.spreadsheet_id || '',
-                name: s.name,
                 secret: s.webhook_secret || '',
                 autoSync: s.auto_sync_on_webhook ?? true,
             };
-        });
-        return initial;
-    });
-
-    const [savingSlug, setSavingSlug] = useState<string | null>(null);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    const [copiedKey, setCopiedKey] = useState<string | null>(null);
-
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    const currentSheet = sheets.find((s) => s.slug === selectedSlug) || sheets[0];
-    const currentConfig = configs[selectedSlug] || {
-        id: currentSheet?.spreadsheet_id || '',
-        name: currentSheet?.name || selectedSlug,
-        secret: currentSheet?.webhook_secret || '',
-        autoSync: currentSheet?.auto_sync_on_webhook ?? true,
-    };
-
-    const webhookUrl = `${baseUrl}/api/webhooks/sheets/${selectedSlug}`;
-    const secret = currentConfig.secret || currentSheet?.webhook_secret || '';
+        }
+        setConfigs(initial);
+        if (sheets.length > 0 && !selectedSlug) {
+            setSelectedSlug(sheets[0].slug);
+        }
+    }, [sheets, selectedSlug]);
 
     const handleCopy = (text: string, key: string) => {
         navigator.clipboard.writeText(text);
@@ -100,9 +87,9 @@ export function SheetSettingsModal({
     const handleSave = async (slug: string) => {
         setSavingSlug(slug);
         setSuccessMessage(null);
-
         try {
-            const res = await fetch('/admin/sheets-sync/config', {
+            const cfg = configs[slug] || { id: '', secret: '', autoSync: true };
+            const res = await fetch(`/admin/sheets-sync/config/${slug}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -111,15 +98,17 @@ export function SheetSettingsModal({
                             ?.content || '',
                 },
                 body: JSON.stringify({
-                    slug,
-                    spreadsheet_id: configs[slug]?.id || '',
-                    name: configs[slug]?.name || '',
+                    spreadsheet_id: cfg.id,
+                    webhook_secret: cfg.secret,
+                    auto_sync_on_webhook: cfg.autoSync,
                 }),
             });
 
             const data = await res.json();
             if (res.ok && data.success) {
-                setSuccessMessage(`Settings saved for ${configs[slug]?.name || slug}`);
+                setSuccessMessage(
+                    `Saved configuration for ${configs[slug]?.id ? slug : 'Spreadsheet'}`,
+                );
                 onSaved(data.sheet);
                 setTimeout(() => setSuccessMessage(null), 3000);
             }
@@ -131,6 +120,7 @@ export function SheetSettingsModal({
 
     const handleGenerateSecret = async (slug: string) => {
         setSavingSlug(slug);
+        setSuccessMessage(null);
         try {
             const res = await fetch('/admin/sheets-sync/generate-secret', {
                 method: 'POST',
@@ -144,7 +134,7 @@ export function SheetSettingsModal({
             });
 
             const data = await res.json();
-            if (res.ok && data.success && data.secret) {
+            if (res.ok && data.success) {
                 setConfigs((prev) => ({
                     ...prev,
                     [slug]: {
@@ -153,7 +143,7 @@ export function SheetSettingsModal({
                     },
                 }));
                 setSuccessMessage(
-                    `New webhook secret generated for ${configs[slug]?.name || slug}`,
+                    `New webhook secret generated for ${configs[slug]?.id ? slug : slug.toUpperCase()}`,
                 );
                 onSaved(data.sheet);
                 setTimeout(() => setSuccessMessage(null), 3000);
@@ -163,6 +153,9 @@ export function SheetSettingsModal({
             setSavingSlug(null);
         }
     };
+
+    const baseUrl =
+        typeof window !== 'undefined' ? window.location.origin : 'https://receiving.laravel.cloud';
 
     const generateAppsScriptCode = (slug: string, secretToken: string) => {
         return `/**
@@ -202,16 +195,26 @@ function onNewUploadRow(e) {
 }`;
     };
 
+    const currentSheet = sheets.find((s) => s.slug === selectedSlug);
+    const currentConfig = configs[selectedSlug] || {
+        id: '',
+        secret: '',
+        autoSync: true,
+    };
+    const webhookUrl = `${baseUrl}/api/webhooks/sheets/${selectedSlug}`;
+    const secret = currentConfig.secret || '';
+    const scriptCode = generateAppsScriptCode(selectedSlug, secret);
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto bg-card text-foreground">
+            <DialogContent className="max-h-[90vh] w-full max-w-full overflow-y-auto bg-card text-foreground sm:max-w-2xl md:max-w-3xl">
                 <DialogHeader className="border-b pb-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2.5">
                         <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
                             <Settings className="size-4" />
                         </div>
                         <div>
-                            <DialogTitle className="text-base font-semibold">
+                            <DialogTitle className="font-semibold text-base">
                                 Google Sheets & Webhook Integration
                             </DialogTitle>
                             <DialogDescription className="text-xs">
@@ -223,8 +226,8 @@ function onNewUploadRow(e) {
                 </DialogHeader>
 
                 <div className="space-y-4 py-2">
-                    {/* Lane Selector Tabs */}
-                    <div className="flex w-full gap-1 overflow-x-auto rounded-lg border bg-muted/50 p-1">
+                    {/* Lane Selector Tabs - Grid 4 Columns */}
+                    <div className="grid grid-cols-2 gap-1 rounded-lg border bg-muted/50 p-1 sm:grid-cols-4">
                         {sheets.map((s) => {
                             const isSelected = s.slug === selectedSlug;
                             return (
@@ -232,16 +235,16 @@ function onNewUploadRow(e) {
                                     key={s.slug}
                                     type="button"
                                     onClick={() => setSelectedSlug(s.slug)}
-                                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                                    className={`flex items-center justify-center gap-1.5 truncate rounded-md px-2.5 py-1.5 font-semibold text-xs transition ${
                                         isSelected
                                             ? 'bg-card text-foreground shadow-sm'
                                             : 'text-muted-foreground hover:bg-card/50 hover:text-foreground'
                                     }`}
                                 >
-                                    <Layers className="size-3.5" />
-                                    <span>{s.name}</span>
+                                    <Layers className="size-3.5 shrink-0" />
+                                    <span className="truncate">{s.name}</span>
                                     {s.webhook_secret && (
-                                        <span className="size-1.5 rounded-full bg-emerald-500" />
+                                        <span className="size-1.5 shrink-0 rounded-full bg-emerald-500" />
                                     )}
                                 </button>
                             );
@@ -249,15 +252,15 @@ function onNewUploadRow(e) {
                     </div>
 
                     {successMessage && (
-                        <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 font-semibold text-xs text-emerald-600 dark:text-emerald-300">
+                        <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 font-semibold text-emerald-600 text-xs dark:text-emerald-300">
                             <CheckCircle2 className="size-4 shrink-0 text-emerald-500" />
                             <span>{successMessage}</span>
                         </div>
                     )}
 
                     {/* Section Switcher */}
-                    <div className="flex items-center justify-between border-b pb-2">
-                        <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
                             <Button
                                 type="button"
                                 size="sm"
@@ -299,7 +302,7 @@ function onNewUploadRow(e) {
                     {activeSection === 'sheet' && (
                         <Card className="border">
                             <CardHeader className="p-4 pb-2">
-                                <CardTitle className="text-xs font-semibold">
+                                <CardTitle className="font-semibold text-xs">
                                     Google Sheet Link or ID
                                 </CardTitle>
                                 <CardDescription className="text-xs">
@@ -312,7 +315,7 @@ function onNewUploadRow(e) {
                                     <Label htmlFor="sheet-id-input" className="text-xs">
                                         Spreadsheet URL or Clean ID
                                     </Label>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                                         <Input
                                             id="sheet-id-input"
                                             type="text"
@@ -327,7 +330,7 @@ function onNewUploadRow(e) {
                                                     },
                                                 })
                                             }
-                                            className="font-mono text-xs"
+                                            className="min-w-0 flex-1 font-mono text-xs"
                                         />
                                         <Button
                                             type="button"
@@ -345,7 +348,7 @@ function onNewUploadRow(e) {
                                 </div>
 
                                 {currentConfig.id && (
-                                    <div className="flex items-center justify-between pt-1">
+                                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                                         <span className="font-mono text-[11px] text-muted-foreground">
                                             Last Synced:{' '}
                                             {currentSheet?.last_synced_at
@@ -358,7 +361,7 @@ function onNewUploadRow(e) {
                                             href={`https://docs.google.com/spreadsheets/d/${currentConfig.id}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="flex items-center gap-1 font-semibold text-xs text-primary hover:underline"
+                                            className="flex items-center gap-1 font-semibold text-primary text-xs hover:underline"
                                         >
                                             <span>Open in Google Sheets</span>
                                             <ExternalLink className="size-3" />
@@ -372,7 +375,7 @@ function onNewUploadRow(e) {
                     {/* Section 2: Webhook Endpoint */}
                     {activeSection === 'webhook' && (
                         <div className="space-y-3">
-                            <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs text-emerald-700 dark:text-emerald-300">
+                            <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-emerald-700 text-xs dark:text-emerald-300">
                                 <ShieldCheck className="size-4 shrink-0 text-emerald-500" />
                                 <div>
                                     <div className="font-semibold">Automated Live Ingestion</div>
@@ -387,12 +390,12 @@ function onNewUploadRow(e) {
                                 <CardContent className="space-y-4 p-4">
                                     <div className="space-y-1.5">
                                         <Label className="text-xs">Webhook Target URL</Label>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                                             <Input
                                                 type="text"
                                                 readOnly
                                                 value={webhookUrl}
-                                                className="bg-muted/50 font-mono text-xs"
+                                                className="min-w-0 flex-1 bg-muted/50 font-mono text-xs"
                                             />
                                             <Button
                                                 type="button"
@@ -426,50 +429,59 @@ function onNewUploadRow(e) {
                                                 Required for auth
                                             </span>
                                         </div>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                                             <Input
                                                 type="text"
                                                 readOnly
                                                 value={secret}
                                                 placeholder="Click Generate Secret to create token..."
-                                                className="bg-muted/50 font-mono text-xs text-emerald-600 dark:text-emerald-400"
+                                                className="min-w-0 flex-1 bg-muted/50 font-mono text-emerald-600 text-xs dark:text-emerald-400"
                                             />
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                variant="outline"
-                                                disabled={!secret}
-                                                onClick={() =>
-                                                    handleCopy(secret, `sec_${selectedSlug}`)
-                                                }
-                                                className="h-9 shrink-0 gap-1 text-xs"
-                                            >
-                                                {copiedKey === `sec_${selectedSlug}` ? (
-                                                    <Check className="size-3.5 text-emerald-500" />
-                                                ) : (
-                                                    <Copy className="size-3.5" />
-                                                )}
-                                                <span>
-                                                    {copiedKey === `sec_${selectedSlug}`
-                                                        ? 'Copied'
-                                                        : 'Copy Secret'}
-                                                </span>
-                                            </Button>
+                                            <div className="flex shrink-0 items-center gap-1.5">
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="outline"
+                                                    disabled={!secret}
+                                                    onClick={() =>
+                                                        handleCopy(secret, `sec_${selectedSlug}`)
+                                                    }
+                                                    className="h-9 gap-1 text-xs"
+                                                >
+                                                    {copiedKey === `sec_${selectedSlug}` ? (
+                                                        <Check className="size-3.5 text-emerald-500" />
+                                                    ) : (
+                                                        <Copy className="size-3.5" />
+                                                    )}
+                                                    <span>
+                                                        {copiedKey === `sec_${selectedSlug}`
+                                                            ? 'Copied'
+                                                            : 'Copy Secret'}
+                                                    </span>
+                                                </Button>
 
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                variant="secondary"
-                                                disabled={savingSlug === selectedSlug}
-                                                onClick={() => handleGenerateSecret(selectedSlug)}
-                                                className="h-9 shrink-0 gap-1 text-xs"
-                                                title="Generate or rotate secret"
-                                            >
-                                                <RefreshCw
-                                                    className={`size-3.5 ${savingSlug === selectedSlug ? 'animate-spin' : ''}`}
-                                                />
-                                                <span>{secret ? 'Regenerate' : 'Generate'}</span>
-                                            </Button>
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="outline"
+                                                    disabled={savingSlug === selectedSlug}
+                                                    onClick={() =>
+                                                        handleGenerateSecret(selectedSlug)
+                                                    }
+                                                    className="h-9 gap-1 text-xs"
+                                                >
+                                                    <RefreshCw
+                                                        className={`size-3.5 ${
+                                                            savingSlug === selectedSlug
+                                                                ? 'animate-spin'
+                                                                : ''
+                                                        }`}
+                                                    />
+                                                    <span>
+                                                        {secret ? 'Regenerate' : 'Generate Secret'}
+                                                    </span>
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -479,47 +491,36 @@ function onNewUploadRow(e) {
 
                     {/* Section 3: Apps Script Code */}
                     {activeSection === 'script' && (
-                        <Card className="border">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">
-                                <div>
-                                    <CardTitle className="text-xs font-semibold">
-                                        Google Apps Script Code ({currentSheet?.name})
-                                    </CardTitle>
-                                    <CardDescription className="text-xs">
-                                        Open Extensions &rarr; Apps Script in your Google Sheet,
-                                        paste this code, and save.
-                                    </CardDescription>
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div className="text-muted-foreground text-xs">
+                                    Copy this script into{' '}
+                                    <strong>Extensions &gt; Apps Script</strong> in your Google
+                                    Sheet.
                                 </div>
                                 <Button
                                     type="button"
                                     size="sm"
-                                    variant="outline"
-                                    onClick={() =>
-                                        handleCopy(
-                                            generateAppsScriptCode(selectedSlug, secret),
-                                            `code_${selectedSlug}`,
-                                        )
-                                    }
-                                    className="h-8 gap-1 text-xs"
+                                    onClick={() => handleCopy(scriptCode, `code_${selectedSlug}`)}
+                                    className="h-7 gap-1 bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90"
                                 >
                                     {copiedKey === `code_${selectedSlug}` ? (
-                                        <Check className="size-3.5 text-emerald-500" />
+                                        <Check className="size-3.5 text-emerald-400" />
                                     ) : (
                                         <Copy className="size-3.5" />
                                     )}
                                     <span>
                                         {copiedKey === `code_${selectedSlug}`
                                             ? 'Copied Script!'
-                                            : 'Copy Code'}
+                                            : 'Copy Apps Script'}
                                     </span>
                                 </Button>
-                            </CardHeader>
-                            <CardContent className="p-4 pt-2">
-                                <pre className="max-h-56 overflow-auto rounded-lg border bg-muted/60 p-3 font-mono text-[11px] text-foreground leading-relaxed">
-                                    {generateAppsScriptCode(selectedSlug, secret)}
-                                </pre>
-                            </CardContent>
-                        </Card>
+                            </div>
+
+                            <pre className="max-h-64 overflow-auto rounded-lg border bg-muted/60 p-3 font-mono text-[11px] text-foreground">
+                                <code>{scriptCode}</code>
+                            </pre>
+                        </div>
                     )}
                 </div>
 
