@@ -1,4 +1,13 @@
-import { CheckCircle2, Code2, Copy, Save, Settings, ShieldCheck, Webhook } from 'lucide-react';
+import {
+    CheckCircle2,
+    Code2,
+    Copy,
+    RefreshCw,
+    Save,
+    Settings,
+    ShieldCheck,
+    Webhook,
+} from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
