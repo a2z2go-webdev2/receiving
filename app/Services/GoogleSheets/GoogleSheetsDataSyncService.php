@@ -953,6 +953,10 @@ class GoogleSheetsDataSyncService
         $synced = GoogleSheetLog::query()->where('is_synced_to_db', true)->count();
         $pending = GoogleSheetLog::query()->where('is_synced_to_db', false)->count();
         $files = GoogleSheetFile::query()->count();
+        $filesPendingR2 = GoogleSheetFile::query()->where(function ($q) {
+            $q->whereNull('r2_url')->orWhere('r2_url', '');
+        })->count();
+        $filesSyncedR2 = GoogleSheetFile::query()->whereNotNull('r2_url')->where('r2_url', '!=', '')->count();
         $extractions = GoogleSheetExtraction::query()->count();
         $percentage = $total > 0 ? round(($synced / $total) * 100, 1) : 0;
 
@@ -961,6 +965,8 @@ class GoogleSheetsDataSyncService
             'synced_serials' => $synced,
             'pending_serials' => $pending,
             'total_files' => $files,
+            'files_pending_r2' => $filesPendingR2,
+            'files_synced_r2' => $filesSyncedR2,
             'total_extractions' => $extractions,
             'completion_percentage' => $percentage,
         ];
