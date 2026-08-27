@@ -66,6 +66,17 @@ class GoogleSheetLog extends Model
             ->whereColumn('google_sheet_extractions.serial_number', 'google_sheet_logs.serial_number');
     }
 
+    protected $appends = ['has_update_available'];
+
+    public function getHasUpdateAvailableAttribute(): bool
+    {
+        if (! $this->is_synced_to_db || ! $this->synced_at || ! $this->updated_at) {
+            return false;
+        }
+
+        return $this->updated_at->gt($this->synced_at);
+    }
+
     public function syncedUpload(): BelongsTo
     {
         return $this->belongsTo(ReceivingUpload::class, 'synced_receiving_upload_id');

@@ -13,6 +13,7 @@ import {
     Search,
     Settings,
     Sliders,
+    Sparkles,
     Square,
     Zap,
 } from 'lucide-react';
@@ -44,9 +45,9 @@ interface SheetConfig {
 
 interface StagedFile {
     id: number;
-    file_name: string;
+    serial_number: number;
     file_id: string | null;
-    file_url: string | null;
+    file_name: string;
     mime_type: string;
     r2_url: string | null;
 }
@@ -75,6 +76,9 @@ interface StagedLogItem {
     uploader_location: string | null;
     is_synced_to_db: boolean;
     synced_receiving_upload_id: number | null;
+    synced_at?: string | null;
+    updated_at?: string | null;
+    has_update_available?: boolean;
     files: StagedFile[];
     extraction: StagedExtraction | null;
     synced_upload?: {
@@ -140,6 +144,7 @@ export default function SheetsSyncPage({
     const [loading, setLoading] = useState<boolean>(true);
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [sortBy, setSortBy] = useState<string>('priority');
     const [page, setPage] = useState<number>(1);
     const [pagination, setPagination] = useState({
         total: 0,
@@ -174,6 +179,7 @@ export default function SheetsSyncPage({
                 sheet: activeSheet,
                 search: searchQuery,
                 status: statusFilter,
+                sort: sortBy,
                 page: String(page),
                 limit: '25',
             });
@@ -194,7 +200,7 @@ export default function SheetsSyncPage({
         } finally {
             setLoading(false);
         }
-    }, [activeSheet, searchQuery, statusFilter, page]);
+    }, [activeSheet, searchQuery, statusFilter, sortBy, page]);
 
     useEffect(() => {
         loadItems();
@@ -555,16 +561,37 @@ export default function SheetsSyncPage({
 
                         <select
                             value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
+                            onChange={(e) => {
+                                setStatusFilter(e.target.value);
+                                setPage(1);
+                            }}
                             className="h-8 rounded-md border border-input bg-background px-2.5 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         >
                             <option value="all">All Uploads ({pagination.total})</option>
                             <option value="pending">Pending Database Sync</option>
+                            <option value="updates_available">
+                                Updates Available (Needs Re-sync)
+                            </option>
                             <option value="synced">Synced in Database</option>
                             <option value="pending_r2">Has Files Pending R2</option>
                             <option value="all_in_r2">All Files in R2</option>
                             <option value="verified">Verified Only</option>
                             <option value="with_extractions">Has AI Extractions</option>
+                        </select>
+
+                        <select
+                            value={sortBy}
+                            onChange={(e) => {
+                                setSortBy(e.target.value);
+                                setPage(1);
+                            }}
+                            className="h-8 rounded-md border border-input bg-background px-2.5 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            title="Sort order"
+                        >
+                            <option value="priority">Priority: Action Needed First</option>
+                            <option value="sn_desc">Serial # (Newest First)</option>
+                            <option value="sn_asc">Serial # (Oldest First)</option>
+                            <option value="latest">Recently Updated in Sheets</option>
                         </select>
                     </div>
 
@@ -747,7 +774,29 @@ export default function SheetsSyncPage({
 
                                                 {/* Database Status */}
                                                 <td className="px-3 py-2">
-                                                    {isSynced ? (
+                                                    {!isSynced ? (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="border-amber-500/30 bg-amber-500/10 text-[10px] font-semibold text-amber-600 dark:text-amber-400"
+                                                        >
+                                                            Pending Sync
+                                                        </Badge>
+                                                    ) : item.has_update_available ? (
+                                                        <div className="flex flex-col items-start gap-0.5">
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="gap-1 border-indigo-500/30 bg-indigo-500/10 text-[10px] font-semibold text-indigo-600 dark:text-indigo-400"
+                                                                title="Google Sheets has newer updates since last database sync"
+                                                            >
+                                                                <Sparkles className="size-2.5" />
+                                                                <span>Update Available</span>
+                                                            </Badge>
+                                                            <span className="font-mono text-[9px] text-muted-foreground">
+                                                                Synced #
+                                                                {item.synced_receiving_upload_id}
+                                                            </span>
+                                                        </div>
+                                                    ) : (
                                                         <Badge
                                                             variant="default"
                                                             className="gap-1 bg-emerald-600 text-[10px] text-white"
@@ -757,13 +806,6 @@ export default function SheetsSyncPage({
                                                                 Synced #
                                                                 {item.synced_receiving_upload_id}
                                                             </span>
-                                                        </Badge>
-                                                    ) : (
-                                                        <Badge
-                                                            variant="outline"
-                                                            className="border-amber-500/30 bg-amber-500/10 text-[10px] text-amber-600 dark:text-amber-400"
-                                                        >
-                                                            Pending Sync
                                                         </Badge>
                                                     )}
                                                 </td>
@@ -783,7 +825,7 @@ export default function SheetsSyncPage({
                                                             <span>Details</span>
                                                         </Button>
 
-                                                        {!isSynced && (
+                                                        {!isSynced ? (
                                                             <Button
                                                                 type="button"
                                                                 size="sm"
@@ -805,7 +847,30 @@ export default function SheetsSyncPage({
                                                                         : 'Sync Now'}
                                                                 </span>
                                                             </Button>
-                                                        )}
+                                                        ) : item.has_update_available ? (
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                variant="outline"
+                                                                disabled={isSyncing}
+                                                                onClick={() =>
+                                                                    handleSyncSerial(
+                                                                        item.serial_number,
+                                                                    )
+                                                                }
+                                                                className="h-7 gap-1 px-2 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 dark:text-indigo-400 dark:hover:bg-indigo-950/50"
+                                                                title="Re-synchronize with latest Google Sheet updates"
+                                                            >
+                                                                <RefreshCw
+                                                                    className={`size-3 ${isSyncing ? 'animate-spin' : ''}`}
+                                                                />
+                                                                <span>
+                                                                    {isSyncing
+                                                                        ? 'Re-syncing...'
+                                                                        : 'Re-sync'}
+                                                                </span>
+                                                            </Button>
+                                                        ) : null}
                                                     </div>
                                                 </td>
                                             </tr>
