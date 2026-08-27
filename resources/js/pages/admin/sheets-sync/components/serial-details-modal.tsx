@@ -1,4 +1,13 @@
-import { CheckCircle2, ExternalLink, Eye, FileText, MapPin, Tag } from 'lucide-react';
+import {
+    CheckCircle2,
+    ExternalLink,
+    Eye,
+    FileText,
+    MapPin,
+    RefreshCw,
+    Sparkles,
+    Tag,
+} from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,10 +23,11 @@ import {
 
 interface StagedFile {
     id: number;
+    serial_number?: number;
     file_name: string;
     file_id: string | null;
-    file_url: string | null;
-    mime_type: string;
+    file_url?: string | null;
+    mime_type?: string;
     r2_url: string | null;
 }
 
@@ -45,6 +55,9 @@ interface SerialItem {
     uploader_location: string | null;
     is_synced_to_db: boolean;
     synced_receiving_upload_id: number | null;
+    synced_at?: string | null;
+    updated_at?: string | null;
+    has_update_available?: boolean;
     files?: StagedFile[];
     extraction?: StagedExtraction | null;
 }
@@ -123,18 +136,29 @@ export function SerialDetailsModal({
                             </div>
                         </div>
 
-                        <Badge
-                            variant={item.is_synced_to_db ? 'default' : 'outline'}
-                            className={`text-xs ${
-                                item.is_synced_to_db
-                                    ? 'bg-emerald-600 text-white'
-                                    : 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                            }`}
-                        >
-                            {item.is_synced_to_db
-                                ? `Synced (Upload #${item.synced_receiving_upload_id})`
-                                : 'Pending Sync'}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                            {item.has_update_available && (
+                                <Badge
+                                    variant="outline"
+                                    className="gap-1 border-indigo-500/30 bg-indigo-500/10 text-xs font-semibold text-indigo-600 dark:text-indigo-400"
+                                >
+                                    <Sparkles className="size-3" />
+                                    <span>Update Available</span>
+                                </Badge>
+                            )}
+                            <Badge
+                                variant={item.is_synced_to_db ? 'default' : 'outline'}
+                                className={`text-xs ${
+                                    item.is_synced_to_db
+                                        ? 'bg-emerald-600 text-white'
+                                        : 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                                }`}
+                            >
+                                {item.is_synced_to_db
+                                    ? `Synced (Upload #${item.synced_receiving_upload_id})`
+                                    : 'Pending Sync'}
+                            </Badge>
+                        </div>
                     </div>
                 </DialogHeader>
 
@@ -426,7 +450,7 @@ export function SerialDetailsModal({
                     >
                         Close
                     </Button>
-                    {!item.is_synced_to_db && onSyncClick && (
+                    {onSyncClick && (
                         <Button
                             type="button"
                             size="sm"
@@ -434,10 +458,23 @@ export function SerialDetailsModal({
                                 onSyncClick(item.serial_number);
                                 onOpenChange(false);
                             }}
-                            className="gap-1.5 bg-emerald-600 text-xs font-bold text-white hover:bg-emerald-500"
+                            className={`gap-1.5 text-xs font-bold text-white ${
+                                item.is_synced_to_db
+                                    ? 'bg-indigo-600 hover:bg-indigo-500'
+                                    : 'bg-emerald-600 hover:bg-emerald-500'
+                            }`}
                         >
-                            <CheckCircle2 className="size-3.5" />
-                            <span>Sync SN-{item.serial_number} Now</span>
+                            {item.is_synced_to_db ? (
+                                <>
+                                    <RefreshCw className="size-3.5" />
+                                    <span>Re-sync SN-{item.serial_number}</span>
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle2 className="size-3.5" />
+                                    <span>Sync SN-{item.serial_number} Now</span>
+                                </>
+                            )}
                         </Button>
                     )}
                 </DialogFooter>

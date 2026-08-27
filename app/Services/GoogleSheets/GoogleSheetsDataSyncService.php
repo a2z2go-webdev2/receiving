@@ -533,18 +533,20 @@ class GoogleSheetsDataSyncService
 
                     // If PO Document, create PoExtraction and PoExtractionItems
                     if (str_contains(strtolower($docTypeStr), 'purchase order') || ($poNoNormalized !== '' && str_contains(strtolower($docTypeStr), 'po'))) {
+                        $parsedPoDateVal = $poDateStr !== '' ? $this->parseDate($poDateStr)?->toDateString() : null;
+
                         /** @var PoExtraction $poExt */
                         $poExt = PoExtraction::query()->updateOrCreate(
                             ['ai_extraction_id' => $aiExt->getKey()],
                             [
                                 'receiving_upload_id' => $upload->getKey(),
-                                'po_number' => $poNo,
-                                'po_number_normalized' => $poNoNormalized,
-                                'po_date' => $poDateStr,
-                                'po_date_value' => $this->parseDate($poDateStr)?->toDateString(),
+                                'po_number' => $poNo !== '' ? $poNo : "PO-SN{$serialNumber}",
+                                'po_number_normalized' => $poNoNormalized !== '' ? $poNoNormalized : "POSN{$serialNumber}",
+                                'po_date' => $poDateStr !== '' ? $poDateStr : null,
+                                'po_date_value' => $parsedPoDateVal,
                                 'arrival_status' => PurchaseOrderArrivalStatus::Arrived->value,
-                                'vendor_name' => $supplierName,
-                                'total_amount' => $totalAmtStr,
+                                'vendor_name' => $supplierName !== '' ? $supplierName : null,
+                                'total_amount' => $totalAmtStr !== '' ? $totalAmtStr : null,
                                 'created_at' => $createdAt,
                                 'updated_at' => $createdAt,
                             ]
@@ -664,6 +666,8 @@ class GoogleSheetsDataSyncService
                             $finalQty = $parsedQty > 0 ? $parsedQty : 1.000;
 
                             if ($poScheduleItem) {
+                                $parsedPoDateVal = $poDateStr !== '' ? $this->parseDate($poDateStr)?->toDateString() : null;
+
                                 // Find or create PO Extraction & Link to ensure relational integrity
                                 $targetPoExt = $poExt ?? PoExtraction::query()->firstOrCreate(
                                     [
@@ -673,11 +677,11 @@ class GoogleSheetsDataSyncService
                                     [
                                         'ai_extraction_id' => $aiExt->getKey(),
                                         'po_number_normalized' => $poNoNormalized !== '' ? $poNoNormalized : "POSN{$serialNumber}",
-                                        'po_date' => $poDateStr,
-                                        'po_date_value' => $this->parseDate($poDateStr)?->toDateString(),
+                                        'po_date' => $poDateStr !== '' ? $poDateStr : null,
+                                        'po_date_value' => $parsedPoDateVal,
                                         'arrival_status' => PurchaseOrderArrivalStatus::Arrived->value,
                                         'vendor_name' => $supplierName,
-                                        'total_amount' => $totalAmtStr,
+                                        'total_amount' => $totalAmtStr !== '' ? $totalAmtStr : null,
                                         'created_at' => $createdAt,
                                         'updated_at' => $createdAt,
                                     ]
@@ -709,10 +713,10 @@ class GoogleSheetsDataSyncService
                                         'arrived_quantity' => $finalQty,
                                         'ordered_quantity' => $finalQty,
                                         'target_quantity' => $poScheduleItem->target_quantity,
-                                        'unit' => $itemUnit,
+                                        'unit' => $itemUnit ?: 'unit',
                                         'arrival_date' => $createdAt->toDateString(),
-                                        'po_number' => $poNo,
-                                        'po_date' => $poDateStr,
+                                        'po_number' => $poNo !== '' ? $poNo : null,
+                                        'po_date' => $parsedPoDateVal,
                                         'po_week' => $this->normalizer->weekOfMonth($createdAt),
                                         'item_code' => $itemCode !== '' ? $itemCode : null,
                                         'item_description' => $canonicalDesc,
@@ -731,7 +735,7 @@ class GoogleSheetsDataSyncService
                                     'source_type' => WarehouseStockSource::Arrival->value,
                                     'ai_extraction_id' => $aiExt->getKey(),
                                     'receiving_upload_id' => $upload->getKey(),
-                                    'po_number' => $poNo,
+                                    'po_number' => $poNo !== '' ? $poNo : null,
                                     'quantity_received' => $finalQty,
                                     'received_at' => $createdAt,
                                     'received_date_quality' => WarehouseDateQuality::Confirmed->value,

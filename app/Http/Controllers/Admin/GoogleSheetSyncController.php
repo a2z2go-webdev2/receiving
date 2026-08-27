@@ -72,6 +72,8 @@ class GoogleSheetSyncController extends Controller
             $query->where('is_synced_to_db', false);
         } elseif ($status === 'synced') {
             $query->where('is_synced_to_db', true);
+        } elseif ($status === 'updates_available') {
+            $query->where('is_synced_to_db', true)->whereColumn('updated_at', '>', 'synced_at');
         } elseif ($status === 'verified') {
             $query->where(fn (Builder $q) => $q->whereRaw('LOWER(review_status) = ?', ['verified']));
         } elseif ($status === 'with_extractions') {
@@ -127,7 +129,25 @@ class GoogleSheetSyncController extends Controller
             });
         }
 
-        $query->orderBy('serial_number', 'asc');
+        // Dynamic Sorting with Smart Priority as Default
+        $sort = (string) $request->input('sort', 'priority');
+        if ($sort === 'priority') {
+            $query->orderByRaw('CASE 
+                WHEN is_synced_to_db = 0 THEN 1 
+                WHEN is_synced_to_db = 1 AND updated_at > synced_at THEN 2 
+                ELSE 3 
+            END ASC')
+                ->orderBy('serial_number', 'desc');
+        } elseif ($sort === 'sn_desc') {
+            $query->orderBy('serial_number', 'desc');
+        } elseif ($sort === 'sn_asc') {
+            $query->orderBy('serial_number', 'asc');
+        } elseif ($sort === 'latest') {
+            $query->orderBy('updated_at', 'desc');
+        } else {
+            $query->orderBy('serial_number', 'asc');
+        }
+
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
         $serialNumbers = collect($paginator->items())->pluck('serial_number')->all();
