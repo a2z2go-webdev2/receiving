@@ -1,10 +1,10 @@
 import { Head, router } from '@inertiajs/react';
 import { Power } from 'lucide-react';
+import { LegacyImportDialog } from '@/components/admin/legacy-import-dialog';
 import { FlashMessage } from '@/components/receiving/flash-message';
 import { PageShell } from '@/components/receiving/page-shell';
 import { StatusBadge } from '@/components/receiving/status-badge';
 import { Button } from '@/components/ui/button';
-import { LegacyImportDialog } from '@/components/admin/legacy-import-dialog';
 
 type UploadType = { id: number; name: string; slug: string; is_active: boolean };
 
@@ -26,9 +26,13 @@ export default function SettingsIndex({ uploadTypes }: { uploadTypes: UploadType
                             <div className="flex items-start justify-between gap-3">
                                 <div>
                                     <p className="font-medium text-base">{type.name}</p>
-                                    <p className="mt-0.5 text-muted-foreground text-xs">/{type.slug}</p>
+                                    <p className="mt-0.5 text-muted-foreground text-xs">
+                                        /{type.slug}
+                                    </p>
                                     <div className="mt-2">
-                                        <StatusBadge value={type.is_active ? 'active' : 'inactive'} />
+                                        <StatusBadge
+                                            value={type.is_active ? 'active' : 'inactive'}
+                                        />
                                     </div>
                                 </div>
                                 <Button
@@ -42,7 +46,7 @@ export default function SettingsIndex({ uploadTypes }: { uploadTypes: UploadType
                                     <Power className="h-4 w-4" />
                                 </Button>
                             </div>
-                            <div className="border-t pt-3 flex justify-end">
+                            <div className="flex justify-end border-t pt-3">
                                 <LegacyImportDialog uploadType={type} />
                             </div>
                         </div>

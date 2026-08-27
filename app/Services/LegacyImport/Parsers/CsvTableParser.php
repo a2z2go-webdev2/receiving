@@ -19,11 +19,6 @@ class CsvTableParser
             return [];
         }
 
-        $lines = str_getcsv($content, "\n");
-        if (empty($lines)) {
-            return [];
-        }
-
         $stream = fopen('php://memory', 'r+');
         fwrite($stream, $content);
         rewind($stream);
@@ -34,7 +29,7 @@ class CsvTableParser
 
         while (($data = fgetcsv($stream)) !== false) {
             // Remove BOM if present on first item
-            if (! empty($data)) {
+            if (isset($data[0])) {
                 $data[0] = preg_replace('/^\x{EF}\x{BB}\x{BF}/u', '', $data[0]);
             }
 

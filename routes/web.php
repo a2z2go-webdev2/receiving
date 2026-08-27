@@ -4,6 +4,7 @@ use App\Enums\Permission;
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\AdminAccessOtpController;
 use App\Http\Controllers\Admin\EmailRecipientController;
+use App\Http\Controllers\Admin\GoogleSheetSyncController;
 use App\Http\Controllers\Admin\LegacyDataImportController;
 use App\Http\Controllers\Admin\PurchaseOrderDocumentLinkController;
 use App\Http\Controllers\Admin\PurchaseOrderItemScheduleController;
@@ -219,6 +220,19 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
             Route::delete('purchase-orders/items/{item}', [PurchaseOrderItemScheduleController::class, 'destroy'])->name('purchase-orders.items.destroy');
             Route::delete('system-reset', SystemResetController::class)
                 ->name('system-reset');
+        });
+
+        Route::prefix('sheets-sync')->name('sheets-sync.')->group(function (): void {
+            Route::get('/', [GoogleSheetSyncController::class, 'index'])->name('index');
+            Route::get('items', [GoogleSheetSyncController::class, 'items'])->name('items');
+            Route::post('refresh/{slug}', [GoogleSheetSyncController::class, 'refresh'])->name('refresh');
+            Route::post('import-raw/{slug}', [GoogleSheetSyncController::class, 'importRaw'])->name('import-raw');
+            Route::post('sync-serial/{slug}/{serialNumber}', [GoogleSheetSyncController::class, 'syncSerial'])->name('sync-serial');
+            Route::post('batch-preview', [GoogleSheetSyncController::class, 'batchPreview'])->name('batch-preview');
+            Route::post('batch-sync', [GoogleSheetSyncController::class, 'batchSync'])->name('batch-sync');
+            Route::get('progress', [GoogleSheetSyncController::class, 'progress'])->name('progress');
+            Route::post('cancel', [GoogleSheetSyncController::class, 'cancelSync'])->name('cancel');
+            Route::post('config', [GoogleSheetSyncController::class, 'updateConfig'])->name('config');
         });
     });
 });

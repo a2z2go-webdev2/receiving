@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
 import { useForm } from '@inertiajs/react';
-import { Upload, FileSpreadsheet, Loader2, AlertCircle, Folder } from 'lucide-react';
+import { AlertCircle, FileSpreadsheet, Folder, Loader2, Upload } from 'lucide-react';
+import type React from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -25,7 +26,8 @@ export function LegacyImportDialog({ uploadType }: Props) {
         files_file: File | null;
         extractions_file: File | null;
     }>({
-        directory_path: 'C:\\Users\\durin\\Downloads\\PINGCON - RECEIVING-20260729T014327Z-1-001\\PINGCON - RECEIVING',
+        directory_path:
+            'C:\\Users\\durin\\Downloads\\PINGCON - RECEIVING-20260729T014327Z-1-001\\PINGCON - RECEIVING',
         logs_file: null,
         files_file: null,
         extractions_file: null,
@@ -56,7 +58,8 @@ export function LegacyImportDialog({ uploadType }: Props) {
                 <DialogHeader>
                     <DialogTitle>Import Legacy Data: {uploadType.name}</DialogTitle>
                     <DialogDescription>
-                        Import legacy receiving spreadsheet exports (CSV or HTML format) into the database.
+                        Import legacy receiving spreadsheet exports (CSV or HTML format) into the
+                        database.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -89,12 +92,14 @@ export function LegacyImportDialog({ uploadType }: Props) {
 
                 <form onSubmit={handleSubmit} className="mt-4 space-y-4">
                     {hasErrors && (
-                        <div className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
-                            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                        <div className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-destructive text-xs">
+                            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                             <div>
                                 <p className="font-semibold">Import Error</p>
-                                {Object.values(errors).map((err, idx) => (
-                                    <p key={idx} className="mt-0.5">{err}</p>
+                                {Object.entries(errors).map(([key, err]) => (
+                                    <p key={`err-${key}`} className="mt-0.5">
+                                        {err}
+                                    </p>
                                 ))}
                             </div>
                         </div>
@@ -102,30 +107,32 @@ export function LegacyImportDialog({ uploadType }: Props) {
 
                     {importMode === 'path' ? (
                         <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-foreground">
+                            <span className="font-semibold text-foreground text-xs">
                                 Folder Path Containing Export Files (HTML or CSV)
-                            </label>
+                            </span>
                             <input
                                 type="text"
                                 value={data.directory_path}
                                 onChange={(e) => setData('directory_path', e.target.value)}
                                 placeholder="C:\Users\...\Downloads\PINGCON - RECEIVING"
-                                className="block w-full rounded-md border bg-background px-3 py-2 text-xs font-mono text-foreground shadow-sm focus:border-primary focus:outline-none"
+                                className="block w-full rounded-md border bg-background px-3 py-2 font-mono text-foreground text-xs shadow-sm focus:border-primary focus:outline-none"
                                 required
                             />
                             {errors.directory_path && (
-                                <p className="text-xs text-destructive">{errors.directory_path}</p>
+                                <p className="text-destructive text-xs">{errors.directory_path}</p>
                             )}
                             <p className="text-[11px] text-muted-foreground">
-                                Bypasses browser upload limits. Scans folder for <code>Receiving_Log</code>, <code>receive_files</code>, and <code>ai_extraction</code> files.
+                                Bypasses browser upload limits. Scans folder for{' '}
+                                <code>Receiving_Log</code>, <code>receive_files</code>, and{' '}
+                                <code>ai_extraction</code> files.
                             </p>
                         </div>
                     ) : (
                         <div className="space-y-3">
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-foreground">
+                                <span className="font-semibold text-foreground text-xs">
                                     1. Receiving Log File (CSV or HTML) *
-                                </label>
+                                </span>
                                 <input
                                     type="file"
                                     accept=".html,.htm,.csv,.txt"
@@ -133,57 +140,70 @@ export function LegacyImportDialog({ uploadType }: Props) {
                                         setData('directory_path', '');
                                         setData('logs_file', e.target.files?.[0] || null);
                                     }}
-                                    className="block w-full text-xs text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-xs file:font-medium hover:file:bg-secondary/80"
+                                    className="block w-full text-muted-foreground text-xs file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:font-medium file:text-xs hover:file:bg-secondary/80"
                                     required={importMode === 'files'}
                                 />
                                 {errors.logs_file && (
-                                    <p className="text-xs text-destructive">{errors.logs_file}</p>
+                                    <p className="text-destructive text-xs">{errors.logs_file}</p>
                                 )}
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-foreground">
+                                <span className="font-semibold text-foreground text-xs">
                                     2. Receive Files List (Optional - CSV or HTML)
-                                </label>
+                                </span>
                                 <input
                                     type="file"
                                     accept=".html,.htm,.csv,.txt"
-                                    onChange={(e) => setData('files_file', e.target.files?.[0] || null)}
-                                    className="block w-full text-xs text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-xs file:font-medium hover:file:bg-secondary/80"
+                                    onChange={(e) =>
+                                        setData('files_file', e.target.files?.[0] || null)
+                                    }
+                                    className="block w-full text-muted-foreground text-xs file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:font-medium file:text-xs hover:file:bg-secondary/80"
                                 />
                                 {errors.files_file && (
-                                    <p className="text-xs text-destructive">{errors.files_file}</p>
+                                    <p className="text-destructive text-xs">{errors.files_file}</p>
                                 )}
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-foreground">
+                                <span className="font-semibold text-foreground text-xs">
                                     3. AI Extractions File (Optional - CSV or HTML)
-                                </label>
+                                </span>
                                 <input
                                     type="file"
                                     accept=".html,.htm,.csv,.txt"
-                                    onChange={(e) => setData('extractions_file', e.target.files?.[0] || null)}
-                                    className="block w-full text-xs text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-xs file:font-medium hover:file:bg-secondary/80"
+                                    onChange={(e) =>
+                                        setData('extractions_file', e.target.files?.[0] || null)
+                                    }
+                                    className="block w-full text-muted-foreground text-xs file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:font-medium file:text-xs hover:file:bg-secondary/80"
                                 />
                                 {errors.extractions_file && (
-                                    <p className="text-xs text-destructive">{errors.extractions_file}</p>
+                                    <p className="text-destructive text-xs">
+                                        {errors.extractions_file}
+                                    </p>
                                 )}
                             </div>
                         </div>
                     )}
 
-                    <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
-                        <p className="font-semibold text-foreground">Multi-Format & Folder Preservation</p>
+                    <div className="rounded-md border bg-muted/30 p-3 text-muted-foreground text-xs">
+                        <p className="font-semibold text-foreground">
+                            Multi-Format & Folder Preservation
+                        </p>
                         <p className="mt-1">
-                            The system automatically joins records by Serial Number and Google Drive File ID. Files will be queued for automatic background transfer to Cloudflare R2.
+                            The system automatically joins records by Serial Number and Google Drive
+                            File ID. Files will be queued for automatic background transfer to
+                            Cloudflare R2.
                         </p>
                     </div>
 
                     {processing && (
-                        <div className="flex items-center gap-2 rounded-md bg-accent p-3 text-xs text-accent-foreground font-medium animate-pulse">
-                            <Loader2 className="h-4 w-4 animate-spin shrink-0" />
-                            <span>Processing legacy dataset and building database records... Please do not close this window.</span>
+                        <div className="flex animate-pulse items-center gap-2 rounded-md bg-accent p-3 font-medium text-accent-foreground text-xs">
+                            <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                            <span>
+                                Processing legacy dataset and building database records... Please do
+                                not close this window.
+                            </span>
                         </div>
                     )}
 

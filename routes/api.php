@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\GoogleSheetWebhookController;
 use App\Http\Controllers\Api\V1\CorrectedDataController;
 use App\Models\ApiKey;
 use Illuminate\Http\Request;
@@ -26,3 +27,6 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         });
     });
 });
+
+Route::post('webhooks/sheets/{slug}', [GoogleSheetWebhookController::class, 'handle'])
+    ->name('api.webhooks.sheets');
