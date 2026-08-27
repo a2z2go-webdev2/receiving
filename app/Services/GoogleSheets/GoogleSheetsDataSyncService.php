@@ -14,6 +14,7 @@ use App\Enums\WarehouseStockSource;
 use App\Features\Receiving\Services\ActivityLogger;
 use App\Features\Receiving\Services\PurchaseOrderDataNormalizer;
 use App\Features\Receiving\Services\PurchaseOrderItemMatcher;
+use App\Features\Receiving\Services\PurchaseOrderLinker;
 use App\Models\AiExtraction;
 use App\Models\GoogleSheetConfig;
 use App\Models\GoogleSheetExtraction;
@@ -22,8 +23,6 @@ use App\Models\GoogleSheetLog;
 use App\Models\GoogleSheetSyncJob;
 use App\Models\PoExtraction;
 use App\Models\PoExtractionItem;
-use App\Models\PurchaseOrderDocumentLink;
-use App\Models\PurchaseOrderItemArrival;
 use App\Models\PurchaseOrderItemSchedule;
 use App\Models\ReceivingUpload;
 use App\Models\ReviewLink;
@@ -505,7 +504,7 @@ class GoogleSheetsDataSyncService
                     $supplierName = $this->extractField($fields, ['supplier', 'supplier name', 'vendor', 'vendor name', 'company name']);
                     $totalAmtStr = $this->extractField($fields, ['total amount due', 'total sales', 'total amount', 'amount due', 'total']);
 
-                    $poNoNormalized = preg_replace('/[^A-Za-z0-9]/', '', (string) $poNo);
+                    $poNoNormalized = $this->normalizer->normalizeIdentifier($poNo);
 
                     /** @var AiExtraction $aiExt */
                     $aiExt = AiExtraction::query()->updateOrCreate(
@@ -517,7 +516,7 @@ class GoogleSheetsDataSyncService
                             'document_type' => strtolower($docTypeStr),
                             'invoice_number' => $invNo !== '' ? $invNo : null,
                             'po_number' => $poNo !== '' ? $poNo : null,
-                            'po_number_normalized' => $poNoNormalized !== '' ? $poNoNormalized : null,
+                            'po_number_normalized' => $poNoNormalized,
                             'po_date' => $poDateStr !== '' ? $poDateStr : null,
                             'raw_extracted_json' => $matchingDoc,
                             'corrected_json' => $matchingDoc,
@@ -532,7 +531,7 @@ class GoogleSheetsDataSyncService
                     );
 
                     // If PO Document, create PoExtraction and PoExtractionItems
-                    if (str_contains(strtolower($docTypeStr), 'purchase order') || ($poNoNormalized !== '' && str_contains(strtolower($docTypeStr), 'po'))) {
+                    if (strtolower(trim($docTypeStr)) === 'purchase order') {
                         $parsedPoDateVal = $poDateStr !== '' ? $this->parseDate($poDateStr)?->toDateString() : null;
 
                         /** @var PoExtraction $poExt */
@@ -540,25 +539,13 @@ class GoogleSheetsDataSyncService
                             ['ai_extraction_id' => $aiExt->getKey()],
                             [
                                 'receiving_upload_id' => $upload->getKey(),
-                                'po_number' => $poNo !== '' ? $poNo : "PO-SN{$serialNumber}",
-                                'po_number_normalized' => $poNoNormalized !== '' ? $poNoNormalized : "POSN{$serialNumber}",
+                                'po_number' => $poNo !== '' ? $poNo : "PO-{$upload->getKey()}",
+                                'po_number_normalized' => $poNoNormalized ?? "po{$upload->getKey()}",
                                 'po_date' => $poDateStr !== '' ? $poDateStr : null,
                                 'po_date_value' => $parsedPoDateVal,
                                 'arrival_status' => PurchaseOrderArrivalStatus::Arrived->value,
                                 'vendor_name' => $supplierName !== '' ? $supplierName : null,
                                 'total_amount' => $totalAmtStr !== '' ? $totalAmtStr : null,
-                                'created_at' => $createdAt,
-                                'updated_at' => $createdAt,
-                            ]
-                        );
-
-                        PurchaseOrderDocumentLink::query()->firstOrCreate(
-                            [
-                                'po_extraction_id' => $poExt->getKey(),
-                                'ai_extraction_id' => $aiExt->getKey(),
-                            ],
-                            [
-                                'source' => PurchaseOrderLinkSource::Automatic->value,
                                 'created_at' => $createdAt,
                                 'updated_at' => $createdAt,
                             ]
@@ -585,9 +572,28 @@ class GoogleSheetsDataSyncService
 
                         // Automatically match and synchronize against master PO item schedule
                         app(PurchaseOrderItemMatcher::class)->sync($poExt);
+                        // Link any previously uploaded invoices that were waiting for this PO
+                        app(PurchaseOrderLinker::class)->syncPoExtraction($poExt);
+                    } else {
+                        // For Invoice / Delivery Receipt / Receiving documents, link to real PO if already present
+                        if ($poNoNormalized !== null) {
+                            /** @var PoExtraction|null $existingRealPo */
+                            $existingRealPo = PoExtraction::query()
+                                ->where('po_number_normalized', $poNoNormalized)
+                                ->first();
+
+                            if ($existingRealPo) {
+                                app(PurchaseOrderLinker::class)->link(
+                                    $aiExt,
+                                    $existingRealPo,
+                                    $activeUser,
+                                    PurchaseOrderLinkSource::Automatic
+                                );
+                            }
+                        }
                     }
 
-                    // For Verified Invoices/Receipts with Supplier, create Stock Lots & Arrivals
+                    // For Verified Invoices/Receipts with Supplier, create Stock Lots
                     if ($reviewStatus === ReviewStatus::Verified && $supplierName !== '') {
                         $rawItems = $matchingDoc['items'] ?? [];
                         $itemsToProcess = [];
@@ -664,69 +670,6 @@ class GoogleSheetsDataSyncService
 
                             $parsedQty = (float) preg_replace('/[^\d.]/', '', $itemQtyStr);
                             $finalQty = $parsedQty > 0 ? $parsedQty : 1.000;
-
-                            if ($poScheduleItem) {
-                                $parsedPoDateVal = $poDateStr !== '' ? $this->parseDate($poDateStr)?->toDateString() : null;
-
-                                // Find or create PO Extraction & Link to ensure relational integrity
-                                $targetPoExt = $poExt ?? PoExtraction::query()->firstOrCreate(
-                                    [
-                                        'receiving_upload_id' => $upload->getKey(),
-                                        'po_number' => $poNo !== '' ? $poNo : "PO-SN{$serialNumber}",
-                                    ],
-                                    [
-                                        'ai_extraction_id' => $aiExt->getKey(),
-                                        'po_number_normalized' => $poNoNormalized !== '' ? $poNoNormalized : "POSN{$serialNumber}",
-                                        'po_date' => $poDateStr !== '' ? $poDateStr : null,
-                                        'po_date_value' => $parsedPoDateVal,
-                                        'arrival_status' => PurchaseOrderArrivalStatus::Arrived->value,
-                                        'vendor_name' => $supplierName,
-                                        'total_amount' => $totalAmtStr !== '' ? $totalAmtStr : null,
-                                        'created_at' => $createdAt,
-                                        'updated_at' => $createdAt,
-                                    ]
-                                );
-
-                                $targetDocLink = PurchaseOrderDocumentLink::query()->firstOrCreate(
-                                    [
-                                        'po_extraction_id' => $targetPoExt->getKey(),
-                                        'ai_extraction_id' => $aiExt->getKey(),
-                                    ],
-                                    [
-                                        'source' => PurchaseOrderLinkSource::Automatic->value,
-                                        'created_at' => $createdAt,
-                                        'updated_at' => $createdAt,
-                                    ]
-                                );
-
-                                $poExtItem = $targetPoExt->items()->where('item_code', $itemCode)->first();
-
-                                PurchaseOrderItemArrival::query()->updateOrCreate(
-                                    ['source_key' => "GSHEET-ARRIVAL-{$slug}-{$serialNumber}-{$uploadedFile->getKey()}-{$suffix}"],
-                                    [
-                                        'purchase_order_document_link_id' => $targetDocLink->getKey(),
-                                        'po_extraction_id' => $targetPoExt->getKey(),
-                                        'ai_extraction_id' => $aiExt->getKey(),
-                                        'receiving_upload_id' => $upload->getKey(),
-                                        'po_extraction_item_id' => $poExtItem?->getKey(),
-                                        'purchase_order_item_schedule_id' => $poScheduleItem->getKey(),
-                                        'arrived_quantity' => $finalQty,
-                                        'ordered_quantity' => $finalQty,
-                                        'target_quantity' => $poScheduleItem->target_quantity,
-                                        'unit' => $itemUnit ?: 'unit',
-                                        'arrival_date' => $createdAt->toDateString(),
-                                        'po_number' => $poNo !== '' ? $poNo : null,
-                                        'po_date' => $parsedPoDateVal,
-                                        'po_week' => $this->normalizer->weekOfMonth($createdAt),
-                                        'item_code' => $itemCode !== '' ? $itemCode : null,
-                                        'item_description' => $canonicalDesc,
-                                        'matched_by' => $normSku ? 'sku' : ($normBarcode ? 'ean' : 'description'),
-                                        'status' => 'arrived',
-                                        'created_at' => $createdAt,
-                                        'updated_at' => $createdAt,
-                                    ]
-                                );
-                            }
 
                             WarehouseStockLot::query()->updateOrCreate(
                                 ['source_key' => "GSHEET-STOCK-{$slug}-{$serialNumber}-{$uploadedFile->getKey()}-{$suffix}"],
