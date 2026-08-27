@@ -76,6 +76,10 @@ class GoogleSheetSyncController extends Controller
             $query->where(fn (Builder $q) => $q->whereRaw('LOWER(review_status) = ?', ['verified']));
         } elseif ($status === 'with_extractions') {
             $query->whereHas('extraction', fn ($q) => $q->whereNotNull('raw_ai_json')->orWhereNotNull('corrected_json'));
+        } elseif ($status === 'pending_r2') {
+            $query->whereHas('files', fn ($q) => $q->whereNull('r2_url')->orWhere('r2_url', ''));
+        } elseif ($status === 'all_in_r2') {
+            $query->whereHas('files')->whereDoesntHave('files', fn ($q) => $q->whereNull('r2_url')->orWhere('r2_url', ''));
         }
 
         // Search by Serial Number, File Name, or File ID

@@ -412,7 +412,14 @@ class GoogleSheetsDataSyncService
                 if ($fileItem->r2_url && str_contains($fileItem->r2_url, 'http')) {
                     $parsedPath = parse_url($fileItem->r2_url, PHP_URL_PATH);
                     if ($parsedPath) {
-                        $targetR2Key = ltrim($parsedPath, '/');
+                        $cleanPath = ltrim($parsedPath, '/');
+                        if (str_starts_with($cleanPath, 'receiving/')) {
+                            $targetR2Key = $cleanPath;
+                        } else {
+                            $targetR2Key = $fileItem->r2_url;
+                        }
+                    } else {
+                        $targetR2Key = $fileItem->r2_url;
                     }
                 }
 
@@ -442,6 +449,7 @@ class GoogleSheetsDataSyncService
                         'r2_object_key' => $targetR2Key,
                         'r2_staging_object_key' => "staging/{$upload->submission_id}/{$sanitizedName}",
                         'original_file_size' => 1024,
+                        'final_file_size' => 1024,
                         'declared_content_type' => $mime,
                         'content_type' => $mime,
                         'validation_status' => 'valid',
@@ -953,6 +961,10 @@ class GoogleSheetsDataSyncService
         $synced = GoogleSheetLog::query()->where('is_synced_to_db', true)->count();
         $pending = GoogleSheetLog::query()->where('is_synced_to_db', false)->count();
         $files = GoogleSheetFile::query()->count();
+        $filesPendingR2 = GoogleSheetFile::query()->where(function ($q) {
+            $q->whereNull('r2_url')->orWhere('r2_url', '');
+        })->count();
+        $filesSyncedR2 = GoogleSheetFile::query()->whereNotNull('r2_url')->where('r2_url', '!=', '')->count();
         $extractions = GoogleSheetExtraction::query()->count();
         $percentage = $total > 0 ? round(($synced / $total) * 100, 1) : 0;
 
@@ -961,6 +973,8 @@ class GoogleSheetsDataSyncService
             'synced_serials' => $synced,
             'pending_serials' => $pending,
             'total_files' => $files,
+            'files_pending_r2' => $filesPendingR2,
+            'files_synced_r2' => $filesSyncedR2,
             'total_extractions' => $extractions,
             'completion_percentage' => $percentage,
         ];

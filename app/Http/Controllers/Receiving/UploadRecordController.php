@@ -88,7 +88,7 @@ class UploadRecordController extends Controller
                     'id' => $file->getKey(),
                     'name' => $file->original_file_name,
                     'content_type' => $file->content_type,
-                    'size' => $file->final_file_size,
+                    'size' => $file->final_file_size ?? $file->original_file_size ?? 1024,
                     'virus_scan_status' => $file->virus_scan_status->value,
                     'failure_reason' => $file->failure_reason,
                     'extraction' => $file->extraction === null ? null : [
@@ -296,6 +296,10 @@ class UploadRecordController extends Controller
         $file->loadMissing('upload');
         $this->authorize('view', $file);
         abort_if($file->r2_object_key === null, 404);
+
+        if (str_starts_with($file->r2_object_key, 'http://') || str_starts_with($file->r2_object_key, 'https://')) {
+            return response()->json(['url' => $file->r2_object_key]);
+        }
 
         try {
             $url = Storage::disk((string) config('receiving.disk'))->temporaryUrl(

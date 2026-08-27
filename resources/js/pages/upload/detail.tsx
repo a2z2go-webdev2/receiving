@@ -406,7 +406,7 @@ function FileDetails({
                         type="button"
                         variant="outline"
                         size="sm"
-                        disabled={!file.size || opening}
+                        disabled={opening}
                         onClick={onOpen}
                     >
                         <ExternalLink /> {opening ? 'Opening…' : 'Open file'}
