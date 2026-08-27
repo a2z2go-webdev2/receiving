@@ -117,7 +117,7 @@ export function BatchSyncModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-lg bg-card text-foreground">
+            <DialogContent className="max-h-[90vh] w-full max-w-full overflow-y-auto bg-card text-foreground sm:max-w-xl">
                 <DialogHeader className="border-b pb-3">
                     <div className="flex items-center gap-2">
                         <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
