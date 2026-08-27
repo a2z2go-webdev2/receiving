@@ -677,7 +677,8 @@ export default function SheetsSyncPage({
                                                             : 'N/A'}
                                                     </div>
                                                     <div className="text-[11px] text-muted-foreground">
-                                                        {item.reviewed_by || 'Unassigned'}
+                                                        {item.reviewed_by ||
+                                                            'jaezelle.benito@pingconmarketing.com'}
                                                     </div>
                                                 </td>
 
