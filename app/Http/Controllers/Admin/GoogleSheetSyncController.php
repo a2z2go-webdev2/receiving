@@ -28,6 +28,16 @@ class GoogleSheetSyncController extends Controller
     public function index(Request $request): Response
     {
         $activeSheet = $request->input('sheet', 'a2z2go');
+        
+        // Ensure every sheet configuration has an active webhook secret
+        $sheets = GoogleSheetConfig::query()->orderBy('id')->get();
+        foreach ($sheets as $sheet) {
+            if (empty($sheet->webhook_secret)) {
+                $sheet->update([
+                    'webhook_secret' => 'whsec_' . Str::random(32),
+                ]);
+            }
+        }
         $sheets = GoogleSheetConfig::query()->orderBy('id')->get();
         $overview = $this->syncService->getOverviewStats();
 
@@ -295,7 +305,7 @@ class GoogleSheetSyncController extends Controller
     }
 
     /**
-     * Update sheet configuration (Spreadsheet ID, URL, name).
+     * Update sheet configuration (Spreadsheet ID, URL, name, webhook settings).
      */
     public function updateConfig(Request $request): JsonResponse
     {
@@ -303,6 +313,8 @@ class GoogleSheetSyncController extends Controller
             'slug' => ['required', 'string', 'exists:google_sheet_configs,slug'],
             'spreadsheet_id' => ['nullable', 'string'],
             'name' => ['nullable', 'string', 'max:100'],
+            'webhook_secret' => ['nullable', 'string', 'max:64'],
+            'auto_sync_on_webhook' => ['nullable', 'boolean'],
         ]);
 
         $cleanId = $this->apiService->extractSpreadsheetId($validated['spreadsheet_id'] ?? '');
@@ -312,12 +324,36 @@ class GoogleSheetSyncController extends Controller
         $config->update([
             'spreadsheet_id' => $cleanId ?: $config->spreadsheet_id,
             'name' => $validated['name'] ?: $config->name,
+            'webhook_secret' => $validated['webhook_secret'] ?? $config->webhook_secret,
+            'auto_sync_on_webhook' => $validated['auto_sync_on_webhook'] ?? $config->auto_sync_on_webhook,
         ]);
 
         return response()->json([
             'success' => true,
             'sheet' => $config->fresh(),
             'message' => "Settings updated for {$config->name}.",
+        ]);
+    }
+
+    /**
+     * Generate or regenerate a fresh secure Webhook Secret for a specific sheet.
+     */
+    public function generateWebhookSecret(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'slug' => ['required', 'string', 'exists:google_sheet_configs,slug'],
+        ]);
+
+        /** @var GoogleSheetConfig $config */
+        $config = GoogleSheetConfig::query()->where('slug', $validated['slug'])->firstOrFail();
+        $secret = 'whsec_' . Str::random(32);
+        $config->update(['webhook_secret' => $secret]);
+
+        return response()->json([
+            'success' => true,
+            'secret' => $secret,
+            'sheet' => $config->fresh(),
+            'message' => "Fresh webhook secret generated for {$config->name}.",
         ]);
     }
 }

@@ -618,79 +618,81 @@ export default function SheetsSyncPage({
                 )}
 
                 {/* Tenant Navigation Tabs & Action Buttons */}
-                <div className="flex flex-col justify-between gap-4 border-border border-b pb-3 md:flex-row md:items-center">
-                    {/* Sheet Tabs */}
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-                        {sheets.map((sheet) => {
-                            const isActive = activeSheet === sheet.slug;
-                            return (
-                                <button
-                                    key={sheet.slug}
-                                    type="button"
-                                    onClick={() => setActiveSheet(sheet.slug)}
-                                    className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2 font-bold text-xs transition ${
-                                        isActive
-                                            ? 'bg-indigo-600 text-white shadow-indigo-600/30 shadow-md'
-                                            : 'border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground'
-                                    }`}
-                                >
-                                    <Layers className="h-3.5 w-3.5" />
-                                    <span>{sheet.name}</span>
-                                    <span
-                                        className={`rounded-full px-2 py-0.5 font-bold text-[10px] ${
+                <div className="flex flex-col gap-3.5 border-border border-b pb-4">
+                    <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
+                        {/* Sheet Tabs */}
+                        <div className="flex flex-wrap items-center gap-2">
+                            {sheets.map((sheet) => {
+                                const isActive = activeSheet === sheet.slug;
+                                return (
+                                    <button
+                                        key={sheet.slug}
+                                        type="button"
+                                        onClick={() => setActiveSheet(sheet.slug)}
+                                        className={`flex items-center gap-2 rounded-xl px-3.5 py-2 font-bold text-xs transition shadow-sm ${
                                             isActive
-                                                ? 'bg-indigo-700 text-white'
-                                                : 'bg-slate-950 text-muted-foreground'
+                                                ? 'bg-primary text-primary-foreground shadow-md ring-2 ring-primary/20'
+                                                : 'border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground'
                                         }`}
                                     >
-                                        {sheet.synced_serials}/{sheet.total_serials}
-                                    </span>
-                                </button>
-                            );
-                        })}
-                    </div>
+                                        <Layers className="h-3.5 w-3.5" />
+                                        <span>{sheet.name}</span>
+                                        <span
+                                            className={`rounded-full px-2 py-0.5 font-bold text-[10px] ${
+                                                isActive
+                                                    ? 'bg-black/20 text-primary-foreground'
+                                                    : 'border border-border/80 bg-muted text-muted-foreground'
+                                            }`}
+                                        >
+                                            {sheet.synced_serials}/{sheet.total_serials}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex items-center gap-2 self-end sm:self-auto">
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => setRawImportOpen(true)}
-                            className="font-semibold text-xs"
-                            title="Directly paste or upload HTML tables or CSV files"
-                        >
-                            <FileText className="mr-1 h-3.5 w-3.5 text-indigo-400" />
-                            <span>Import Table / HTML</span>
-                        </Button>
+                        {/* Action Buttons */}
+                        <div className="flex shrink-0 flex-wrap items-center gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setRawImportOpen(true)}
+                                className="border-border bg-card font-semibold text-foreground text-xs hover:bg-muted"
+                                title="Directly paste or upload HTML tables or CSV files"
+                            >
+                                <FileText className="mr-1.5 h-3.5 w-3.5 text-indigo-500" />
+                                <span>Import Table / HTML</span>
+                            </Button>
 
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            disabled={refreshingApi || loading}
-                            onClick={handleRefreshSheet}
-                            className="font-semibold text-xs"
-                            title="Fetch latest rows from Google Sheets API"
-                        >
-                            <RefreshCw
-                                className={`mr-1 h-3.5 w-3.5 ${refreshingApi ? 'animate-spin' : ''}`}
-                            />
-                            <span>{refreshingApi ? 'Fetching...' : 'Refresh Sheet'}</span>
-                        </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={refreshingApi || loading}
+                                onClick={handleRefreshSheet}
+                                className="border-border bg-card font-semibold text-foreground text-xs hover:bg-muted"
+                                title="Fetch latest rows from Google Sheets API"
+                            >
+                                <RefreshCw
+                                    className={`mr-1.5 h-3.5 w-3.5 text-sky-500 ${refreshingApi ? 'animate-spin' : ''}`}
+                                />
+                                <span>{refreshingApi ? 'Fetching...' : 'Refresh Sheet'}</span>
+                            </Button>
 
-                        <Button
-                            type="button"
-                            size="sm"
-                            disabled={progress?.isRunning}
-                            onClick={() => setBatchModalOpen(true)}
-                            className="bg-gradient-to-r from-emerald-600 to-teal-600 font-bold text-white text-xs shadow-emerald-600/20 shadow-md hover:from-emerald-500 hover:to-teal-500"
-                        >
-                            <Sliders className="mr-1 h-3.5 w-3.5" />
-                            <span>
-                                Batch Sync ({currentSheetConfig?.pending_serials || 0} Pending)
-                            </span>
-                        </Button>
+                            <Button
+                                type="button"
+                                size="sm"
+                                disabled={progress?.isRunning}
+                                onClick={() => setBatchModalOpen(true)}
+                                className="bg-emerald-600 font-bold text-white text-xs shadow-emerald-600/20 shadow-sm hover:bg-emerald-500"
+                            >
+                                <Sliders className="mr-1.5 h-3.5 w-3.5" />
+                                <span>
+                                    Batch Sync ({currentSheetConfig?.pending_serials || 0} Pending)
+                                </span>
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
