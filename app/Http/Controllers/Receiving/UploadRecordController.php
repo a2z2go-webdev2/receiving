@@ -179,6 +179,10 @@ class UploadRecordController extends Controller
     private function purchaseOrderCandidates(): array
     {
         return PoExtraction::query()
+            ->whereHas('upload.uploadType', fn ($query) => $query->where('workflow', UploadWorkflow::PurchaseOrder))
+            ->whereNotNull('po_number')
+            ->where('po_number', '!=', '')
+            ->whereNot('po_number', 'LIKE', 'PO-SN%')
             ->with('upload:id,created_at')
             ->orderByDesc('po_date_value')
             ->orderByDesc('id')
