@@ -330,10 +330,11 @@ class UploadPageController extends Controller
         $file->loadMissing('upload');
         abort_unless($file->upload->upload_type_id === $uploadType->getKey(), 403);
         abort_unless($file->upload->uploader_user_id === $user->getKey(), 403);
-        abort_if($file->r2_object_key === null, 404);
+        $key = $file->resolvedR2ObjectKey();
+        abort_if($key === null, 404);
 
         return Storage::disk((string) config('receiving.disk'))->response(
-            $file->r2_object_key,
+            $key,
             $file->sanitized_file_name,
             ['Content-Type' => $file->content_type, 'X-Content-Type-Options' => 'nosniff'],
         );
@@ -341,9 +342,14 @@ class UploadPageController extends Controller
 
     private function uploaderFilePreviewUrl(UploadType $uploadType, UploadedFile $file, ReceivingSettings $settings): string
     {
+        $key = $file->resolvedR2ObjectKey();
+        if ($key === null) {
+            return route('receiving.upload.files.preview', ['uploadType' => $uploadType->slug, 'file' => $file->getKey()]);
+        }
+
         try {
             return Storage::disk((string) config('receiving.disk'))->temporaryUrl(
-                (string) $file->r2_object_key,
+                $key,
                 now()->addMinutes((int) $settings->get('signed_url_expiration_minutes')),
             );
         } catch (Throwable) {

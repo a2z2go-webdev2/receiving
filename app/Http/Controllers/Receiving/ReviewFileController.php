@@ -14,10 +14,11 @@ class ReviewFileController extends Controller
     {
         $link = $links->resolve($token);
         abort_unless($link?->isUsable() && $file->receiving_upload_id === $link->receiving_upload_id, 404);
-        abort_if($file->r2_object_key === null, 404);
+        $key = $file->resolvedR2ObjectKey();
+        abort_if($key === null, 404);
 
         return Storage::disk((string) config('receiving.disk'))->response(
-            $file->r2_object_key,
+            $key,
             $file->sanitized_file_name,
             [
                 'Content-Type' => $file->content_type,
