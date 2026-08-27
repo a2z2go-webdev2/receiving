@@ -280,7 +280,7 @@ export default function PurchaseOrderItemsIndex({
                         <tbody className="divide-y">
                             {items.data.map((item) => (
                                 <tr key={item.id}>
-                                    <td className="px-3 py-2 text-center font-mono text-muted-foreground text-[11px]">
+                                    <td className="px-3 py-2 text-center font-mono text-[11px] text-muted-foreground">
                                         {item.serial_number ?? '-'}
                                     </td>
                                     <td className="px-3 py-2">
@@ -306,7 +306,7 @@ export default function PurchaseOrderItemsIndex({
                                     <td className="px-3 py-2 text-right tabular-nums">
                                         {formatQuantity(item.target_quantity)} {item.unit ?? ''}
                                     </td>
-                                    <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
+                                    <td className="px-3 py-2 text-right text-muted-foreground tabular-nums">
                                         {item.package_quantity !== null && item.package_unit ? (
                                             <span>
                                                 1 {item.unit ?? 'case'} ={' '}

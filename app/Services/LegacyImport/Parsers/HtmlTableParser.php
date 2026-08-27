@@ -84,7 +84,7 @@ class HtmlTableParser
             }
         }
 
-        if ($headerIndex === -1 && ! empty($rawRows)) {
+        if ($headerIndex === -1) {
             // Assume row 1 or row 0 is header
             $headerIndex = 0;
             $headers = $rawRows[0];

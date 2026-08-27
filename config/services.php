@@ -49,4 +49,9 @@ return [
         'timeout_seconds' => (int) env('CLOUDMERSIVE_TIMEOUT_SECONDS', 30),
     ],
 
+    'google' => [
+        'sheets_api_key' => env('GOOGLE_SHEETS_API_KEY'),
+        'service_account_json' => env('GOOGLE_SERVICE_ACCOUNT_JSON'),
+    ],
+
 ];
