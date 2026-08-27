@@ -93,6 +93,8 @@ interface SyncOverview {
     pending_serials: number;
     failed_serials: number;
     total_files: number;
+    files_pending_r2?: number;
+    files_synced_r2?: number;
     total_extractions: number;
     completion_percentage: number;
 }
@@ -339,7 +341,14 @@ export default function SheetsSyncPage({
             `${overview.completion_percentage}% Ingested`,
         ],
         ['Pending Ingestion', overview.pending_serials, Clock, 'Awaiting sync'],
-        ['Attached Files', overview.total_files, Cloud, 'Linked in R2'],
+        [
+            'Attached Files',
+            overview.total_files,
+            Cloud,
+            overview.files_pending_r2 !== undefined && overview.files_pending_r2 > 0
+                ? `${overview.files_pending_r2} Pending R2 sync`
+                : `${overview.files_synced_r2 ?? overview.total_files} Linked in R2`,
+        ],
         ['AI Extractions', overview.total_extractions, Zap, 'PO & Invoice JSONs'],
     ] as const;
 
@@ -552,6 +561,8 @@ export default function SheetsSyncPage({
                             <option value="all">All Uploads ({pagination.total})</option>
                             <option value="pending">Pending Database Sync</option>
                             <option value="synced">Synced in Database</option>
+                            <option value="pending_r2">Has Files Pending R2</option>
+                            <option value="all_in_r2">All Files in R2</option>
                             <option value="verified">Verified Only</option>
                             <option value="with_extractions">Has AI Extractions</option>
                         </select>
@@ -626,6 +637,13 @@ export default function SheetsSyncPage({
                                     items.map((item) => {
                                         const isSyncing = syncingSerial === item.serial_number;
                                         const isSynced = item.is_synced_to_db;
+                                        const fileList = item.files || [];
+                                        const totalFiles = fileList.length || item.file_count || 0;
+                                        const r2Count = fileList.filter((f) =>
+                                            Boolean(f.r2_url && f.r2_url.trim()),
+                                        ).length;
+                                        const pendingR2Count =
+                                            totalFiles > 0 ? Math.max(0, totalFiles - r2Count) : 0;
 
                                         return (
                                             <tr key={item.id} className="hover:bg-muted/30">
@@ -665,25 +683,41 @@ export default function SheetsSyncPage({
 
                                                 {/* Attached Files */}
                                                 <td className="px-3 py-2">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Badge
-                                                            variant="outline"
-                                                            className="font-mono text-[11px]"
-                                                        >
-                                                            {item.files?.length ||
-                                                                item.file_count ||
-                                                                0}{' '}
-                                                            Files
-                                                        </Badge>
-                                                        {item.files?.some((f) => f.r2_url) && (
+                                                    {totalFiles === 0 ? (
+                                                        <span className="font-mono text-[11px] text-muted-foreground">
+                                                            0 Files
+                                                        </span>
+                                                    ) : (
+                                                        <div className="flex flex-wrap items-center gap-1.5">
                                                             <Badge
-                                                                variant="secondary"
-                                                                className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400"
+                                                                variant="outline"
+                                                                className="font-mono text-[11px]"
                                                             >
-                                                                R2
+                                                                {totalFiles}{' '}
+                                                                {totalFiles === 1
+                                                                    ? 'File'
+                                                                    : 'Files'}
                                                             </Badge>
-                                                        )}
-                                                    </div>
+
+                                                            {pendingR2Count > 0 ? (
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="border-amber-500/30 bg-amber-500/10 font-mono text-[10px] font-semibold text-amber-600 dark:text-amber-400"
+                                                                    title={`${pendingR2Count} out of ${totalFiles} file(s) have no R2 URL in receive_files sheet tab`}
+                                                                >
+                                                                    {pendingR2Count} Pending R2
+                                                                </Badge>
+                                                            ) : (
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="border-emerald-500/30 bg-emerald-500/10 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400"
+                                                                    title="All files have valid Cloudflare R2 storage URLs"
+                                                                >
+                                                                    {r2Count} in R2
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </td>
 
                                                 {/* AI & Review Status */}

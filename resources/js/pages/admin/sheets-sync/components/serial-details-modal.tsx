@@ -170,10 +170,26 @@ export function SerialDetailsModal({
 
                         <Card className="border p-2.5">
                             <div className="text-[10px] font-medium text-muted-foreground uppercase">
-                                Files Attached
+                                R2 File Status
                             </div>
-                            <div className="mt-0.5 font-mono text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                                {item.files?.length || item.file_count || 1} Linked
+                            <div className="mt-0.5 font-mono text-xs font-semibold">
+                                {(() => {
+                                    const total = item.files?.length || item.file_count || 0;
+                                    const r2 =
+                                        item.files?.filter((f) =>
+                                            Boolean(f.r2_url && f.r2_url.trim()),
+                                        ).length || 0;
+                                    const pending = Math.max(0, total - r2);
+                                    return pending > 0 ? (
+                                        <span className="text-amber-600 dark:text-amber-400">
+                                            {r2}/{total} R2 ({pending} Pending)
+                                        </span>
+                                    ) : (
+                                        <span className="text-emerald-600 dark:text-emerald-400">
+                                            {r2}/{total} in R2
+                                        </span>
+                                    );
+                                })()}
                             </div>
                         </Card>
                     </div>
@@ -195,7 +211,7 @@ export function SerialDetailsModal({
                     <Card className="border">
                         <CardHeader className="p-3 pb-1.5">
                             <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                Attached Cloudflare R2 Files ({item.files?.length || 0})
+                                Attached Files ({item.files?.length || 0})
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-1.5 p-3 pt-1">
@@ -223,7 +239,7 @@ export function SerialDetailsModal({
                                     </div>
 
                                     <div className="flex items-center gap-2">
-                                        {f.r2_url ? (
+                                        {f.r2_url && f.r2_url.trim() ? (
                                             <Badge
                                                 variant="outline"
                                                 className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono text-[10px]"
@@ -232,10 +248,10 @@ export function SerialDetailsModal({
                                             </Badge>
                                         ) : (
                                             <Badge
-                                                variant="secondary"
-                                                className="font-mono text-[10px]"
+                                                variant="outline"
+                                                className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono text-[10px] font-semibold"
                                             >
-                                                Pending R2
+                                                Pending R2 URL
                                             </Badge>
                                         )}
 
