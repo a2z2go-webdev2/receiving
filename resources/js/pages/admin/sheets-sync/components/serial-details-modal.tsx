@@ -118,7 +118,7 @@ export function SerialDetailsModal({
                                 </DialogTitle>
                                 <DialogDescription className="text-xs">
                                     Uploaded: {item.timestamp || 'N/A'} • Reviewed by:{' '}
-                                    {item.reviewed_by || 'N/A'}
+                                    {item.reviewed_by || 'jaezelle.benito@pingconmarketing.com'}
                                 </DialogDescription>
                             </div>
                         </div>

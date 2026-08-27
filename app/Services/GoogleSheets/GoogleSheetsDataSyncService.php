@@ -134,6 +134,9 @@ class GoogleSheetsDataSyncService
                 $reviewToken = $this->tableParser->getCaseInsensitive($log, ['review token', 'review_token']);
                 $reviewedAt = $this->tableParser->getCaseInsensitive($log, ['reviewed at', 'reviewed_at']);
                 $reviewedBy = $this->tableParser->getCaseInsensitive($log, ['reviewed by', 'reviewed_by']);
+                if (empty($reviewedBy) || strtolower(trim($reviewedBy)) === 'unassigned') {
+                    $reviewedBy = 'jaezelle.benito@pingconmarketing.com';
+                }
                 $tokenCreated = $this->tableParser->getCaseInsensitive($log, ['review token created at', 'review_token_created_at']);
                 $tokenExpires = $this->tableParser->getCaseInsensitive($log, ['review expires at', 'review_expires_at']);
                 $uploaderLoc = $this->tableParser->getCaseInsensitive($log, ['uploader location', 'uploader_location']);
@@ -259,16 +262,29 @@ class GoogleSheetsDataSyncService
 
         // 2. Resolve User
         $reviewerEmail = trim((string) $log->reviewed_by);
+        if ($reviewerEmail === '' || strtolower($reviewerEmail) === 'unassigned') {
+            $reviewerEmail = 'jaezelle.benito@pingconmarketing.com';
+        }
+
         $activeUser = null;
-        if ($reviewerEmail !== '' && filter_var($reviewerEmail, FILTER_VALIDATE_EMAIL)) {
+        if (filter_var($reviewerEmail, FILTER_VALIDATE_EMAIL)) {
             $activeUser = User::query()->where('email', strtolower($reviewerEmail))->first();
+            if (! $activeUser) {
+                $activeUser = User::query()->create([
+                    'email' => strtolower($reviewerEmail),
+                    'name' => str_starts_with(strtolower($reviewerEmail), 'jaezelle') ? 'Jaezelle Benito' : 'Sheet Reviewer',
+                    'password' => 'Password12345678!',
+                    'status' => UserStatus::Active,
+                ]);
+                $activeUser->syncRoles(['uploader']);
+            }
         }
 
         if (! $activeUser) {
             $activeUser = User::query()->firstOrCreate(
-                ['email' => 'legacy.import@pingconmarketing.com'],
+                ['email' => 'jaezelle.benito@pingconmarketing.com'],
                 [
-                    'name' => 'Legacy Import User',
+                    'name' => 'Jaezelle Benito',
                     'password' => 'Password12345678!',
                     'status' => UserStatus::Active,
                 ]

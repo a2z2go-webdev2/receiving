@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\GoogleSheetConfig;
+use App\Models\GoogleSheetExtraction;
+use App\Models\GoogleSheetFile;
 use App\Models\GoogleSheetLog;
 use App\Models\GoogleSheetSyncJob;
 use App\Services\GoogleSheets\GoogleSheetsApiService;
@@ -62,8 +64,6 @@ class GoogleSheetSyncController extends Controller
         $query = GoogleSheetLog::query()
             ->where('sheet_slug', $sheet)
             ->with([
-                'files' => fn ($q) => $q->orderBy('id'),
-                'extraction',
                 'syncedUpload:id,submission_id,file_count,review_status,ai_status,created_at',
             ]);
 
@@ -75,31 +75,81 @@ class GoogleSheetSyncController extends Controller
         } elseif ($status === 'verified') {
             $query->where(fn (Builder $q) => $q->whereRaw('LOWER(review_status) = ?', ['verified']));
         } elseif ($status === 'with_extractions') {
-            $query->whereHas('extraction', fn ($q) => $q->whereNotNull('raw_ai_json')->orWhereNotNull('corrected_json'));
+            $query->whereExists(function ($sub) use ($sheet) {
+                $sub->selectRaw(1)
+                    ->from('google_sheet_extractions')
+                    ->whereColumn('google_sheet_extractions.serial_number', 'google_sheet_logs.serial_number')
+                    ->where('google_sheet_extractions.sheet_slug', $sheet)
+                    ->where(fn ($sq) => $sq->whereNotNull('raw_ai_json')->orWhereNotNull('corrected_json'));
+            });
         } elseif ($status === 'pending_r2') {
-            $query->whereHas('files', fn ($q) => $q->whereNull('r2_url')->orWhere('r2_url', ''));
+            $query->whereExists(function ($sub) use ($sheet) {
+                $sub->selectRaw(1)
+                    ->from('google_sheet_files')
+                    ->whereColumn('google_sheet_files.serial_number', 'google_sheet_logs.serial_number')
+                    ->where('google_sheet_files.sheet_slug', $sheet)
+                    ->where(fn ($sq) => $sq->whereNull('r2_url')->orWhere('r2_url', ''));
+            });
         } elseif ($status === 'all_in_r2') {
-            $query->whereHas('files')->whereDoesntHave('files', fn ($q) => $q->whereNull('r2_url')->orWhere('r2_url', ''));
+            $query->whereExists(function ($sub) use ($sheet) {
+                $sub->selectRaw(1)
+                    ->from('google_sheet_files')
+                    ->whereColumn('google_sheet_files.serial_number', 'google_sheet_logs.serial_number')
+                    ->where('google_sheet_files.sheet_slug', $sheet);
+            })->whereNotExists(function ($sub) use ($sheet) {
+                $sub->selectRaw(1)
+                    ->from('google_sheet_files')
+                    ->whereColumn('google_sheet_files.serial_number', 'google_sheet_logs.serial_number')
+                    ->where('google_sheet_files.sheet_slug', $sheet)
+                    ->where(fn ($sq) => $sq->whereNull('r2_url')->orWhere('r2_url', ''));
+            });
         }
 
         // Search by Serial Number, File Name, or File ID
         if ($search !== '') {
             $cleanSn = preg_replace('/[^\d]/', '', $search);
-            $query->where(function (Builder $q) use ($search, $cleanSn) {
+            $query->where(function (Builder $q) use ($search, $cleanSn, $sheet) {
                 if ($cleanSn !== '') {
                     $q->orWhere('serial_number', (int) $cleanSn);
                 }
                 $q->orWhere('reviewed_by', 'like', "%{$search}%")
                     ->orWhere('uploader_location', 'like', "%{$search}%")
-                    ->orWhereHas('files', function (Builder $fq) use ($search) {
-                        $fq->where('file_name', 'like', "%{$search}%")
-                            ->orWhere('file_id', 'like', "%{$search}%");
+                    ->orWhereExists(function ($sub) use ($search, $sheet) {
+                        $sub->selectRaw(1)
+                            ->from('google_sheet_files')
+                            ->whereColumn('google_sheet_files.serial_number', 'google_sheet_logs.serial_number')
+                            ->where('google_sheet_files.sheet_slug', $sheet)
+                            ->where(function ($fq) use ($search) {
+                                $fq->where('file_name', 'like', "%{$search}%")
+                                    ->orWhere('file_id', 'like', "%{$search}%");
+                            });
                     });
             });
         }
 
         $query->orderBy('serial_number', 'asc');
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+        $serialNumbers = collect($paginator->items())->pluck('serial_number')->all();
+        if (! empty($serialNumbers)) {
+            $filesBySerial = GoogleSheetFile::query()
+                ->where('sheet_slug', $sheet)
+                ->whereIn('serial_number', $serialNumbers)
+                ->orderBy('id')
+                ->get()
+                ->groupBy('serial_number');
+
+            $extractionsBySerial = GoogleSheetExtraction::query()
+                ->where('sheet_slug', $sheet)
+                ->whereIn('serial_number', $serialNumbers)
+                ->get()
+                ->keyBy('serial_number');
+
+            foreach ($paginator->items() as $log) {
+                $log->setRelation('files', $filesBySerial->get($log->serial_number, collect()));
+                $log->setRelation('extraction', $extractionsBySerial->get($log->serial_number));
+            }
+        }
 
         return response()->json([
             'items' => $paginator->items(),
