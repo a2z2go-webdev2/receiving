@@ -7,7 +7,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // 1. Find all fake/synthetic PO extractions or PO extractions belonging to non-PO workflows
+        // Find any PoExtraction records belonging to non-purchase_order upload workflows or synthetic placeholders
         $fakePos = DB::table('po_extractions')
             ->leftJoin('receiving_uploads', 'po_extractions.receiving_upload_id', '=', 'receiving_uploads.id')
             ->leftJoin('upload_types', 'receiving_uploads.upload_type_id', '=', 'upload_types.id')
@@ -22,33 +22,27 @@ return new class extends Migration
         if ($fakePos->isNotEmpty()) {
             $fakePoIds = $fakePos->pluck('id')->unique()->all();
 
-            // Delete associated arrival records
             DB::table('purchase_order_item_arrivals')
                 ->whereIn('po_extraction_id', $fakePoIds)
                 ->delete();
 
-            // Delete associated fulfillment records
             DB::table('purchase_order_item_fulfillments')
                 ->whereIn('po_extraction_id', $fakePoIds)
                 ->delete();
 
-            // Delete associated document links
             DB::table('purchase_order_document_links')
                 ->whereIn('po_extraction_id', $fakePoIds)
                 ->delete();
 
-            // Delete associated PO extraction items
             DB::table('po_extraction_items')
                 ->whereIn('po_extraction_id', $fakePoIds)
                 ->delete();
 
-            // Delete the synthetic/invalid PO extractions
             DB::table('po_extractions')
                 ->whereIn('id', $fakePoIds)
                 ->delete();
         }
 
-        // Also cleanup any orphaned GSHEET-ARRIVAL records
         DB::table('purchase_order_item_arrivals')
             ->where('source_key', 'LIKE', 'GSHEET-ARRIVAL-%')
             ->delete();
@@ -56,6 +50,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // No down migration needed as these were synthetic invalid entries
+        // No-op
     }
 };
