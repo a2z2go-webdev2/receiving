@@ -56,13 +56,19 @@ class UploadLogController extends Controller
             ->with([
                 'uploadType:id,name,workflow',
                 'uploader:id,name,email',
-                'extractions:id,receiving_upload_id,po_link_status',
-                $purchaseOrderView
-                    ? 'poExtractions:id,receiving_upload_id,arrival_status,po_date_value'
-                    : 'poExtractions:id,receiving_upload_id,arrival_status',
                 ...($purchaseOrderView
-                    ? ['purchaseOrderItemArrivals:id,receiving_upload_id,arrival_date']
-                    : []),
+                    ? [
+                        'poExtractions:id,receiving_upload_id,arrival_status,po_date_value,po_number',
+                        'poExtractions.activeDocumentLinks.aiExtraction:id,receiving_upload_id,document_type',
+                        'poExtractions.activeDocumentLinks.aiExtraction.upload:id,upload_type_id',
+                        'poExtractions.activeDocumentLinks.aiExtraction.upload.uploadType:id,name,workflow',
+                        'purchaseOrderItemArrivals:id,receiving_upload_id,arrival_date',
+                    ]
+                    : [
+                        'extractions:id,receiving_upload_id,po_link_status,document_type',
+                        'extractions.activePurchaseOrderLink.poExtraction:id,receiving_upload_id,po_number',
+                        'poExtractions:id,receiving_upload_id,arrival_status',
+                    ]),
             ])
             ->when(! $purchaseOrderView, fn (Builder $query) => $query->whereHas(
                 'uploadType',
@@ -103,6 +109,12 @@ class UploadLogController extends Controller
             'purchase_order_status' => $purchaseOrderView
                 ? $this->purchaseOrderArrivalSummary($upload)
                 : $this->purchaseOrderLinkSummary($upload),
+            'linked_receipts' => $purchaseOrderView
+                ? $this->purchaseOrderLinkedReceipts($upload, $serials)
+                : [],
+            'po_link_details' => $purchaseOrderView
+                ? null
+                : $this->uploadPoLinkDetails($upload),
             'waiting_time' => $purchaseOrderView
                 ? $this->uploadWaitingTime($upload, $normalizer)
                 : null,
@@ -211,6 +223,72 @@ class UploadLogController extends Controller
         }
 
         return PurchaseOrderLinkStatus::NotApplicable->value;
+    }
+
+    /**
+     * @return array<int, array{id: int, serial_number: int, serial_prefix: string, upload_type: string, document_type: string|null, linked_at: string}>
+     */
+    private function purchaseOrderLinkedReceipts(ReceivingUpload $upload, UploadSerialNumber $serials): array
+    {
+        $receipts = [];
+        $seenIds = [];
+
+        foreach ($upload->poExtractions as $po) {
+            foreach ($po->activeDocumentLinks as $link) {
+                $aiUpload = $link->aiExtraction->upload;
+                $uploadId = (int) $aiUpload->getKey();
+                if (isset($seenIds[$uploadId])) {
+                    continue;
+                }
+
+                $seenIds[$uploadId] = true;
+                $receipts[] = [
+                    'id' => $uploadId,
+                    'serial_number' => $serials->number($aiUpload),
+                    'serial_prefix' => $serials->prefix($aiUpload->uploadType),
+                    'upload_type' => $aiUpload->uploadType->name,
+                    'document_type' => $link->aiExtraction->document_type,
+                    'linked_at' => $link->created_at->toISOString(),
+                ];
+            }
+        }
+
+        return $receipts;
+    }
+
+    /**
+     * @return array{status: string, total_invoices: int, linked_invoices: int, po_numbers: string[]}
+     */
+    private function uploadPoLinkDetails(ReceivingUpload $upload): array
+    {
+        $invoices = $upload->extractions->filter(
+            fn ($e) => in_array($e->po_link_status, [
+                PurchaseOrderLinkStatus::Linked,
+                PurchaseOrderLinkStatus::AwaitingPurchaseOrder,
+                PurchaseOrderLinkStatus::MissingPoNumber,
+                PurchaseOrderLinkStatus::ReadyToLink,
+                PurchaseOrderLinkStatus::PurchaseOrderAlreadyLinked,
+            ], true)
+        );
+
+        $linkedCount = $invoices->filter(
+            fn ($e) => $e->po_link_status === PurchaseOrderLinkStatus::Linked
+        )->count();
+
+        /** @var string[] $poNumbers */
+        $poNumbers = $upload->extractions
+            ->map(fn ($e) => $e->activePurchaseOrderLink?->poExtraction?->po_number)
+            ->filter(fn ($po): bool => is_string($po) && $po !== '')
+            ->unique()
+            ->values()
+            ->all();
+
+        return [
+            'status' => $this->purchaseOrderLinkSummary($upload),
+            'total_invoices' => $invoices->count(),
+            'linked_invoices' => $linkedCount,
+            'po_numbers' => $poNumbers,
+        ];
     }
 
     public function resendReceiving(Request $request, ReceivingUpload $upload, UploadNotificationSender $notifications): RedirectResponse
