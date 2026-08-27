@@ -2,7 +2,12 @@
 
 use App\Enums\AiStatus;
 use App\Enums\EmailStatus;
+use App\Enums\PurchaseOrderArrivalStatus;
+use App\Enums\PurchaseOrderLinkSource;
+use App\Enums\PurchaseOrderLinkStatus;
 use App\Models\AiExtraction;
+use App\Models\PoExtraction;
+use App\Models\PurchaseOrderDocumentLink;
 use App\Models\ReceivingUpload;
 use App\Models\UploadedFile;
 use App\Models\UploadType;
@@ -244,4 +249,74 @@ it('excludes purchase order uploads from the general receive logs page', functio
             ->where('uploads.data.0.id', $standardUpload->getKey())
             ->where('uploads.data.0.serial_prefix', 'SN')
             ->where('uploads.data.0.serial_number', $standardUpload->getKey()));
+});
+
+it('returns linked_receipts for purchase orders and po_link_details for receive logs', function (): void {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+    $purchaseOrderType = UploadType::query()->where('slug', 'purchase-order')->firstOrFail();
+    $standardType = UploadType::query()->where('slug', 'a2z2go')->firstOrFail();
+
+    $poUpload = makeSearchableUpload($purchaseOrderType, 'po-100.pdf', [
+        'document_type' => 'Purchase Order',
+        'fields' => [['label' => 'PO Number', 'value' => 'PO-TEST-100']],
+        'items' => [],
+    ]);
+    $poExtraction = PoExtraction::query()->create([
+        'ai_extraction_id' => $poUpload->extractions->first()->getKey(),
+        'receiving_upload_id' => $poUpload->getKey(),
+        'po_number' => 'PO-TEST-100',
+        'po_number_normalized' => 'POTEST100',
+        'po_date' => '2026-08-01',
+        'po_date_value' => '2026-08-01',
+        'arrival_status' => PurchaseOrderArrivalStatus::Arrived,
+    ]);
+
+    $invoiceUpload = makeSearchableUpload($standardType, 'inv-100.pdf', [
+        'document_type' => 'Invoice',
+        'fields' => [['label' => 'PO Number', 'value' => 'PO-TEST-100']],
+        'items' => [],
+    ]);
+    $invoiceExtraction = $invoiceUpload->extractions->first();
+    $invoiceExtraction->forceFill([
+        'po_number' => 'PO-TEST-100',
+        'po_number_normalized' => 'POTEST100',
+        'po_link_status' => PurchaseOrderLinkStatus::Linked,
+    ])->save();
+
+    PurchaseOrderDocumentLink::query()->create([
+        'po_extraction_id' => $poExtraction->getKey(),
+        'ai_extraction_id' => $invoiceExtraction->getKey(),
+        'source' => PurchaseOrderLinkSource::Automatic,
+    ]);
+
+    // Test purchase orders index
+    $this->actingAs($admin)
+        ->withSession(['admin.otp_verified_at' => now()->getTimestamp()])
+        ->get(route('admin.purchase-orders.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('admin/purchase-orders/index')
+            ->has('uploads.data', 1)
+            ->where('uploads.data.0.id', $poUpload->getKey())
+            ->where('uploads.data.0.purchase_order_status', 'arrived')
+            ->has('uploads.data.0.linked_receipts', 1)
+            ->where('uploads.data.0.linked_receipts.0.id', $invoiceUpload->getKey())
+            ->where('uploads.data.0.linked_receipts.0.serial_prefix', 'SN')
+            ->where('uploads.data.0.linked_receipts.0.serial_number', $invoiceUpload->getKey()));
+
+    // Test receive logs index
+    $this->actingAs($admin)
+        ->withSession(['admin.otp_verified_at' => now()->getTimestamp()])
+        ->get(route('admin.uploads.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('admin/uploads/index')
+            ->has('uploads.data', 1)
+            ->where('uploads.data.0.id', $invoiceUpload->getKey())
+            ->where('uploads.data.0.purchase_order_status', 'linked')
+            ->where('uploads.data.0.po_link_details.status', 'linked')
+            ->where('uploads.data.0.po_link_details.total_invoices', 1)
+            ->where('uploads.data.0.po_link_details.linked_invoices', 1)
+            ->where('uploads.data.0.po_link_details.po_numbers', ['PO-TEST-100']));
 });
