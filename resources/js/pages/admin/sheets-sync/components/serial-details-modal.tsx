@@ -105,7 +105,7 @@ export function SerialDetailsModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto bg-card text-foreground">
+            <DialogContent className="max-h-[90vh] w-full max-w-full overflow-y-auto bg-card text-foreground sm:max-w-3xl md:max-w-4xl">
                 <DialogHeader className="border-b pb-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
