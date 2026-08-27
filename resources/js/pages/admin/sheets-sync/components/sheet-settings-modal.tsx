@@ -100,6 +100,41 @@ export function SheetSettingsModal({
         }
     };
 
+    const handleGenerateSecret = async (slug: string) => {
+        setSavingSlug(slug);
+        try {
+            const res = await fetch('/admin/sheets-sync/generate-secret', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN':
+                        (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)
+                            ?.content || '',
+                },
+                body: JSON.stringify({ slug }),
+            });
+
+            const data = await res.json();
+            if (res.ok && data.success && data.secret) {
+                setConfigs((prev) => ({
+                    ...prev,
+                    [slug]: {
+                        ...prev[slug],
+                        secret: data.secret,
+                    },
+                }));
+                setSuccessMessage(
+                    `New webhook secret generated for ${configs[slug]?.name || slug}`,
+                );
+                onSaved(data.sheet);
+                setTimeout(() => setSuccessMessage(null), 3000);
+            }
+        } catch {
+        } finally {
+            setSavingSlug(null);
+        }
+    };
+
     const generateAppsScriptCode = (slug: string, secret: string) => {
         return `/**
  * Google Apps Script Webhook Trigger for Receiving System
@@ -332,12 +367,14 @@ function onNewUploadRow(e) {
                                                     type="text"
                                                     readOnly
                                                     value={secret}
+                                                    placeholder="Click Generate Secret to create token..."
                                                     className="flex-1 select-all rounded-lg border border-slate-800 bg-slate-900 p-2 font-mono text-emerald-400 text-xs"
                                                 />
                                                 <Button
                                                     type="button"
                                                     size="sm"
                                                     variant="secondary"
+                                                    disabled={!secret}
                                                     onClick={() =>
                                                         handleCopy(secret, `sec_${sheet.slug}`)
                                                     }
@@ -349,6 +386,23 @@ function onNewUploadRow(e) {
                                                         <Copy className="h-3.5 w-3.5" />
                                                     )}
                                                     <span className="ml-1">Copy Secret</span>
+                                                </Button>
+
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="outline"
+                                                    disabled={savingSlug === sheet.slug}
+                                                    onClick={() => handleGenerateSecret(sheet.slug)}
+                                                    className="h-8 border-indigo-500/40 bg-indigo-950/40 text-indigo-300 hover:bg-indigo-900/60 font-semibold text-xs"
+                                                    title="Generate or rotate a new Webhook Secret token"
+                                                >
+                                                    <RefreshCw
+                                                        className={`h-3.5 w-3.5 ${savingSlug === sheet.slug ? 'animate-spin' : ''}`}
+                                                    />
+                                                    <span className="ml-1">
+                                                        {secret ? 'Regenerate' : 'Generate Secret'}
+                                                    </span>
                                                 </Button>
                                             </div>
                                         </div>

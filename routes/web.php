@@ -233,6 +233,7 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
             Route::get('progress', [GoogleSheetSyncController::class, 'progress'])->name('progress');
             Route::post('cancel', [GoogleSheetSyncController::class, 'cancelSync'])->name('cancel');
             Route::post('config', [GoogleSheetSyncController::class, 'updateConfig'])->name('config');
+            Route::post('generate-secret', [GoogleSheetSyncController::class, 'generateWebhookSecret'])->name('generate-secret');
         });
     });
 });
