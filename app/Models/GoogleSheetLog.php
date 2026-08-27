@@ -57,13 +57,13 @@ class GoogleSheetLog extends Model
     public function files(): HasMany
     {
         return $this->hasMany(GoogleSheetFile::class, 'sheet_slug', 'sheet_slug')
-            ->where('serial_number', $this->serial_number);
+            ->whereColumn('google_sheet_files.serial_number', 'google_sheet_logs.serial_number');
     }
 
     public function extraction(): HasOne
     {
         return $this->hasOne(GoogleSheetExtraction::class, 'sheet_slug', 'sheet_slug')
-            ->where('serial_number', $this->serial_number);
+            ->whereColumn('google_sheet_extractions.serial_number', 'google_sheet_logs.serial_number');
     }
 
     public function syncedUpload(): BelongsTo
