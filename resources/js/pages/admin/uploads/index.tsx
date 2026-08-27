@@ -45,6 +45,22 @@ import {
 import { useLivePageData } from '@/hooks/use-live-page-data';
 import { aiStatusLabel } from '@/lib/upload-status';
 
+type LinkedReceipt = {
+    id: number;
+    serial_number: number;
+    serial_prefix: string;
+    upload_type: string;
+    document_type: string | null;
+    linked_at: string | null;
+};
+
+type PoLinkDetails = {
+    status: string;
+    total_invoices: number;
+    linked_invoices: number;
+    po_numbers: string[];
+};
+
 type Upload = {
     id: number;
     serial_number: number;
@@ -58,6 +74,8 @@ type Upload = {
     ai_status: string;
     review_status: string;
     purchase_order_status: string;
+    linked_receipts?: LinkedReceipt[];
+    po_link_details?: PoLinkDetails | null;
     waiting_time: { days: number | null; arrived: boolean } | null;
     can_resend_receiving: boolean;
     can_resend_review: boolean;
@@ -421,7 +439,7 @@ export default function UploadsIndex({
                                 {!purchaseOrderView && <th className="px-3 py-2">Review email</th>}
                                 <th className="px-3 py-2">AI extraction</th>
                                 <th className="px-3 py-2">
-                                    {purchaseOrderView ? 'Arrival' : 'PO link'}
+                                    {purchaseOrderView ? 'Linked receipts / Arrival' : 'PO link'}
                                 </th>
                                 {purchaseOrderView && <th className="px-3 py-2">Waiting time</th>}
                                 {!purchaseOrderView && <th className="px-3 py-2">Review status</th>}
@@ -456,7 +474,85 @@ export default function UploadsIndex({
                                         />
                                     </td>
                                     <td className="px-3 py-2">
-                                        <StatusBadge value={upload.purchase_order_status} />
+                                        {purchaseOrderView ? (
+                                            <div className="flex flex-col gap-1">
+                                                <div className="flex items-center gap-1.5">
+                                                    <StatusBadge
+                                                        value={upload.purchase_order_status}
+                                                    />
+                                                    {upload.linked_receipts &&
+                                                        upload.linked_receipts.length > 0 && (
+                                                            <span className="font-medium text-[11px] text-muted-foreground">
+                                                                {upload.linked_receipts.length}{' '}
+                                                                {upload.linked_receipts.length === 1
+                                                                    ? 'receipt'
+                                                                    : 'receipts'}
+                                                            </span>
+                                                        )}
+                                                </div>
+                                                {upload.linked_receipts &&
+                                                upload.linked_receipts.length > 0 ? (
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {upload.linked_receipts.map((receipt) => (
+                                                            <Link
+                                                                key={receipt.id}
+                                                                href={`/admin/uploads/${receipt.id}`}
+                                                                className="inline-flex items-center rounded border border-border/60 bg-muted/60 px-1.5 py-0.5 font-medium text-[10px] text-foreground transition-colors hover:bg-muted"
+                                                                title={`${receipt.upload_type}${receipt.document_type ? ` · ${receipt.document_type}` : ''}`}
+                                                            >
+                                                                {receipt.serial_prefix}-
+                                                                {receipt.serial_number}
+                                                            </Link>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-[11px] text-muted-foreground">
+                                                        No receipts linked
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col gap-0.5">
+                                                <div className="flex items-center gap-1.5">
+                                                    <StatusBadge
+                                                        value={upload.purchase_order_status}
+                                                    />
+                                                    {upload.po_link_details &&
+                                                        upload.po_link_details.total_invoices >
+                                                            1 && (
+                                                            <span className="font-medium text-[11px] text-muted-foreground">
+                                                                {
+                                                                    upload.po_link_details
+                                                                        .linked_invoices
+                                                                }
+                                                                /
+                                                                {
+                                                                    upload.po_link_details
+                                                                        .total_invoices
+                                                                }{' '}
+                                                                linked
+                                                            </span>
+                                                        )}
+                                                </div>
+                                                {upload.po_link_details?.po_numbers &&
+                                                    upload.po_link_details.po_numbers.length >
+                                                        0 && (
+                                                        <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+                                                            <span>PO:</span>
+                                                            {upload.po_link_details.po_numbers.map(
+                                                                (poNum) => (
+                                                                    <span
+                                                                        key={poNum}
+                                                                        className="font-medium text-foreground"
+                                                                    >
+                                                                        {poNum}
+                                                                    </span>
+                                                                ),
+                                                            )}
+                                                        </div>
+                                                    )}
+                                            </div>
+                                        )}
                                     </td>
                                     {purchaseOrderView && (
                                         <td className="px-3 py-2">
