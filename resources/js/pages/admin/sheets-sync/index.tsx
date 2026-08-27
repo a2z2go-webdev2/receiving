@@ -18,8 +18,8 @@ import {
     Zap,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { PageShell } from '@/components/receiving/page-shell';
 import { Button } from '@/components/ui/button';
-import AppLayout from '@/layouts/app-layout';
 import { BatchSyncModal } from './components/batch-sync-modal';
 import { RawImportModal } from './components/raw-import-modal';
 import { SerialDetailsModal } from './components/serial-details-modal';
@@ -363,77 +363,58 @@ export default function SheetsSyncPage({
     const currentSheetConfig = sheets.find((s) => s.slug === activeSheet);
 
     return (
-        <AppLayout
-            breadcrumbs={[
-                { title: 'Dashboard', href: '/dashboard' },
-                { title: 'Google Sheets Sync', href: '/admin/sheets-sync' },
-            ]}
-        >
+        <>
             <Head title="Google Sheets Upload Sync" />
 
-            <div className="mx-auto w-full max-w-7xl space-y-6 p-6">
+            <PageShell
+                title="Google Sheets Serial Sync"
+                description="Ingest upload submissions, Cloudflare R2 file links, and AI extraction JSONs by Serial Number."
+                actions={
+                    <div className="flex items-center gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSettingsOpen(true)}
+                            className="flex items-center gap-1.5 font-semibold text-xs"
+                        >
+                            <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span>Sheet Settings</span>
+                        </Button>
+
+                        <Button
+                            asChild
+                            variant="secondary"
+                            size="sm"
+                            className="gap-1.5 text-xs font-semibold"
+                        >
+                            <Link href="/admin/uploads">
+                                <Layers className="h-3.5 w-3.5" />
+                                <span>View Receive Logs</span>
+                            </Link>
+                        </Button>
+                    </div>
+                }
+            >
                 {/* Toast Notification */}
                 {toastMessage && (
                     <div
-                        className={`fade-in slide-in-from-top-3 flex animate-in items-center justify-between rounded-xl border p-4 font-semibold text-xs shadow-lg duration-200 ${
+                        className={`fade-in slide-in-from-top-3 flex animate-in items-center justify-between rounded-xl border p-3 font-semibold text-xs shadow-md duration-200 ${
                             toastMessage.type === 'success'
-                                ? 'border-emerald-500/40 bg-emerald-950/90 text-emerald-300'
-                                : 'border-rose-500/40 bg-rose-950/90 text-rose-300'
+                                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300'
+                                : 'border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-300'
                         }`}
                     >
                         <span>{toastMessage.text}</span>
                         <button
                             type="button"
                             onClick={() => setToastMessage(null)}
-                            className="text-slate-400 hover:text-white"
+                            className="text-muted-foreground hover:text-foreground"
                         >
                             ✕
                         </button>
                     </div>
                 )}
-
-                {/* Header Strip */}
-                <div className="flex flex-col justify-between gap-4 border-sidebar-border/80 border-b pb-5 sm:flex-row sm:items-center">
-                    <div className="flex items-center gap-3.5">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-emerald-500 shadow-indigo-500/25 shadow-lg">
-                            <FileSpreadsheet className="h-6 w-6 text-white" />
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h1 className="font-black text-foreground text-xl tracking-tight">
-                                    Google Sheets Serial Sync
-                                </h1>
-                                <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 font-semibold text-[11px] text-emerald-400">
-                                    Live Database Sync
-                                </span>
-                            </div>
-                            <p className="mt-0.5 text-muted-foreground text-xs">
-                                Ingest upload submissions, Cloudflare R2 file links, and AI
-                                extraction JSONs by Serial Number.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-2.5">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setSettingsOpen(true)}
-                            className="flex items-center gap-1.5 font-semibold text-xs"
-                        >
-                            <Settings className="h-3.5 w-3.5 text-slate-400" />
-                            <span>Sheet Settings</span>
-                        </Button>
-
-                        <Link
-                            href="/admin/uploads"
-                            className="flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-1.5 font-semibold text-secondary-foreground text-xs transition hover:bg-secondary/80"
-                        >
-                            <Layers className="h-3.5 w-3.5" />
-                            <span>View Receive Logs</span>
-                        </Link>
-                    </div>
-                </div>
 
                 {/* Top Metrics Strip */}
                 <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-5">
@@ -945,46 +926,55 @@ export default function SheetsSyncPage({
                         </div>
                     )}
                 </div>
-            </div>
 
-            {/* Batch Sync Modal */}
-            <BatchSyncModal
-                open={batchModalOpen}
-                onOpenChange={setBatchModalOpen}
-                sheetSlug={activeSheet}
-                sheetName={currentSheetConfig?.name || activeSheet.toUpperCase()}
-                onStartBatchSync={handleStartBatchSync}
-            />
+                {/* Batch Sync Modal */}
+                <BatchSyncModal
+                    open={batchModalOpen}
+                    onOpenChange={setBatchModalOpen}
+                    sheetSlug={activeSheet}
+                    sheetName={currentSheetConfig?.name || activeSheet.toUpperCase()}
+                    onStartBatchSync={handleStartBatchSync}
+                />
 
-            {/* Raw Import Modal */}
-            <RawImportModal
-                open={rawImportOpen}
-                onOpenChange={setRawImportOpen}
-                sheetSlug={activeSheet}
-                sheetName={currentSheetConfig?.name || activeSheet.toUpperCase()}
-                onImportSuccess={(msg) => {
-                    showToast(msg, 'success');
-                    loadItems();
-                }}
-            />
+                {/* Raw Import Modal */}
+                <RawImportModal
+                    open={rawImportOpen}
+                    onOpenChange={setRawImportOpen}
+                    sheetSlug={activeSheet}
+                    sheetName={currentSheetConfig?.name || activeSheet.toUpperCase()}
+                    onImportSuccess={(msg) => {
+                        showToast(msg, 'success');
+                        loadItems();
+                    }}
+                />
 
-            {/* Sheet Settings Modal */}
-            <SheetSettingsModal
-                open={settingsOpen}
-                onOpenChange={setSettingsOpen}
-                sheets={sheets}
-                onSaved={(updated) => {
-                    setSheets((prev) => prev.map((s) => (s.slug === updated.slug ? updated : s)));
-                }}
-            />
+                {/* Sheet Settings Modal */}
+                <SheetSettingsModal
+                    open={settingsOpen}
+                    onOpenChange={setSettingsOpen}
+                    sheets={sheets}
+                    onSaved={(updated) => {
+                        setSheets((prev) =>
+                            prev.map((s) => (s.slug === updated.slug ? updated : s)),
+                        );
+                    }}
+                />
 
-            {/* Serial Details Modal */}
-            <SerialDetailsModal
-                open={!!detailsItem}
-                onOpenChange={(op) => !op && setDetailsItem(null)}
-                item={detailsItem}
-                onSyncClick={(sn) => handleSyncSerial(sn)}
-            />
-        </AppLayout>
+                {/* Serial Details Modal */}
+                <SerialDetailsModal
+                    open={!!detailsItem}
+                    onOpenChange={(op) => !op && setDetailsItem(null)}
+                    item={detailsItem}
+                    onSyncClick={(sn) => handleSyncSerial(sn)}
+                />
+            </PageShell>
+        </>
     );
 }
+
+SheetsSyncPage.layout = {
+    breadcrumbs: [
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Google Sheets Sync', href: '/admin/sheets-sync' },
+    ],
+};

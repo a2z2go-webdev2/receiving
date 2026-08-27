@@ -28,13 +28,13 @@ class GoogleSheetSyncController extends Controller
     public function index(Request $request): Response
     {
         $activeSheet = $request->input('sheet', 'a2z2go');
-        
+
         // Ensure every sheet configuration has an active webhook secret
         $sheets = GoogleSheetConfig::query()->orderBy('id')->get();
         foreach ($sheets as $sheet) {
             if (empty($sheet->webhook_secret)) {
                 $sheet->update([
-                    'webhook_secret' => 'whsec_' . Str::random(32),
+                    'webhook_secret' => 'whsec_'.Str::random(32),
                 ]);
             }
         }
@@ -346,7 +346,7 @@ class GoogleSheetSyncController extends Controller
 
         /** @var GoogleSheetConfig $config */
         $config = GoogleSheetConfig::query()->where('slug', $validated['slug'])->firstOrFail();
-        $secret = 'whsec_' . Str::random(32);
+        $secret = 'whsec_'.Str::random(32);
         $config->update(['webhook_secret' => $secret]);
 
         return response()->json([
