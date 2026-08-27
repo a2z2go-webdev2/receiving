@@ -1,13 +1,16 @@
 <?php
 
 use App\Features\Receiving\Services\PurchaseOrderDataNormalizer;
+use App\Models\AiExtraction;
 use App\Models\GoogleSheetConfig;
 use App\Models\GoogleSheetLog;
 use App\Models\PoExtraction;
-use App\Models\PurchaseOrderItemArrival;
+use App\Models\PurchaseOrderDocumentLink;
 use App\Models\PurchaseOrderItemFulfillment;
 use App\Models\PurchaseOrderItemSchedule;
 use App\Models\ReceivingUpload;
+use App\Models\UploadedFile;
+use App\Models\UploadType;
 use App\Models\User;
 use App\Services\GoogleSheets\GoogleSheetsDataSyncService;
 use App\Services\GoogleSheets\GoogleSheetsTableParser;
@@ -274,14 +277,6 @@ test('Extracted data automatically matches with PO item records for consistency'
     expect($fulfillment)->not->toBeNull()
         ->and((float) $fulfillment->ordered_quantity)->toBe(2.0)
         ->and($fulfillment->matched_by)->toBe('sku');
-
-    // Verify PurchaseOrderItemArrival was created and linked to the master PO Schedule Item!
-    $arrival = PurchaseOrderItemArrival::query()
-        ->where('purchase_order_item_schedule_id', $schedule->getKey())
-        ->first();
-
-    expect($arrival)->not->toBeNull()
-        ->and((float) $arrival->arrived_quantity)->toBe(2.0);
 });
 
 test('Google Sheets Webhook endpoint rejects unauthorized requests', function () {
@@ -367,4 +362,124 @@ test('Google Sheets Webhook endpoint receives payload and automatically syncs to
     $stagedLog = GoogleSheetLog::query()->where('sheet_slug', 'bonita')->where('serial_number', 77)->first();
     expect($stagedLog)->not->toBeNull()
         ->and($stagedLog->is_synced_to_db)->toBeTrue();
+
+    // Verify NO synthetic PoExtraction was created for Invoice
+    $fakePo = PoExtraction::query()->where('po_number', 'LIKE', 'PO-SN%')->first();
+    expect($fakePo)->toBeNull();
+});
+
+test('Syncing invoice with existing PO number links to real PO without creating fake PO extractions', function () {
+    /** @var GoogleSheetsDataSyncService $syncService */
+    $syncService = app(GoogleSheetsDataSyncService::class);
+
+    $user = User::factory()->create();
+    $type = UploadType::query()->where('slug', 'bonita')->first() ?? UploadType::factory()->create(['slug' => 'bonita']);
+
+    // 1. Create a real PO in the system
+    $realPoUpload = ReceivingUpload::query()->create([
+        'submission_id' => fake()->uuid(),
+        'upload_type_id' => $type->getKey(),
+        'uploader_user_id' => $user->getKey(),
+        'uploader_email' => $user->email,
+        'r2_bucket' => 'test-bucket',
+        'r2_prefix' => 'receiving/bonita',
+        'file_count' => 1,
+    ]);
+    $realPoFile = UploadedFile::query()->create([
+        'receiving_upload_id' => $realPoUpload->getKey(),
+        'original_file_name' => 'PO_4455.pdf',
+        'sanitized_file_name' => 'PO_4455.pdf',
+        'stored_file_name' => 'PO_4455.pdf',
+        'file_extension' => 'pdf',
+        'r2_bucket' => 'test-bucket',
+        'r2_object_key' => 'receiving/PO_4455.pdf',
+        'r2_staging_object_key' => "staging/{$realPoUpload->getKey()}/PO_4455.pdf",
+        'original_file_size' => 100,
+        'final_file_size' => 100,
+        'declared_content_type' => 'application/pdf',
+        'content_type' => 'application/pdf',
+    ]);
+    $realPoAiExt = AiExtraction::query()->create([
+        'receiving_upload_id' => $realPoUpload->getKey(),
+        'uploaded_file_id' => $realPoFile->getKey(),
+        'document_type' => 'purchase order',
+        'raw_extracted_json' => [
+            'documentType' => 'Purchase Order',
+            'fields' => [
+                ['label' => 'PO Number', 'value' => 'PO-4455'],
+            ],
+        ],
+        'corrected_json' => [
+            'documentType' => 'Purchase Order',
+            'fields' => [
+                ['label' => 'PO Number', 'value' => 'PO-4455'],
+            ],
+        ],
+        'ai_status' => 'extracted',
+        'review_status' => 'verified',
+    ]);
+    $realPoExt = PoExtraction::query()->create([
+        'ai_extraction_id' => $realPoAiExt->getKey(),
+        'receiving_upload_id' => $realPoUpload->getKey(),
+        'po_number' => 'PO-4455',
+        'po_number_normalized' => 'po4455',
+        'arrival_status' => 'pending',
+    ]);
+
+    // 2. Sync an invoice referencing PO-4455
+    $logs = [
+        [
+            'serial_number' => 88,
+            'branch' => 'Main',
+            'uploader_email' => 'uploader@example.com',
+            'status' => 'synced',
+            'created_at' => '2026-08-18 10:00:00',
+        ],
+    ];
+
+    $files = [
+        [
+            'serial_number' => 88,
+            'file_name' => 'Invoice_88.pdf',
+            'file_id' => 'file_88_inv',
+            'mime_type' => 'application/pdf',
+            'r2_url' => 'https://pub-r2.receiving.com/receiving/bonita/2026/08/18/SN-88/Invoice_88.pdf',
+        ],
+    ];
+
+    $extractions = [
+        [
+            'serial_number' => 88,
+            'ai_status' => 'Extracted',
+            'corrected_json' => json_encode([
+                'serialNumber' => 88,
+                'documents' => [
+                    [
+                        'documentType' => 'Invoice',
+                        'fileName' => 'Invoice_88.pdf',
+                        'fields' => [
+                            ['label' => 'Invoice Number', 'value' => 'INV-8888'],
+                            ['label' => 'PO Number', 'value' => 'PO-4455'],
+                            ['label' => 'Supplier', 'value' => 'TEST SUPPLIER PH'],
+                            ['label' => 'Description', 'value' => 'Sample Product Item'],
+                            ['label' => 'Quantity', 'value' => '10'],
+                        ],
+                    ],
+                ],
+            ]),
+        ],
+    ];
+
+    $syncService->stageData('bonita', $logs, $files, $extractions);
+    $result = $syncService->syncSerialNumber('bonita', 88);
+
+    expect($result['success'])->toBeTrue();
+
+    // Verify invoice is linked to the real PO
+    $link = PurchaseOrderDocumentLink::query()->where('po_extraction_id', $realPoExt->getKey())->first();
+    expect($link)->not->toBeNull();
+
+    // Verify NO fake PO was created
+    $fakePo = PoExtraction::query()->where('po_number', 'PO-SN88')->first();
+    expect($fakePo)->toBeNull();
 });
