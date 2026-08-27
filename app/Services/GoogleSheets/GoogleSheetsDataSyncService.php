@@ -412,14 +412,14 @@ class GoogleSheetsDataSyncService
                 if ($fileItem->r2_url && str_contains($fileItem->r2_url, 'http')) {
                     $parsedPath = parse_url($fileItem->r2_url, PHP_URL_PATH);
                     if ($parsedPath) {
-                        $cleanPath = ltrim($parsedPath, '/');
-                        if (str_starts_with($cleanPath, 'receiving/')) {
-                            $targetR2Key = $cleanPath;
-                        } else {
-                            $targetR2Key = $fileItem->r2_url;
+                        $cleanPath = rawurldecode(ltrim($parsedPath, '/'));
+                        $bucketName = (string) config('filesystems.disks.r2.bucket');
+                        if ($bucketName !== '' && str_starts_with($cleanPath, $bucketName.'/')) {
+                            $cleanPath = substr($cleanPath, strlen($bucketName) + 1);
+                        } elseif (preg_match('#^receiving-[a-z0-9_-]+/(.+)#i', $cleanPath, $m)) {
+                            $cleanPath = $m[1];
                         }
-                    } else {
-                        $targetR2Key = $fileItem->r2_url;
+                        $targetR2Key = $cleanPath;
                     }
                 }
 
