@@ -248,7 +248,7 @@ it('excludes purchase order uploads from the general receive logs page', functio
             ->has('uploads.data', 1)
             ->where('uploads.data.0.id', $standardUpload->getKey())
             ->where('uploads.data.0.serial_prefix', 'SN')
-            ->where('uploads.data.0.serial_number', $standardUpload->getKey()));
+            ->where('uploads.data.0.serial_number', $standardUpload->serial_number));
 });
 
 it('returns linked_receipts for purchase orders and po_link_details for receive logs', function (): void {
@@ -303,7 +303,7 @@ it('returns linked_receipts for purchase orders and po_link_details for receive 
             ->has('uploads.data.0.linked_receipts', 1)
             ->where('uploads.data.0.linked_receipts.0.id', $invoiceUpload->getKey())
             ->where('uploads.data.0.linked_receipts.0.serial_prefix', 'SN')
-            ->where('uploads.data.0.linked_receipts.0.serial_number', $invoiceUpload->getKey()));
+            ->where('uploads.data.0.linked_receipts.0.serial_number', $invoiceUpload->serial_number));
 
     // Test receive logs index
     $this->actingAs($admin)

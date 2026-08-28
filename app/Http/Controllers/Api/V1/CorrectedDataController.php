@@ -26,7 +26,7 @@ class CorrectedDataController extends Controller
         $serialNumber = $request->serialNumber();
 
         return $this->respond(
-            $this->baseQuery()->where('receiving_upload_id', $serialNumber),
+            $this->baseQuery()->where(fn (Builder $q) => $q->where('receiving_upload_id', $serialNumber)->orWhereHas('upload', fn (Builder $u) => $u->where('serial_number', $serialNumber))),
             $request,
             ['type' => 'serial_number', 'value' => $serialNumber],
             fn (AiExtraction $extraction): bool => $this->isInvoiceOrReceipt($extraction),
@@ -177,7 +177,7 @@ class CorrectedDataController extends Controller
     {
         return $query->with([
             'file:id,original_file_name,r2_object_key,content_type,declared_content_type',
-            'upload:id,submission_id,upload_type_id,latitude,longitude,location_accuracy_meters,location_captured_at,upload_completed_at',
+            'upload:id,serial_number,submission_id,upload_type_id,latitude,longitude,location_accuracy_meters,location_captured_at,upload_completed_at',
             'upload.uploadType:id,name,slug',
         ]);
     }

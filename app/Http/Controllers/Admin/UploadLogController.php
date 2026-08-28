@@ -60,7 +60,7 @@ class UploadLogController extends Controller
                     ? [
                         'poExtractions:id,receiving_upload_id,arrival_status,po_date_value,po_number',
                         'poExtractions.activeDocumentLinks.aiExtraction:id,receiving_upload_id,document_type',
-                        'poExtractions.activeDocumentLinks.aiExtraction.upload:id,upload_type_id',
+                        'poExtractions.activeDocumentLinks.aiExtraction.upload:id,upload_type_id,serial_number',
                         'poExtractions.activeDocumentLinks.aiExtraction.upload.uploadType:id,name,workflow',
                         'purchaseOrderItemArrivals:id,receiving_upload_id,arrival_date',
                     ]
@@ -347,7 +347,8 @@ class UploadLogController extends Controller
             if ($resolvedPoUploadId !== null) {
                 $query->orWhere('receiving_uploads.id', $resolvedPoUploadId);
             } elseif ($serialNumber !== null) {
-                $query->orWhere('receiving_uploads.id', $serialNumber);
+                $query->orWhere('receiving_uploads.serial_number', $serialNumber)
+                    ->orWhere('receiving_uploads.id', $serialNumber);
             }
 
             $query

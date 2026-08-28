@@ -173,6 +173,7 @@ class PingconLegacyImporter implements LegacyDataImporterInterface
                     [
                         'submission_id' => $submissionId,
                         'upload_type_id' => $uploadType->getKey(),
+                        'serial_number' => $sn,
                         'uploader_user_id' => $activeUser->getKey(),
                         'uploader_email' => $activeUser->email,
                         'file_count' => max(1, $fileCount),
@@ -246,7 +247,7 @@ class PingconLegacyImporter implements LegacyDataImporterInterface
                         $createdAt->format('Y'),
                         $createdAt->format('m'),
                         $createdAt->format('d'),
-                        $upload->getKey(),
+                        $sn,
                         $storedFileName
                     );
 

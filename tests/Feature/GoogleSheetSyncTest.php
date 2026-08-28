@@ -1,6 +1,7 @@
 <?php
 
 use App\Features\Receiving\Services\PurchaseOrderDataNormalizer;
+use App\Features\Receiving\Services\UploadSerialNumber;
 use App\Models\AiExtraction;
 use App\Models\GoogleSheetConfig;
 use App\Models\GoogleSheetLog;
@@ -14,6 +15,7 @@ use App\Models\UploadType;
 use App\Models\User;
 use App\Services\GoogleSheets\GoogleSheetsDataSyncService;
 use App\Services\GoogleSheets\GoogleSheetsTableParser;
+use Illuminate\Support\Str;
 
 beforeEach(function () {
     $this->artisan('db:seed', ['--force' => true]);
@@ -482,4 +484,73 @@ test('Syncing invoice with existing PO number links to real PO without creating 
     // Verify NO fake PO was created
     $fakePo = PoExtraction::query()->where('po_number', 'PO-SN88')->first();
     expect($fakePo)->toBeNull();
+});
+
+test('GoogleSheetsDataSyncService preserves exact spreadsheet serial numbers and respects gaps across upload types', function () {
+    /** @var GoogleSheetsDataSyncService $syncService */
+    $syncService = app(GoogleSheetsDataSyncService::class);
+    $serials = app(UploadSerialNumber::class);
+
+    // 1. Simulate A2Z2GO having 100 uploads (taking IDs 1..100)
+    $a2zType = UploadType::query()->where('slug', 'a2z2go')->firstOrFail();
+    $a2zUploads = [];
+    for ($i = 1; $i <= 50; $i++) {
+        $a2zUploads[] = [
+            'submission_id' => (string) Str::uuid(),
+            'upload_type_id' => $a2zType->getKey(),
+            'serial_number' => $i,
+            'uploader_user_id' => 1,
+            'uploader_email' => 'uploader@a2z.com',
+            'file_count' => 1,
+            'r2_bucket' => 'test',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+    }
+    ReceivingUpload::query()->insert($a2zUploads);
+
+    // 2. Stage PINGCON with serial numbers 108 and 110 (SN 109 is missing)
+    $pingconLogs = [
+        [
+            'Serial Number' => '108',
+            'Timestamp' => 'Aug 17, 2026 11:00:00 AM',
+            'File Count' => '1',
+            'Review Status' => 'Verified',
+        ],
+        [
+            'Serial Number' => '110',
+            'Timestamp' => 'Aug 17, 2026 11:30:00 AM',
+            'File Count' => '1',
+            'Review Status' => 'Verified',
+        ],
+    ];
+
+    $syncService->stageData('pingcon', $pingconLogs, [], []);
+
+    // 3. Sync both serial numbers
+    $res108 = $syncService->syncSerialNumber('pingcon', 108);
+    $res110 = $syncService->syncSerialNumber('pingcon', 110);
+
+    expect($res108['success'])->toBeTrue()
+        ->and($res110['success'])->toBeTrue();
+
+    // 4. Verify PINGCON uploads have exact serial numbers 108 and 110
+    $upload108 = ReceivingUpload::query()->find($res108['upload_id']);
+    $upload110 = ReceivingUpload::query()->find($res110['upload_id']);
+
+    expect($upload108->serial_number)->toBe(108)
+        ->and($upload110->serial_number)->toBe(110)
+        ->and($serials->number($upload108))->toBe(108)
+        ->and($serials->number($upload110))->toBe(110)
+        ->and($serials->label($upload108))->toBe('SN-108')
+        ->and($serials->label($upload110))->toBe('SN-110');
+
+    // 5. Verify SN-109 does not exist under PINGCON
+    $pingconType = UploadType::query()->where('slug', 'pingcon')->firstOrFail();
+    $resolved109 = $serials->resolve($pingconType, 109);
+    expect($resolved109)->toBeNull();
+
+    // 6. Verify resolve works for 108 and 110
+    expect($serials->resolve($pingconType, 108))->toBe($upload108->getKey())
+        ->and($serials->resolve($pingconType, 110))->toBe($upload110->getKey());
 });
