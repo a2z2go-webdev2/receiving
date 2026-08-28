@@ -185,6 +185,12 @@ export default function SheetsSyncPage({
             });
 
             const res = await fetch(`/admin/sheets-sync/items?${params.toString()}`);
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                console.error('Failed to load sheet items:', errorData);
+                setItems([]);
+                return;
+            }
             const data = await res.json();
 
             setItems(data.items || []);
@@ -196,7 +202,9 @@ export default function SheetsSyncPage({
                     last_page: 1,
                 },
             );
-        } catch {
+        } catch (err) {
+            console.error('Error fetching sheet items:', err);
+            setItems([]);
         } finally {
             setLoading(false);
         }

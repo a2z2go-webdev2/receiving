@@ -3,10 +3,14 @@
 namespace App\Console\Commands;
 
 use App\Models\ActivityLog;
+use App\Models\GoogleSheetConfig;
+use App\Models\GoogleSheetLog;
 use App\Models\ReceivingUpload;
 use App\Models\UploadedFile;
 use App\Models\UploadOtp;
+use App\Services\GoogleSheets\GoogleSheetsDataSyncService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 class ClearUploadsData extends Command
@@ -89,6 +93,22 @@ class ClearUploadsData extends Command
         // receiving_uploads cascade-deletes: uploaded_files, ai_extractions, review_links.
         ReceivingUpload::query()->delete();
         UploadOtp::query()->delete();
+
+        if (Schema::hasTable('google_sheet_logs')) {
+            GoogleSheetLog::query()->update([
+                'is_synced_to_db' => false,
+                'synced_receiving_upload_id' => null,
+                'synced_at' => null,
+            ]);
+
+            if (Schema::hasTable('google_sheet_configs')) {
+                /** @var GoogleSheetsDataSyncService $syncService */
+                $syncService = app(GoogleSheetsDataSyncService::class);
+                foreach (GoogleSheetConfig::all() as $cfg) {
+                    $syncService->updateSheetCounts($cfg->slug);
+                }
+            }
+        }
 
         $this->components->twoColumnDetail('Receiving uploads cleared', (string) $uploadCount);
         $this->components->twoColumnDetail('Upload OTPs cleared', (string) $otpCount);
