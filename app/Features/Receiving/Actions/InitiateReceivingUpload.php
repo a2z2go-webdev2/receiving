@@ -44,9 +44,14 @@ class InitiateReceivingUpload
         $upload = DB::transaction(function () use ($user, $uploadType, $files, $submissionId, $location): ReceivingUpload {
             $requiresReview = $uploadType->workflow->requiresReview();
             $sendsNotifications = $uploadType->workflow->sendsNotifications();
+            $nextSerial = ((int) ReceivingUpload::query()
+                ->where('upload_type_id', $uploadType->getKey())
+                ->max('serial_number')) + 1;
+
             $upload = ReceivingUpload::query()->create([
                 'submission_id' => $submissionId,
                 'upload_type_id' => $uploadType->getKey(),
+                'serial_number' => $nextSerial,
                 'uploader_user_id' => $user->getKey(),
                 'uploader_email' => $user->email,
                 'latitude' => $location['latitude'] ?? null,
@@ -66,7 +71,7 @@ class InitiateReceivingUpload
                 'receiving/%s/%s/SN-%d/',
                 $uploadType->r2_prefix,
                 $upload->created_at->format('Y/m/d'),
-                $upload->getKey(),
+                $nextSerial,
             );
             $upload->save();
 
@@ -75,7 +80,7 @@ class InitiateReceivingUpload
                 $extension = strtolower(pathinfo($metadata['name'], PATHINFO_EXTENSION));
                 $stored = $this->sanitizer->storedName(
                     $uploadType->r2_prefix,
-                    $upload->getKey(),
+                    $nextSerial,
                     $index + 1,
                     $extension,
                 );
@@ -94,7 +99,7 @@ class InitiateReceivingUpload
                 $file->r2_staging_object_key = sprintf(
                     'staging/%s/SN-%d/%s',
                     $uploadType->r2_prefix,
-                    $upload->getKey(),
+                    $nextSerial,
                     $stored,
                 );
                 $file->save();
