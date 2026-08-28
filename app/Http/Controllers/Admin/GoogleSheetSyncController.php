@@ -64,7 +64,7 @@ class GoogleSheetSyncController extends Controller
         $query = GoogleSheetLog::query()
             ->where('sheet_slug', $sheet)
             ->with([
-                'syncedUpload:id,submission_id,file_count,review_status,ai_status,created_at',
+                'syncedUpload:id,serial_number,submission_id,file_count,review_status,ai_status,created_at',
             ]);
 
         // Filter by Status

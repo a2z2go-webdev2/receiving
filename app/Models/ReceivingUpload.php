@@ -18,6 +18,7 @@ use Illuminate\Support\Collection;
  * @property int $id
  * @property string $submission_id
  * @property int $upload_type_id
+ * @property int|null $serial_number
  * @property int $uploader_user_id
  * @property string $uploader_email
  * @property float|null $latitude
@@ -48,7 +49,7 @@ use Illuminate\Support\Collection;
  * @property-read Collection<int, PurchaseOrderItemArrival> $purchaseOrderItemArrivals
  */
 #[Fillable([
-    'submission_id', 'upload_type_id', 'uploader_user_id', 'uploader_email', 'r2_bucket', 'r2_prefix',
+    'submission_id', 'upload_type_id', 'serial_number', 'uploader_user_id', 'uploader_email', 'r2_bucket', 'r2_prefix',
     'latitude', 'longitude', 'location_accuracy_meters', 'location_captured_at',
     'file_count', 'processing_status', 'email_status', 'review_email_status', 'ai_status', 'review_status',
     'failure_reason', 'review_email_failure_reason', 'upload_completed_at', 'notification_sent_at',
@@ -58,9 +59,23 @@ class ReceivingUpload extends Model
 {
     use HasFactory;
 
+    protected static function booted(): void
+    {
+        static::creating(function (ReceivingUpload $upload): void {
+            if (($upload->serial_number === null || $upload->serial_number <= 0) && $upload->upload_type_id) {
+                $max = static::query()
+                    ->where('upload_type_id', $upload->upload_type_id)
+                    ->max('serial_number');
+
+                $upload->serial_number = ($max !== null ? (int) $max : 0) + 1;
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [
+            'serial_number' => 'integer',
             'processing_status' => UploadProcessingStatus::class,
             'email_status' => EmailStatus::class,
             'review_email_status' => EmailStatus::class,
@@ -108,7 +123,7 @@ class ReceivingUpload extends Model
 
     public function getSerialNumberAttribute(): int
     {
-        return (int) $this->getKey();
+        return (int) ($this->attributes['serial_number'] ?? $this->getKey());
     }
 
     public function poExtractions(): HasMany

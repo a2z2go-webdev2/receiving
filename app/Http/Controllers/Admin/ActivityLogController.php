@@ -29,10 +29,11 @@ class ActivityLogController extends Controller
         $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], mb_strtolower($search)).'%';
         $uploadId = $this->resolveUploadId($search, $serials);
         $logs = ActivityLog::query()
-            ->with(['upload:id,upload_type_id', 'upload.uploadType:id,name,workflow'])
+            ->with(['upload:id,upload_type_id,serial_number', 'upload.uploadType:id,name,workflow'])
             ->when($search !== '', fn (Builder $query) => $query->where(function (Builder $query) use ($pattern, $uploadId): void {
                 if ($uploadId !== null) {
-                    $query->orWhere('receiving_upload_id', $uploadId);
+                    $query->orWhere('receiving_upload_id', $uploadId)
+                        ->orWhereHas('upload', fn ($u) => $u->where('serial_number', $uploadId));
                 }
 
                 $query

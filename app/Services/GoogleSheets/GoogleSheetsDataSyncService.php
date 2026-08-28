@@ -341,6 +341,7 @@ class GoogleSheetsDataSyncService
                 $upload = ReceivingUpload::query()->create([
                     'submission_id' => $submissionId,
                     'upload_type_id' => $uploadType->getKey(),
+                    'serial_number' => $serialNumber,
                     'uploader_user_id' => $activeUser->getKey(),
                     'uploader_email' => $activeUser->email,
                     'file_count' => max(1, $files->count() ?: $log->file_count),
@@ -362,6 +363,7 @@ class GoogleSheetsDataSyncService
                 ]);
             } else {
                 $upload->update([
+                    'serial_number' => $serialNumber,
                     'uploader_user_id' => $activeUser->getKey(),
                     'uploader_email' => $activeUser->email,
                     'file_count' => max(1, $files->count() ?: $log->file_count),
@@ -445,7 +447,7 @@ class GoogleSheetsDataSyncService
                         $createdAt->format('Y'),
                         $createdAt->format('m'),
                         $createdAt->format('d'),
-                        $upload->getKey(),
+                        $serialNumber,
                         $storedFileName
                     );
                 }
