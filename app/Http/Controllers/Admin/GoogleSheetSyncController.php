@@ -133,8 +133,8 @@ class GoogleSheetSyncController extends Controller
         $sort = (string) $request->input('sort', 'priority');
         if ($sort === 'priority') {
             $query->orderByRaw('CASE 
-                WHEN is_synced_to_db = 0 THEN 1 
-                WHEN is_synced_to_db = 1 AND updated_at > synced_at THEN 2 
+                WHEN is_synced_to_db = false THEN 1 
+                WHEN is_synced_to_db = true AND updated_at > synced_at THEN 2 
                 ELSE 3 
             END ASC')
                 ->orderBy('serial_number', 'desc');
