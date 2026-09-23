@@ -18,11 +18,12 @@ use Illuminate\Support\Collection;
  * @property string|null $ean_barcode_normalized
  * @property string $description
  * @property string $description_normalized
- * @property string $target_quantity
+ * @property string|null $target_quantity
  * @property string|null $package_quantity
  * @property string|null $package_unit
  * @property string|null $sold_quantity
  * @property string|null $unit
+ * @property string $category
  * @property int|null $expected_week
  * @property bool $is_special_order
  * @property bool $is_active
@@ -39,7 +40,7 @@ use Illuminate\Support\Collection;
     'serial_number', 'sku_number', 'sku_number_normalized', 'ean_barcode',
     'ean_barcode_normalized', 'description', 'description_normalized',
     'target_quantity', 'package_quantity', 'package_unit', 'sold_quantity',
-    'unit', 'expected_week', 'is_special_order', 'is_active',
+    'unit', 'category', 'expected_week', 'is_special_order', 'is_active',
     'notes', 'source', 'source_key', 'created_by',
 ])]
 class PurchaseOrderItemSchedule extends Model

@@ -176,7 +176,10 @@ export default function MissingItemsReport({
     );
 }
 
-function formatQuantity(value: number) {
+function formatQuantity(value: number | null | undefined) {
+    if (value === null || value === undefined) {
+        return '-';
+    }
     return value.toLocaleString(undefined, {
         maximumFractionDigits: 3,
     });

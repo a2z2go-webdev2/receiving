@@ -24,25 +24,98 @@ it('imports the item records csv into item schedule records', function (): void 
         database_path('seeders/data/po_item_records.csv'),
     );
 
-    expect($stats['rows'])->toBe(419)
-        ->and($stats['records'])->toBe(419)
-        ->and(PurchaseOrderItemSchedule::query()->where('source', PurchaseOrderItemScheduleImporter::SOURCE)->count())->toBe(419)
-        ->and(PurchaseOrderItemSchedule::query()->whereNull('expected_week')->count())->toBe(419);
+    expect($stats['rows'])->toBe(1163)
+        ->and($stats['records'])->toBe(1163)
+        ->and(PurchaseOrderItemSchedule::query()->where('source', PurchaseOrderItemScheduleImporter::SOURCE)->count())->toBe(1163)
+        ->and(PurchaseOrderItemSchedule::query()->where('category', 'non_food')->count())->toBe(419)
+        ->and(PurchaseOrderItemSchedule::query()->where('category', 'food')->count())->toBe(744)
+        ->and(PurchaseOrderItemSchedule::query()->whereNull('expected_week')->count())->toBe(1163);
 
-    $sample = PurchaseOrderItemSchedule::query()->where('serial_number', 4)->firstOrFail();
-    expect($sample->sku_number)->toBe('2053P')
-        ->and($sample->ean_barcode)->toBe('4809013751802')
-        ->and((float) $sample->package_quantity)->toBe(4.0)
-        ->and($sample->package_unit)->toBe('pc')
-        ->and($sample->unit)->toBe('case');
+    // Non-food item sample
+    $sampleNonFood = PurchaseOrderItemSchedule::query()->where('serial_number', 5)->firstOrFail();
+    expect($sampleNonFood->sku_number)->toBe('2053P')
+        ->and($sampleNonFood->ean_barcode)->toBe('4809013751802')
+        ->and($sampleNonFood->category)->toBe('non_food')
+        ->and((float) $sampleNonFood->package_quantity)->toBe(4.0)
+        ->and($sampleNonFood->package_unit)->toBe('pc')
+        ->and($sampleNonFood->unit)->toBe('case')
+        ->and((float) $sampleNonFood->target_quantity)->toBe(292.0);
+
+    // Food item sample (no target quantity, no package quantity)
+    $sampleFood = PurchaseOrderItemSchedule::query()->where('serial_number', 2)->firstOrFail();
+    expect($sampleFood->sku_number)->toBe('1405P')
+        ->and($sampleFood->category)->toBe('food')
+        ->and($sampleFood->unit)->toBe('pc')
+        ->and($sampleFood->target_quantity)->toBeNull()
+        ->and($sampleFood->package_quantity)->toBeNull();
 
     $rerun = app(PurchaseOrderItemScheduleImporter::class)->import(
         database_path('seeders/data/po_item_records.csv'),
     );
 
     expect($rerun['created'])->toBe(0)
-        ->and($rerun['updated'])->toBe(419)
+        ->and($rerun['updated'])->toBe(1163)
         ->and($rerun['deactivated'])->toBe(0);
+});
+
+it('imports item records directly from markdown files in items directory', function (): void {
+    $stats = app(PurchaseOrderItemScheduleImporter::class)->importDirectory(
+        base_path('items'),
+    );
+
+    expect($stats['rows'])->toBe(1165)
+        ->and($stats['skipped'])->toBe(2)
+        ->and($stats['records'])->toBe(1163)
+        ->and(PurchaseOrderItemSchedule::query()->where('category', 'food')->count())->toBe(744)
+        ->and(PurchaseOrderItemSchedule::query()->where('category', 'non_food')->count())->toBe(419);
+});
+
+it('does not include food items without target quantity in missing items or recurring items reports', function (): void {
+    // food item with null target_quantity
+    PurchaseOrderItemSchedule::query()->create([
+        'sku_number' => 'FOOD-1',
+        'sku_number_normalized' => 'food-1',
+        'description' => 'Organic Apples',
+        'description_normalized' => 'organic apples',
+        'category' => 'food',
+        'target_quantity' => null,
+        'unit' => 'pc',
+        'is_active' => true,
+    ]);
+
+    // non-food item with target_quantity
+    $missingNonFood = PurchaseOrderItemSchedule::query()->create([
+        'sku_number' => 'NONFOOD-1',
+        'sku_number_normalized' => 'nonfood-1',
+        'description' => 'Trash Bags',
+        'description_normalized' => 'trash bags',
+        'category' => 'non_food',
+        'target_quantity' => '50.000',
+        'unit' => 'box',
+        'is_active' => true,
+    ]);
+
+    $admin = poReportingAdmin();
+
+    $this->actingAs($admin)
+        ->withSession(['admin.otp_verified_at' => now()->getTimestamp()])
+        ->get(route('admin.purchase-orders.reports.missing-items', ['month' => '2026-07', 'week' => 1]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('admin/purchase-orders/reports/missing-items')
+            ->has('rows', 1)
+            ->where('rows.0.sku_number', 'NONFOOD-1')
+            ->where('rows.0.category', 'non_food'));
+
+    $this->actingAs($admin)
+        ->withSession(['admin.otp_verified_at' => now()->getTimestamp()])
+        ->get(route('admin.purchase-orders.reports.recurring-items'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('admin/purchase-orders/reports/recurring-items')
+            ->has('rows', 1)
+            ->where('rows.0.sku_number', 'NONFOOD-1')
+            ->where('rows.0.category', 'non_food'));
 });
 
 it('matches purchase order items by EAN barcode', function (): void {

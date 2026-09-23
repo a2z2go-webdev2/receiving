@@ -1,420 +1,1164 @@
-"Serial Number",SKU,EAN,Description,"Sold Qty",Package,"Package Unit","Target Quantity","Main Unit"
-1,Q0104P,Q0104P,"Q0104P Pingcon JRT 250m MG x1",158209,12,rolls,989.00,case
-2,0340P,0340P,"0340P Jumbo Roll Tissue MG 200m individually wrap 80mm x1",100120,12,pc,626.00,case
-3,KS004P,###,"KS004P Interfolded Paper Towel Virgin Pulp 1 ply 175 pulls x1",192211,30,pc,481.00,case
-4,2053P,4809013751802,"2053P Pingcon Rubbing Alcohol Isopropyl 70% Alcohol with Moisturizer Gallon (3.78Liters) x1",15545,4,pc,292.00,case
-5,Y0316P,Y0316P,"Y0316P Bathroom Tissue,white, 3 ply, Soft Texture, 100% virgin pulp width of sheet: 10 11 cm, diameter of roll:10 12cm, minimum 200 sheet per roll, biodegradable x1",246720,48,pc,386.00,case
-6,MH62P,4801234107727,"MH62P Baygon Multi Insect Killer Odorless 500ml x1",8173,12,pc,52.00,case
-7,Q0101P,Q0101P,"Q0101P Pingcon JRT 200m Premium MG x1",43620,12,pc,273.00,case
-8,0192P,0192P,"0192P Paper Cups White 8oz x50",43700,20,pc,164.00,case
-9,Z1015P,9556111408088,"Z1015P Lysol Disinfectant Spray Crisp Linen 510g x1",4617,12,pc,29.00,case
-10,Y0300P,Y0300P,"Y0300P Bonita Suprema 300 Bathroom Tissue Roll 100% Virgin Pulp 2 ply x 150 300 sheets 100mm x 100mm x1",248500,48,pc,389.00,case
-11,0345P,0345P,"0345P Interleave Virgin Pulp 2ply x 200 pulls 400 sheets x1",97536,48,pc,153.00,case
-12,BC167P,BC167P,"BC167P Ziptie Garbage Bag Clear XL 30"" x 37"" x10",32920,20,pc,124.00,case
-13,KS001P,###,"KS001P Bathroom Tissue Roll Virgin Pulp 3 ply 450sheets x1",118752,48,pc,186.00,case
-14,2069P,2069P,"2069P Rubbing Alcohol 70% Ethyl Apple Blast Scent Gallon x1",2396,4,pc,45.00,case
-15,2042P,2042P,"2042P Diswashing Liquid Cleaner Lime Gallon x1",7107,4,pc,134.00,case
-16,1664P,1664P,"1664P Bonita Jumbo Roll Tissue Class A Virgin Pulp 2 ply 250 meters x1",12144,12,pc,76.00,case
-17,2102P,4800047840067,"2102P Zonrox Bleach Original Scent gallon x1",7725,3,pc,194.00,case
-18,MH01P,4801234056728,"MH01P Pledge Lemon 330mL x1",2996,24,pc,10.00,case
-19,0344P,0344P,"0344P Bathroom Tissue Roll Mixed Grade 2-ply x 150 300 sheets 100mm x 100mm x1",132864,48,pc,208.00,case
-20,MH28P,4801234107826,"MH28P Baygon Protector Multi Insect Killer Citrus Scent 500mL x1",2354,12,pc,15.00,case
-21,0348P,0348P,"0348P Unbranded Interfolded Paper Towel Virgin Pulp 175 pulls 30gsm x1",25080,30,pc,63.00,case
-22,Z1018P,9556111408279,"Z1018P Lysol D. Spray Early Morning Breeze 510g x1",1426,12,pc,9.00,case
-23,08105P,4809013751574,"08105P Garbage Bag XXL Black 37 x 40 x .001 x1",154600,100,pc,116.00,case
-24,Q0108P,Q0108P,"Q0108P Hand Roll Tissue VP 200m x1",4837,12,pc,31.00,case
-25,GR101P,GR101P,"GR101P 3M Scotch Brite Scrub Sponge with foam 100mm x 75mm x 30mm x1",16827,24,pc,53.00,case
-26,SF0101P,SF0101P,"SF0101P Garbage Bag XXL Black 37"" x 40"" x .001 x1",137800,100,pc,104.00,case
-27,MH07P,4801234061517,"MH07P Glade Air Freshener Lemon 320mL x1",2926,12,pc,19.00,case
-28,P0126P,4800888181572,"P0126P Surf Detergent Powder Kalamansi 1.1kg x1",5381,12,pc,34.00,case
-29,P1587P,4800014151240,"P1587P Summit Still Bottled Water 330ml x1",15060,12,pc,95.00,case
-30,08109P,08109P,"08109P Garbage Bag XXL Clear 37"" x 40"" x .001 x1",115200,100,pc,87.00,case
-31,SF0105P,SF0105P,"SF0105P Garbage Bag XXL Clear 37"" x 40"" x .001 x1",118300,100,pc,89.00,case
-32,Q0111P,Q0111P,"Q0111P Pingcon JRT 180m MG x1",9840,12,pc,62.00,case
-33,Z1024P,4801002062883,"Z1024P Lysol Disinfectant Spray Fresh Blossoms 510g x1",936,12,pc,6.00,case
-34,FE131P,FE131P,"FE131P Mop Aluminum Handle Plastic Head Blue x1",1214,1,pc,92.00,pc
-35,0342P,0342P,"0342P Hand Roll Tissue VP 180m x1",2418,6,pc,31.00,case
-36,MH16P,4801234108229,"MH16P Baygon Multi Insect Killer Waterbased 500mL x1",1239,12,pc,8.00,case
-37,MH96P,4801234072124,"MH96P Mr. Muscle Mold And Mildew Refill 500ml x1",2622,12,pc,17.00,case
-38,1034P,4902430304733,"1034P Ambi Pur Air Freshener LV & C 275g x1",1673,6,pc,21.00,case
-39,BC170P,BC170P,"BC170P Non-Bio Ziptie Garbage Bag Natural XXL 37' x 40' x10",7480,20,pc,29.00,case
-40,Y0350P,Y0350P,"Y0350P Kitchen Towel Virgin Pulp 2 ply x 85 pulls 170 sheets x1",10128,24,pc,32.00,case
-41,0186P,0186P,"0186P Paper Cups White 6.5oz x50",9780,20,pc,37.00,case
-42,2014P,2014P,"2014P Liquid Hand Soap Strawberry with moisturizer Gallon x1",2090,4,pc,40.00,case
-43,BC134P,BC134P,"BC134P Ziptie Garbage Bag Natural Small 18"" x 20"" x20",21800,50,pc,33.00,case
-44,MH08P,9555222601463,"MH08P Glade Air Freshener Lavender 320mL x1",1712,12,pc,11.00,case
-45,1056P,4987176160645,"1056P Joy Dishwashing Liquid Lemon Refill 540mL x1",2335,3,pc,59.00,case
-46,0166P,7914501581407,"0166P Wooden Coffee Stirrer 5"" x1000",1272,10,pc,10.00,case
-47,2022P,2022P,"2022P Liquid Hand Soap Lemon Gallon x1",2043,4,pc,39.00,case
-48,04904P,"955 7601130168","04904P Great Gloves Disposable Small x100",790,10,pc,6.00,case
-49,2012P,2012P,"2012P All Purpose Liquid Cleaner Yellow Gallon x1",2170,4,pc,41.00,case
-50,1552P,4800067600108,"1552P Albatross Lemon Refill 50g x1",9438,12,pc,59.00,case
-51,GR113P,GR113P,"GR113P Microfiber Cloth Blue x1",4470,50,pc,7.00,case
-52,P2392P,###,"P2392P Tide Detergent Powder Original Scent 1500kg x1",1150,4,pc,22.00,case
-53,SF0104P,SF0104P,"SF0104P Garbage Bag XL Black PE 30"" x 37"" .001 x1",89600,100,pc,68.00,case
-54,P1589P,4806513691003,"P1589P Solbac Disinfectant Spray Fresh Linen 400g x1",828,12,pc,6.00,case
-55,2043P,2043P,"2043P Liquid Hand Soap Lavender Scent Gallon x1",2006,4,pc,38.00,case
-56,Z1014P,9556111408071,"Z1014P Lysol Disinfectant Spray Crisp Linen 340g x1",673,12,pc,5.00,case
-57,0596P,4800888112996,"0596P Domex Multi-Purpose Cleaner Lemon Fresh 500mL x1",2903,24,pc,10.00,case
-58,08111P,4809013751567,"08111P Garbage Bag XL Black PE 30 x 37 x .001 x1",83300,100,pc,63.00,case
-59,Y0351P,Y0351P,"Y0351P Jumbo Roll Tissue MG Plus 2 ply 200m x1",5748,12,pc,36.00,case
-60,04903P,###,"04903P Great Gloves Disposable Medium x100",782,10,pc,6.00,case
-61,Q0103P,Q0103P,"Q0103P Interleave Virgin Pulp 2-ply x 200 pulls 400 sheets x1",18730,60,pc,24.00,case
-62,GR107P,GR107P,"GR107P 3M Microfiber Cloth Green x1",3853,50,pc,6.00,case
-63,TM0102P,TM0102P,"TM0102P Diversey Complete Wax 5L x1",91,2,pc,4.00,case
-64,Q0110P,Q0110P,"Q0110P Pingcon Interfolded Paper Towel Regular 1ply 175 pulls x1",9240,30,pc,24.00,case
-65,04880P,04880P,"04880P Glomed Surgical Latex Gloves Large x100",552,10,pc,5.00,case
-66,SS0132P,9556111980720,"SS0132P Lysol Disinfectant Spray Citrus Meadows 510g x1",476,12,pc,3.00,case
-67,SS1454P,###,"SS1454P Tide Detergent Powder Original Scent 1.19kg x1",902,4,pc,17.00,case
-68,P0692P,8934868115717,"P0692P Domex Toilet Cleaner Ultra Thick Bleach 900ml x1",1531,12,pc,10.00,case
-69,SF0106P,SF0106P,"SF0106P Garbage Bag Large Black 26"" x 32"" x .001 x1",81600,100,pc,62.00,case
-70,08107P,08107P,"08107P Garbage Bag Medium Clear 22"" x 24"" x .001 x1",118100,100,pc,89.00,case
-71,P2369P,4987176280756,"P2369P Downy Sunrise Fresh 750mL x1",1474,8,pc,14.00,case
-72,KS005P,###,"KS005P Interfolded Paper Towel Virgin Pulp 1 ply 150 pulls x1",9570,30,pc,24.00,case
-73,FE291P,FE291P,"FE291P Diamond Sealer Finish Wax Gallon x1",268,4,pc,6.00,case
-74,2124P,4800047820458,"2124P Green Cross Isophrophyl Alcohol with Moisturizer 70% Gallon x1",389,3,pc,10.00,case
-75,2034P,2034P,"2034P Liquid Hand Soap Green Apple Scent Gallon x1",1378,4,pc,26.00,case
-76,P0983P,8850175010418,"P0983P Glade Automatic Spray Lavender & Vanilla 3in1 Refill x1",703,6,pc,9.00,case
-77,P1771P,59631896391,"P1771P Lysol Disenfectant Spray Crisp Linen 539g x1",394,12,pc,3.00,case
-78,04899P,04899P,"04899P Great Gloves Disposable Large x100",414,10,pc,4.00,case
-79,FE018P,FE018P,"FE018P Toilet Bowl Cleaner Gallon x1",1008,4,pc,19.00,case
-80,FE109P,FE109P,"FE109P 3M Microfiber Cloth Yellow x1",2600,50,pc,4.00,case
-81,P1508P,4902430355193,"P1508P Downy Passion Fabric Conditioner Refill 1.2L x1",559,6,pc,7.00,case
-82,FW001P,FW001P,"FW001P Falcon Velocity Cartridge Filter with Sealant x1",109,1,pc,9.00,pc
-83,TM0114P,###,"TM0114P Diversey Go Getter 5L x1",120,2,pc,5.00,case
-84,1673P,1673P,"1673P Facial Tissue Unwrapped Premium Grade 2 ply 75 pulls white off white x1",11334,72,pc,12.00,case
-85,P2378P,4902430245012,"P2378P Downy Sunrise Fresh Refill 1.5L x1",506,6,pc,7.00,case
-86,FE183P,FE183P,"FE183P Utility Belt Bag x1",989,1,pc,75.00,pc
-87,2021P,2021P,"2021P Liquid Hand Soap Baby Blossom with moisturizer gallon x1",967,4,pc,19.00,case
-88,1575P,4800067600382,"1575P Albatross Lemon Refill 100g x1",2832,12,pc,18.00,case
-89,08104P,4809013751550,"08104P Garbage Bag Large Black 26 x 32 x .001 x1",56600,100,pc,43.00,case
-90,FE033P,FE033P,"FE033P Dust Mop with handle 36"" x1",181,1,pc,14.00,pc
-91,MH31P,4801234108236,"MH31P Baygon Multi Insect Killer Waterbased 600mL x1",394,12,pc,3.00,case
-92,FE110P,FE110P,"FE110P 3M Microfiber Cloth Purple x1",2326,50,pc,4.00,case
-93,GR108P,GR108P,"GR108P 3M Microfiber Cloth Red x1",2287,50,pc,4.00,case
-94,FE099P,32611121126,"FE099P Window Squeegee 12"" x1",264,1,pc,20.00,pc
-95,Q0105P,Q0105P,"Q0105P Intefolded Paper Towel VP 1ply 175 pulls x1",5070,30,pc,13.00,case
-96,FE130P,FE130P,"FE130P Mop Aluminum Handle Plastic Head Yellow x1",339,1,pc,26.00,pc
-97,Z1033P,9556111996097,"Z1033P Lysol Disinfectant Multi-Action Cleaner Lavender 900ml x1",750,12,pc,5.00,case
-98,P1835P,4987176043917,"P1835P Joy Diswashing Liquid Lemon 1050mL x1",483,6,pc,7.00,case
-99,08103P,4809013751543,"08103P Garbage Bag Medium Black 22 x 24 x .001 x1",77510,100,pc,59.00,case
-100,FE048P,6943925101534,"FE048P Plastic Broom x1",1773,1,pc,133.00,pc
-101,08108P,08108P,"08108P Garbage Bag Large Clear 26"" x 32"" x .001 x1",46700,100,pc,36.00,case
-102,BC137P,BC137P,"BC137P Ziptie Garbage Bag Natural Large 26"" x 32"" x10",5350,50,pc,9.00,case
-103,GR102P,GR102P,"GR102P 3M Scotch Brite Scrubing Pad 4.5 in x 6 in x1",5248,48,pc,9.00,case
-104,MH70P,4801234140113,"MH70P Glade Scented Gel Lavender 180g x1",846,12,pc,6.00,case
-105,FE242P,FE242P,"FE242P Mop Head Rayon Heavy Duty No. 400 x1",1645,1,pc,124.00,pc
-106,SS1101P,###,"SS1101P Downy Sunrise Fresh 1.48L Pouch x1",372,6,pc,5.00,case
-107,P0308P,19200997843,"P0308P Lysol Disinfectant Spray Crisp Linen Scent 538g x1",242,12,pc,2.00,case
-108,JU0109P,JU0109P,"JU0109P Mop Head cotton 400g x1",1744,1,pc,131.00,pc
-109,SF0113P,SF0113P,"SF0113P Garbage Bag Medium Black 22"" x 24"" x .001 x1",68500,100,pc,52.00,case
-110,2117P,2117P,"2117P Zonrox Gallon Lemon x1",880,3,pc,22.00,case
-111,P2414P,4902430412551,"P2414P Tide Perfect Clean Original Scent 715g x1",1000,12,pc,7.00,case
-112,08102P,4809013751536,"08102P Garbage Bag Small Black 18 x 18 x .001 x1",95400,100,pc,72.00,case
-113,1584P,1584P,"1584P 3M Microfiber Cloth Blue x10",157,5,pc,3.00,case
-114,1642P,8888089419515,"1642P Boncafe Coffee Filter 1x4 (8 12 cups) x40",494,1,pc,38.00,pc
-115,OC0103P,OC0103P,"OC0103P Power Clean Non Buffable Wax Supreme Gallon x1",114,4,pc,3.00,case
-116,MH112P,9555222605089,"MH112P Glade Automatic Spray Ocean Escape Refill 175g x1",416,6,pc,6.00,case
-117,FE266P,FE266P,"FE266P Wooden Spoon x25",1862,100,pc,2.00,case
-118,FE215P,FE215P,"FE215P Round rugs White MAKAPAL x35",1384,1,pc,104.00,pc
-119,FE283P,FE283P,"FE283P Dust Mop with Handle Set 24"" x1",100,1,pc,8.00,pc
-120,04874P,4806530870542,"04874P Indoplas Facemask 3ply x50",1293,40,pc,3.00,case
-121,P1856P,###,"P1856P Tide Perfect Clean Original Fresh 565g x1",934,12,pc,6.00,case
-122,2040P,2040P,"2040P Unbranded All Purpose Detergent Powder 1kg x1",3710,30,pc,10.00,case
-123,Y0309P,Y0309P,"Y0309P Bonita Pre cut Table Napkin Mixed Grade 1 ply 1000 sheets x1",2525,5,pc,38.00,case
-124,08118P,08118P,"08118P Garbage Bag XL Clear 30"" x 37"" x .0010 x1",26500,100,pc,20.00,case
-125,FE039P,FE039P,"FE039P Soft Broom Makapal x1",491,1,pc,37.00,pc
-126,FE193P,FE193P,"FE193P Rubber Gloves Makapal Medium pair x1",1374,1,pc,104.00,pc
-127,FE248P,FE248P,"FE248P Rubber Gloves Makapal Large pair x1",1480,1,pc,111.00,pc
-128,FE267P,FE267P,"FE267P Wooden Fork x25",1655,100,pc,2.00,case
-129,Q0109P,Q0109P,"Q0109P Pingcon Interfolded Paper Towel Premium MG 1 ply 175 pulls 34gsm x1",3660,30,pc,10.00,case
-130,FE021P,FE021P,"FE021P Spray Gun 500mL x1",2005,1,pc,151.00,pc
-131,P2391P,4902430452779,"P2391P Downy Garden Bloom 750mL x1",648,8,pc,7.00,case
-132,SS1318P,4902430867290,"SS1318P Joy Dishwashing Liquid Lemon Bottle 475mL x1",704,24,pc,3.00,case
-133,2112P,4800047841705,"2112P Zonrox Color Safe Bleach 900mL x1",1435,24,pc,5.00,case
-134,P1549P,4800047847370,"P1549P Zonrox Colorsafe Bleach Blossom Fresh 3600mL x1",370,3,pc,10.00,case
-135,FE192P,FE192P,"FE192P Trash Can with Small Cover x1",1169,1,pc,88.00,pc
-136,FE062P,86876176421,"FE062P Rubbermaid Mop Squeezer Side Press x1",13,1,pc,1.00,pc
-137,2101P,4800047840012,"2101P Zonrox Bleach Original 1L x1",2166,24,pc,7.00,case
-138,FE002P,FE002P,"FE002P Dust Pan Black Big x1",1682,1,pc,127.00,pc
-139,FE049P,FE049P,"FE049P Pail 4 gallon x1",1495,1,pc,113.00,pc
-140,Y0303P,Y0303P,"Y0303P Bonita Ultima 450 Bathroom Tissue Roll 100% Virgin Pulp 3 ply x 150 450 sheets 100mm x 100mm x1",8496,48,pc,14.00,case
-141,SF0111P,SF0111P,"SF0111P Garbage Bag Large Clear 26"" x 32"" x .001 x1",28500,100,pc,22.00,case
-142,P1627P,4800312274146,"P1627P Perwoll Laundry Detergent Liquid 1 Gallon x1",123,4,pc,3.00,case
-143,1499P,1499P,"1499P Unbranded White Sugar Sachet x100",511,50,pc,1.00,case
-144,FE253P,FE253P,"FE253P Welcome Mat x1",1269,1,pc,96.00,pc
-145,SF0109P,SF0109P,"SF0109P Garbage Bag Small Black 18"" x 18"" x .001 x1",60000,100,pc,45.00,case
-146,TM0101P,TM0101P,"TM0101P Diversey Forward Disinfectant Cleaner 5L x1",57,2,pc,3.00,case
-147,MH114P,9555222605461,"MH114P Glade Automatic Spray Morning Freshness Refill 175g x1",262,6,pc,4.00,case
-148,FE187P,FE187P,"FE187P Mop Aluminum Handle Plastic Head Green x1",184,1,pc,14.00,pc
-149,2125P,4800047820465,"2125P Green Cross Ethyl Alcohol 70% Solution Gallon x1",129,3,pc,4.00,case
-150,1587P,4800067600443,"1587P Albatross Strawberry Refill 100g x1",1282,12,pc,9.00,case
-151,Z1035P,19200850896,"Z1035P Lysol Disinfectant Spray for Baby's Room 510g x1",140,12,pc,1.00,case
-152,TM0105P,TM0105P,"TM0105P Diversey Step Off Floor Stripper 5L x1",79,2,pc,3.00,case
-153,MH35P,4801234071943,"MH35P Mr. Muscle All Purpose Cleaner Lemon 500mL x1",781,24,pc,3.00,case
-154,2027P,4809013751888,"2027P Pingcon Hand Sanitizer 70% Apple Punch with Moisturizer Gallon (3.78Liters) x1",171,4,pc,4.00,case
-155,TPSAKURA,TPSAKURA,"TPSAKURA TPSAKURA Bonita Bathroom Tissue Roll Singles 2 ply 300 sheets x1",9530,48,pc,15.00,case
-156,VA002P,4806013230078,"VA002P Glad Aluminum Foil 30cm x 7m x1",561,24,pc,2.00,case
-157,FE136P,4800117120471,"FE136P Wipe Out Dirt and Stain Remover 250g x1",772,24,pc,3.00,case
-158,08124P,08124P,"08124P Garbage Bag XL Yellow PE 30"" x 37"" x .001 x1",16800,100,pc,13.00,case
-159,08160P,08160P,"08160P Garbage Bag Green XL 30"" x 37"" .001 x1",17000,100,pc,13.00,case
-160,OC0105P,OC0105P,"OC0105P Power Clean Carpet Shampoo Gallon x1",104,4,pc,2.00,case
-161,OC0102P,OC0102P,"OC0102P Power Clean Wax Stripper Supreme Gallon x1",116,4,pc,3.00,case
-162,1468P,4800067600344,"1468P Albatross Jasmine Refill 100g x1",1183,12,pc,8.00,case
-163,MH129P,9555222606741,"MH129P Mr. Muscle Fresh Discs Starter Lavender 38g x1",440,1,,33.00,pc
-164,GR103P,GR103P,"GR103P 3M Polishing Pad 16"" White x1",157,5,pc,3.00,case
-165,FE107P,FE107P,"FE107P Complete Wax Generic Gallon x1",78,4,pc,2.00,case
-166,Z1017P,9556111408262,"Z1017P Lysol Disinfectant Spray Early Morning Breeze 340g x1",156,12,pc,1.00,case
-167,SF0108P,SF0108P,"SF0108P Garbage Bag Medium Clear 22"" x 24"" x .001 x1",35000,100,pc,27.00,case
-168,TM0108P,TM0108P,"TM0108P Diversey View Quick 5L x1",49,2,pc,2.00,case
-169,P2427P,###,"P2427P Downy Fabric Conditioner Garden Bloom 1.5L x1",180,6,pc,3.00,case
-170,1559P,4800067600061,"1559P Albatross Strawberry Refill 50g x1",1784,12,pc,12.00,case
-171,P1507P,4902430452816,"P1507P Downy Garden Bloom Fabric Conditioner Refill 1.48L x1",182,6,pc,3.00,case
-172,TM0111P,807174526714,"TM0111P Diversey Good Sense Odor Eliminator Gallon x1",31,2,x1,2.00,case
-173,MH57P,4801234056711,"MH57P Pledge Furniture Polish Lemon 180ml x1",286,24,pc,1.00,case
-174,2129P,4800047847288,"2129P Zonrox Multi Clean Floral Blast Scent 900ml x1",434,24,pc,2.00,case
-175,Z1034P,9556111996035,"Z1034P Lysol Disinfectant Multi-Action Cleaner Lemon 900ml x1",311,24,pc,1.00,case
-176,MH86P,4801234071523,"MH86P Mr. Muscle All Purpose Cleaner Fresh Lemon 1L x1",331,12,pc,3.00,case
-177,FE017P,FE017P,"FE017P Muriatic Acid Gallon x1",296,4,pc,6.00,case
-178,P0082P,4801234074012,"P0082P Mr. Muscle Stick on Toilet Bowl Cleaning Strip Citrus Scent 10g x3",679,24,pc,3.00,case
-179,2076P,4806029930405,"2076P Swakto Concentrated Fabric Conditioner Antibac Gallon x1",173,4,pc,4.00,case
-180,MH119P,###,"MH119P Mr. Muscle Glass & Multi-Surface Cleaner Primary Fresh Fragrance 500mL x1",315,24,pc,1.00,case
-181,08117P,08117P,"08117P Garbage Bag XXL Green 37"" x 40"" x .001 x1",10600,100,pc,8.00,case
-182,P0568P,4800047841408,"P0568P Del Fabric Conditioner 1000mL x1",308,12,pc,2.00,case
-183,1052P,4902430468701,"1052P Joy Dishwashing Liquid Lemon Bottle 780mL x1",248,1,pc,19.00,pc
-184,1385P,4800067600542,"1385P Albatross Lemon with handle 50g x1",1187,12,pc,8.00,case
-185,2086P,###,"2086P Rubbing Alcohol Isopropyl Nature Fresh Scent with Moisturizer Gallon x1",163,4,pc,4.00,case
-186,MH05P,4801234140014,"MH05P Glade Scented GEL Lemon 180mL x1",323,24,pc,2.00,case
-187,GR134P,4800314100344,"GR134P 3M Super Shine 3.8L x1",31,4,pc,1.00,case
-188,BC210P,BC210P,"BC210P Quicktie Garbage Bag Green XL 30"" x 37"" x10",1280,20,pc,5.00,case
-189,P1580P,4902430412643,"P1580P Tide Detergent Powder 2.45kg x1",90,4,pc,2.00,case
-190,P0780P,4800047840593,"P0780P Zonrox Floral Scent Gallon x1",335,3,pc,9.00,case
-191,GR132P,GR132P,"GR132P 3M Floor Sealer 3.8L x1",33,4,pc,1.00,case
-192,SS1106P,4800888181640,"SS1106P Surf Detergent Powder Antibacterial 1.1kg x1",391,12,pc,3.00,case
-193,Y0326P,Y0326P,"Y0326P Facial Tissue Virgin Pulp 2 ply x 60 pulls 120 sheets x1",3096,72,pc,4.00,case
-194,TM0117P,###,"TM0117P Diversey Ecko Screen pack of 2 x1",35,1,pc,3.00,pc
-195,MH115P,###,"MH115P Mr. Muscle Stick on Strip Toilet Bowl Cleaning Citrus Scent 10g x1",1500,72,pc,2.00,case
-196,04895P,04895P,"04895P Glomed Gloves Disposable Small x100",115,10,pc,1.00,case
-197,SF0112P,SF0112P,"SF0112P Garbage Bag XL Clear 30"" x 37"" x .0010 x1",12300,100,pc,10.00,case
-198,08106P,08106P,"08106P Garbage Bag Small Clear 18"" x 18"" x .001 x1",28200,100,pc,22.00,case
-199,FE254P,FE254P,"FE254P Tornado Mop x1",100,1,pc,8.00,pc
-200,08112P,08112P,"08112P Garbage Bag XXL Yellow 37"" x 40"" x .001 x1",9200,100,pc,7.00,case
-201,FE025P,FE025P,"FE025P Penguin Steel Wool x16",350,25,pc,2.00,case
-202,P1298P,4806013250076,"P1298P Pine-Sol Multi-Surface Cleaner & Deodizer Lavander Clean 500mL x1",368,24,pc,2.00,case
-203,1471P,4800067600387,"1471P Albatross lemon with holder 100g x1",594,12,pc,4.00,case
-204,P0520P,P0520P,"P0520P Unbranded Brown sugar sachet 5g x100",256,50,pc,1.00,case
-205,FE038P,FE038P,"FE038P Round Rugs Colored x35",523,1,pc,40.00,pc
-206,P0771P,4800045310296,"P0771P Pride with Antibacterial 1000g x1",411,12,pc,3.00,case
-207,FE185P,FE185P,"FE185P Mop Aluminum Handle Plastic Head Red x1",98,1,pc,8.00,pc
-208,PMS0040400018,GR133P,"GR133P 3M Floor Stripper 3.8L x1",40,3,pc,1.00,case
-209,2025P,2025P,"2025P Cosab Bleach Gallon x1",366,4,pc,7.00,case
-210,TM0103P,TM0103P,"TM0103P Diversey Taski Over and Under 5L x1",14,2,pc,1.00,case
-211,FE024P,FE024P,"FE024P Glass Cleaner Gallon x1",185,4,pc,4.00,case
-212,FE166P,FE166P,"FE166P Pranela Blue with edging x1",1511,1,pc,114.00,pc
-213,2016P,2016P,"2016P Liquid Hand Soap Peppermint Gallon x1",203,4,pc,4.00,case
-214,04897P,792536229122,"04897P Glomed Surgical Latex Gloves Medium x100",102,10,pc,1.00,case
-215,1046P,9556076012672,"1046P AmbiPur Gel Relaxing Lavender 180g x1",220,1,pc,17.00,pc
-216,1537P,1537P,"1537P 3M Microfiber Cloth Red x10",46,5,pc,1.00,case
-217,1022P,4902430389570,"1022P Joy Dishwashing Liquid Lemon 20mL x1",6048,1,pc,454.00,pc
-218,SS1645P,4800045310272,"SS1645P Smart Dishwashing Paste 400g Kalamansi with canister x1",699,1,,53.00,pc
-219,P1506P,4902430504560,"P1506P Downy Mystique Fabric Conditioner Refill 1.2L x1",100,1,pc,8.00,pc
-220,GR110P,GR110P,"GR110P Unbranded Floor Pad 20"" Red x 1",60,5,pc,1.00,case
-221,1063P,4902430468756,"1063P Joy Dishwashing Liquid Antibac Refill 540mL x1",195,3,pc,5.00,case
-222,OC0101P,OC0101P,"OC0101P Power Clean Buffable Emulsion Wax Supreme Gallon x1",53,4,pc,1.00,case
-223,FE022P,FE022P,"FE022P Carpet Shampoo Gallon x1",145,4,pc,3.00,case
-224,FE041P,FE041P,"FE041P Pranela Big Blue yard x1",405,1,pc,31.00,pc
-225,0551P,4800888181572,"0551P Surf Powder Kalamansi 1kg x1",300,12,pc,2.00,case
-226,04926P,###,"04926P Glomed Latex Gloves Black Large x100",90,10,pc,1.00,case
-227,P1858P,P1858P,"P1858P Cleanaide Microfiber Yellow x1",415,1,pc,32.00,pc
-228,GR117P,21200510083,"GR117P 3M Outdoor Gloves pair x1",182,1,pc,14.00,pc
-229,1588P,4800067600764,"1588P Albatross Strawberry with Holder 100g x1",446,12,pc,3.00,case
-230,FE026P,FE026P,"FE026P Unbranded Stripping pad Black 16"" x1",60,5,pc,1.00,case
-231,0558P,4902430093767,"0558P Joy Dishwash Liquid Lemon 250mL x1",358,20,pc,2.00,case
-232,P0891P,8850175010500,"P0891P Glade Scented GEL Ocean Escape 180ml x1",188,6,pc,3.00,case
-233,P0781P,4800888189813,"P0781P Surf Detergent Powder Cherry Blossom 1.1kg x1",259,12,pc,2.00,case
-234,SS1125P,4800888112972,"SS1125P Domex Multi-Purpose Cleaner Classic 1L Bottle x1",161,1,pc,13.00,pc
-235,P2413P,###,"P2413P Downy Parfum Passion Refill 1.5L x1",91,1,pc,7.00,pc
-236,Z1023P,4801002062906,"Z1023P Lysol Disinfectant Spray Fresh Blossoms 340g x1",62,12,pc,1.00,case
-237,FE279P,FE279P,"FE279P Window Squeegee 15"" x1",48,1,pc,4.00,pc
-238,MH95P,4801234072216,"MH95P Mr. Muscle Total Kitchen Cleaner Primary 500ml x1",145,24,pc,1.00,case
-239,1048P,4987176156167,"1048P Joy Dishwashing Liquid Antibac Refill 1Liter x1",93,1,pc,7.00,pc
-240,GR116P,GR116P,"GR116P Unbranded Polishing Pad White 16"" x1",74,5,pc,2.00,case
-241,2083P,2083P,"2083P Liquid Detergent Fresh Petal Gallon x1",158,4,pc,3.00,case
-242,04977P,04977P,"04977P Urinal Screen with Enzyme for Male Urinals Lemon x1",107,1,pc,9.00,pc
-243,FE189P,FE189P,"FE189P Unbranded Floor Pad Black 20"" x1",48,5,pc,1.00,case
-244,FE243P,FE243P,"FE243P Mop Head Rayon Heavy Duty No. 500 x1",306,1,pc,23.00,pc
-245,SS1185P,4800067601860,"SS1185P Gleam Liquid Sosa 1L x1",127,12,pc,1.00,case
-246,08119P,08119P,"08119P Garbage Bag Medium Yellow 22"" x 24"" x .001 x1",11800,100,pc,9.00,case
-247,BC138P,BC138P,"BC138P Non-Bio Ziptie Garbage Bag Black Large 26"" x 32"" x10",1000,50,pc,2.00,case
-248,2106P,4800047820182,"2106P Green Cross Alcohol 70% w/ Moisturizer 500mL x1",287,24,pc,1.00,case
-249,BC187P,BC187P,"BC187P Biodegradable Ziptie Garbage Bag Black XXL 37"" x 40"" x .001 x10",440,20,pc,2.00,case
-250,04978P,04978P,"04978P Urinal Screen with Enzyme for Male Urinals Strawberry x1",92,1,pc,7.00,pc
-251,1538P,1538P,"1538P 3M Microfiber Cloth Yellow x10",32,5,pc,1.00,case
-252,GR105P,GR105P,"GR105P 3M Stripping Pad 16"" Black x1",38,5,pc,1.00,case
-253,FE019P,FE019P,"FE019P Plastic Dipper or tabo x1",1237,1,pc,93.00,pc
-254,P1859P,P1859P,"P1859P Cleanaide Microfiber Green x1",316,50,pc,1.00,case
-255,P1263P,4806501705040,"P1263P Champion Supra Clean Detergent Powder 800g x1",223,1,pc,17.00,pc
-256,FE133P,FE133P,"FE133P Generic Mop Squeezer Side Press x1",7,1,pc,1.00,pc
-257,1576P,4800067600405,"1576P Albatross Sampaguita Refill 100g x1",391,12,pc,3.00,case
-258,P2393P,###,"P2393P Downy Premium Parfum Passion 750mL x1",139,8,pc,2.00,case
-259,MH127P,8850175020479,"MH127P Glade Scented Gel Sakura & Waterlily 180g x1",133,12,,1.00,case
-260,P0795P,4800067601846,"P0795P Gleam Liquid Sosa 500mL x1",125,24,pc,1.00,case
-261,2107P,4800047840265,"2107P Zonrox Bleach Lemon Scent 1L x1",504,24,pc,2.00,case
-262,SS1169P,4800047841422,"SS1169P Del Fabric Softener Lavender Breeze 1000mL x1",139,12,pc,1.00,case
-263,FE157P,FE157P,"FE157P Plastic Stirrer x1000",111,1,pc,9.00,pc
-264,FE211P,FE211P,"FE211P Car Shampoo Gallon x1",91,4,pc,2.00,case
-265,GR127P,01593100630589451024G0337391,"GR127P Scotch-Brite™ 96 GP Scouring Pad 6"" x 9"" x1",488,50,pc,1.00,case
-266,Y0321P,Y0321P,"Y0321P Kitchen Towel 2 ply x 85 170 sheets x1",552,24,pc,2.00,case
-267,SF0107P,SF0107P,"SF0107P Garbage Bag Small Clear 18"" x 18"" x .001 x1",13100,100,pc,10.00,case
-268,TM0104P,TM0104P,"TM0104P Diversey Snapback Floor Restorer 5L x1",8,1,pc,1.00,pc
-269,FE298P,FE298P,"FE298P Push Brush with Plastic Handle x1",138,1,pc,11.00,pc
-270,GR138P,4800314009692,"GR138P 3M Scotch Brite Scrub Sponge Mini 75mm x 75mm x 30mm x1",576,1,pc,44.00,pc
-271,1644P,1644P,"1644P Broom Stick x1",746,1,pc,56.00,pc
-272,FE052P,FE052P,"FE052P Liquid Declogger Gallon x1",68,4,pc,2.00,case
-273,VA001P,4806013230016,"VA001P Glad Cling Wrap 30m x 30cm x1",142,24,pc,1.00,case
-274,FE088P,FE088P,"FE088P Degreaser Gallon x1",98,1,pc,8.00,pc
-275,P1665P,4800888112965,"P1665P Domex Multi-Purpose Cleaner Classic 500ml Blue Bottle x1",192,24,pc,1.00,case
-276,FE153P,FE153P,"FE153P Toilet Brush with handle and case x1",282,1,pc,22.00,pc
-277,GR109P,GR109P,"GR109P 3M Buffing Pad Red 16"" x1",44,5,pc,1.00,case
-278,FE144P,FE144P,"FE144P Push Brush 12"" with wood handle x1",125,1,pc,10.00,pc
-279,FE032P,FE032P,"FE032P Unbranded Buffer Pad Red 16"" x1",46,5,pc,1.00,case
-280,FE121P,FE121P,"FE121P Paint Brush 1 1/2 x1",428,1,pc,33.00,pc
-281,MH111P,8850175011408,"MH111P Glade Automatic Spray Ocean Escape Primary 175g x1",40,4,pc,1.00,case
-282,GR136P,4800314032102,"GR136P Scotch Brite Broom Walis Tibay x1",53,1,pc,4.00,pc
-283,FE035P,FE035P,"FE035P Spatula #3 (Putty Knife) x1",578,1,pc,44.00,pc
-284,SS1150P,4902430622080,"SS1150P Downy Premium Parfum Passion 600mL Refill x1",105,1,pc,8.00,pc
-285,P1860P,P1860P,"P1860P Cleanaide Microfiber Blue x1",246,5,pc,4.00,case
-286,TM0112P,###,"TM0112P Diversey Shine Up 5L x1",11,1,pc,1.00,pc
-287,PP0001P,PP0001P,"PP0001P Bonita Quarter Fold Table Napkins Virgin Pulp 1 ply 350 sheets x1",221,8,pc,3.00,case
-288,P0687P,###,"P0687P Domex Toilet Bowl Cleaner Ultra Thick 500mL x1",157,1,pc,12.00,pc
-289,2074P,2074P,"2074P Liquid Disinfectant Concentrated Gallon x1",22,4,pc,1.00,case
-290,08121P,08121P,"08121P Garbage Bag Medium Green 22"" x 24"" x .001 x1",8300,100,pc,7.00,case
-291,P1543P,4902430304726,"P1543P Ambi Pur Air Effects Freshener Blossom & Breeze Spray 275g x1",66,1,pc,5.00,pc
-292,MH133P,9555222606758,"MH133P Mr. Muscle Fresh Discs Starter Citrus 38g x1",105,1,pc,8.00,pc
-293,P1097P,4800047820427,"P1097P Green Cross Isopropyl 70% with Pump 1000mL x1",75,6,pc,1.00,case
-294,FE199P,FE199P,"FE199P Pranela Big Pink yard x1",206,1,pc,16.00,pc
-295,MH09P,4801234072612,"MH09P Mr. Muscle Glass Cleaner Primary 500mL x1",97,12,pc,1.00,case
-296,SS0271P,4800888181596,"SS0271P Surf Powder Soap Sunrise Fresh 1.1 kg x1",140,12,pc,1.00,case
-297,MH54P,4801234100018,"MH54P Pledge Metal Polish 150ml x1",79,24,pc,1.00,case
-298,P0364P,4801234071981,"P0364P Mr. Muscle All Purpose Cleaner Lavender 500mL x1",154,24,pc,1.00,case
-299,Z1003P,4801002457818,"Z1003P Lysol Disinfectant Spray Crisp Berry 510g x1",26,12,pc,1.00,case
-300,FE135P,6950266583769,"FE135P Chamois with case x1",218,1,pc,17.00,pc
-301,MH48P,4801234072629,"MH48P Mr. Muscle Glass and Multi Surface Cleaner Refill 500ml x1",145,24,pc,1.00,case
-302,FE128P,FE128P,"FE128P Rectangular Cotton Doormat 2' x 3' x1",294,1,pc,23.00,pc
-303,PR0101P,###,"PR0101P Primesol Disinfectant Gallon x1",50,4,pc,1.00,case
-304,P2309P,###,"P2309P Tide Perfect Clean Downy Garden Bloom 1220g x1",51,4,pc,1.00,case
-305,TM0110P,###,"TM0110P Lysol All-in One Disinfectant Concentrate Pine Scent 1Liter x1",40,1,pc,3.00,pc
-306,FE126P,FE126P,"FE126P Generic Carpet Stain Remover Gallon x1",64,4,pc,2.00,case
-307,GR119P,GR119P,"GR119P Unbranded Floor Pad 20"" White x",24,5,pc,1.00,case
-308,FE205P,FE205P,"FE205P Pranela Big Yellow yard x1",175,1,pc,14.00,pc
-309,FE164P,FE164P,"FE164P Pranela Pink with edging x1",550,1,pc,42.00,pc
-310,OC0104P,OC0104P,"OC0104P Power Clean Protective Sealer - Supreme Gallon x1",13,4,pc,1.00,case
-311,GR118P,GR118P,"GR118P Unbranded Floor Pad 20"" Green x 1",23,5,pc,1.00,case
-312,FE093P,FE093P,"FE093P Mop Head Cotton 500g x1",151,1,pc,12.00,pc
-313,FE068P,FE068P,"FE068P Mop Handle Wood Roscas x1",88,1,pc,7.00,pc
-314,08113P,08113P,"08113P Garbage Bag Small Yellow 18"" x 18"" x .001 x1",7500,100,pc,6.00,case
-315,SS0059P,4800067601747,"SS0059P Gleam Muriatic Acid 500mL x1",221,24,pc,1.00,case
-316,TM0116P,###,"TM0116P Diversey Suma Calc 5L x1",10,1,pc,1.00,pc
-317,FE141P,FE141P,"FE141P Doormat Oval x1",219,1,pc,17.00,pc
-318,0498P,0498P,"0498P Plastic Broom with Plastic Dustpan Set x1",74,1,pc,6.00,pc
-319,FE155P,FE155P,"FE155P Toilet Pump Big x1",179,1,pc,14.00,pc
-320,MH117P,4801234165512,"MH117P Mr. Muscle Toilet Bowl Cleaner Citrus Scent 500mL x1",106,1,pc,8.00,pc
-321,0346P,###,"0346P Interfolded Paper Towel Virgin Pulp 175 pulls 30gsm x1",300,30,pc,1.00,case
-322,GR111P,GR111P,"GR111P 3M Microfiber Cloth Purple x10",15,5,pc,1.00,case
-323,FE090P,FE090P,"FE090P Wax Stripper Gallon x1",42,1,pc,4.00,pc
-324,FE059P,FE059P,"FE059P Disposable Plastic Gloves x100",205,1,pc,16.00,pc
-325,P2148P,###,"P2148P Downy Garden Bloom Pouch 660mL x1",64,8,,1.00,case
-326,Y0349P,Y0349P,"Y0349P Hand Roll Tissue MG 1ply 200m x1",60,12,pc,1.00,case
-327,P2084P,###,"P2084P Tide Detergent Powder 1160g x1",36,1,,3.00,pc
-328,MH135P,###,"MH135P Glade Scented Gel Morning Freshness 180g x1",60,12,pc,1.00,case
-329,BC145P,BC145P,"BC145P Non-Bio Ziptie Garbage Bag Natural Medium 22"" x 24"" x20",400,50,pc,1.00,case
-330,FE249P,FE249P,"FE249P Rubber Gloves Makapal XL pair x1",138,1,pc,11.00,pc
-331,MH71P,4801234074029,"MH71P Mr. Muscle Stick on Toilet Bowl Cleaning Strip Lavender Scent 10g x3",129,24,pc,1.00,case
-332,08158P,08158P,"08158P Garbage Bag XXL Black 37'' x 40"" x 0.0015 x1",1300,100,pc,1.00,case
-333,1551P,4800067600283,"1551P Albatross Sampaguita Refill 50g x1",227,12,pc,2.00,case
-334,FE165P,FE165P,"FE165P Pranela Yellow with edging x1",305,1,pc,23.00,pc
-335,FE252P,FE252P,"FE252P Baby Paper Plates Silver x25",249,20,pc,1.00,case
-336,BC153P,BC153P,"BC153P Biodegradable Ziptie GB Natural Large 26"" x 32"" x10",200,20,pc,1.00,case
-337,FE020P,FE020P,"FE020P Toilet Pump Small x1",124,1,pc,10.00,pc
-338,FE226P,FE226P,"FE226P Sulit Fork White x25",231,1,pc,18.00,pc
-339,04925P,04925P,"04925P Magic Mop x1",30,1,pc,3.00,pc
-340,Z1013P,9556111408064,"Z1013P Lysol D. Spray Crisp Linen 170g x1",27,12,pc,1.00,case
-341,OC0108P,###,"OC0108P Power Clean Solution Multi Purpose Cleaner Gallon x1",28,4,pc,1.00,case
-342,2028P,2028P,"2028P Body Wash Garden of Lavander Gallon x1",22,4,pc,1.00,case
-343,P1903P,###,"P1903P Surf Detergent Powder Kalamansi 2.2kg x1",26,4,pc,1.00,case
-344,FE177P,FE177P,"FE177P Air Freshener Lemon Scent Gallon x1",40,4,pc,1.00,case
-345,P1818P,4902430627528,"P1818P Downy Antibac Fabric Conditioner Refill 690mL x1",40,8,pc,1.00,case
-346,SS1705P,###,"SS1705P Pride Powder Washing Machine (Light Blue) 40g x1",1500,1,pc,113.00,pc
-347,08140P,08140P,"08140P Garbage Bag XXL Clear 37"" x 40"" x .0015 x1",900,100,pc,1.00,case
-348,04981P,04981P,"04981P Heavy Duty Plastic Broom with Plastic Dustpan Set x1",13,1,pc,1.00,pc
-349,FE054P,FE054P,"FE054P Plastic Laundry Brush x1",193,1,pc,15.00,pc
-350,P1843P,###,"P1843P Joy Dishwashing Liquid Kalamansi Refill 540mL x1",42,3,pc,2.00,case
-351,P2383P,###,"P2383P Albatross Apple with Holder 100g x1",94,12,pc,1.00,case
-352,0165P,0165P,"0165P Twin Flying Horse Disposable Plastic Cups 8oz x50",240,20,pc,1.00,case
-353,FE273P,FE273P,"FE273P Generic Polisher Nylon Brush 16"" x1",8,1,pc,1.00,pc
-354,FE234P,FE234P,"FE234P Sulit Spoon x25",205,100,pc,1.00,case
-355,08122P,08122P,"08122P Garbage Bag Small Green PE 18"" x 18"" x .001 x1",4000,100,pc,3.00,case
-356,SS1440P,###,"SS1440P Surf Detergent Powder Blossom Fresh 1.1kg x1",51,12,pc,1.00,case
-357,FE043P,FE043P,"FE043P Feather Duster x1",79,1,pc,6.00,pc
-358,P1857P,p1857p,"P1857P Cleanaide Microfiber Red x1",70,50,pc,1.00,case
-359,SS0084P,4800045310159,"SS0084P Smart Dishwashing Paste 400g with canister x1",116,1,pc,9.00,pc
-360,FE167P,FE167P,"FE167P Laundry Brush Fish Net x1",187,1,pc,15.00,pc
-361,P2004P,4806501709178,"P2004P Calla Detergent Powder Floral Scent 1.6kg x1",26,1,,2.00,pc
-362,GR137P,GR137P,"GR137P 3M Scotch Brite Scrub Sponge with Foam Regular 150mm x 95mm x1",69,1,pc,6.00,pc
-363,FE281P,FE281P,"FE281P Megatop Plastic Cups 8 oz x50",204,20,pc,1.00,case
-364,GR115P,GR115P,"GR115P Unbranded Polishing Pad Green 16"" x1",14,5,pc,1.00,case
-365,OC0106P,###,"OC0106P Power Clean Spray Buff Solution Supreme Gallon x1",7,4,pc,1.00,case
-366,OC0109P,###,"OC0109P Power Clean Toilet Bowl Cleaner Gallon 3.4L x1",20,4,pc,1.00,case
-367,SS0985P,480067600740,"SS0985P Albatross Sampaguita 100g with holder x1",75,12,pc,1.00,case
-368,FE203P,FE203P,"FE203P Rubber Gloves Super Thick Black pair x1",55,1,pc,5.00,pc
-369,2123P,4800047840258,"2123P Zonrox Bleach Fresh Scent Gallon x1",33,3,pc,1.00,case
-370,GR106P,GR106P,"GR106P 3M Scrubbing Pad 16"" Blue x1",9,5,pc,1.00,case
-371,MH73P,4801234014728,"MH73P Mr. Muscle Glass & Multi-Surface Cleaner Primary - Lemon Lime 500ml x1",30,1,pc,3.00,pc
-372,08120P,08120P,"08120P Garbage Bag Large Yellow 26"" x 32"" .001 x1",1400,100,pc,2.00,case
-373,MH77P,###,"MH77P Mr. Muscle Toilet Bowl Cleaner 500ml Citrus Scent x1",42,24,pc,1.00,case
-374,2062P,4809013751796,"2062P Rubbing Alcohol 70% Isopropyl Alcohol with moisturizer Fresh Petal Scent 500ml pump bottle with front sticker x1",48,4,pc,1.00,case
-375,FE303P,###,"FE303P Rubber Gloves Makapal Small Pair x1",63,1,pc,5.00,pc
-376,FE275P,FE275P,"FE275P Broom Stick with Handle x1",31,1,pc,3.00,pc
-377,P1553P,4902430867306,"P1553P Joy Dishwashing Liquid Kalamansi Bottle 475ml x1",30,1,pc,3.00,pc
-378,P2017P,###,"P2017P Champion Fabric Conditioner 1L Pouch x1",24,1,pc,2.00,pc
-379,SS1294P,###,"SS1294P Pride with Fabric Conditioner Detergent Sakura Blossom 2kg x1",21,1,pc,2.00,pc
-380,0389P,4800147200099,"0389P Zim Scouring Pad With Sponge Small 75x100x30mm x1",153,1,pc,12.00,pc
-381,FE160P,FE160P,"FE160P Dust Mop Head 36"" x1",7,1,pc,1.00,pc
-382,MH87P,4801234071622,"MH87P Mr. Muscle All Purpose Cleaner Wild Lavender 1L x1",23,12,pc,1.00,case
-383,GR139P,GR139P,"GR139P 3M Microfiber Cloth White x1",50,50,pc,1.00,case
-384,BC162P,BC162P,"BC162P Ziptie Garbage Bag Black XL 30"" x 37"" x .0010 x10",100,100,pc,1.00,case
-385,SF0117P,SF0117P,"SF0117P Garbage Bag XL Yellow 30"" x 37"" x .001 x1",1000,100,pc,1.00,case
-386,0380P,4800147210654,"0380P Zim 2N1 Scrubbing sponge Jr x1",166,1,pc,13.00,pc
-387,SF0102P,SF0102P,"SF0102P Garbage Bag XXL Green 37"" x 40"" x .001 x1",700,100,pc,1.00,case
-388,08134P,08134P,"08134P Garbage Bag Large Green 26"" x32"" x .001 x1",1100,100,pc,1.00,case
-389,MH25P,###,"MH25P Baygon Multi-Insect Killer Kerosene Based 500mL x1",11,12,pc,1.00,case
-390,P1667P,###,"P1667P Del Fabric Conditioner Gentle Protect Refill 1L x1",18,12,pc,1.00,case
-391,0477P,0477P,"0477P Mop Handle Heavy Duty Rubbermaid Aluminum x1",2,1,pc,1.00,pc
-392,FE145P,FE145P,"FE145P Air Freshener Strawberry Scent Gallon x1",19,4,pc,1.00,case
-393,MH110P,4801234056827,"MH110P Pledge Furniture Cleaner Rain Shower 330mL x1",10,24,pc,1.00,case
-394,0350P,0350P,"0350P Bathroom Tissue Roll Virgin Pulp 3ply 600sheets x1",192,48,pc,1.00,case
-395,P1299P,4806013250052,"P1299P Pine-Sol Multi-Surface Cleaner & Deodizer Lemon Fresh 500mL x1",23,24,pc,1.00,case
-396,P2781P,###,"P2781P Albatross Apple Refill 100g x1",45,12,x1,1.00,case
-397,FE046P,FE046P,"FE046P Knitted Gloves pair x1",100,1,pc,8.00,pc
-398,FE029P,FE029P,"FE029P Ceiling Broom x1",32,1,pc,3.00,pc
-399,2085P,2085P,"2085P Swakto Fabric Conditioner Duo with Antibacterial 40mL x1",432,144,pc,1.00,case
-400,FE007P,FE007P,"FE007P Hand Brush Big Heavy Duty x1",33,1,pc,3.00,pc
-401,FE244P,FE244P,"FE244P Pranela Green with edging x1",81,1,pc,7.00,pc
-402,FE287P,FE287P,"FE287P Generic Furniture Polish Gallon x1",4,1,pc,1.00,pc
-403,2128P,4800047841736,"2128P Zonrox Bleach Plus 900ml x1",32,24,pc,1.00,case
-404,2114P,4800047840029,"2114P Zonrox Bleach Original 500mL",63,36,pc,1.00,case
-405,0153P,0153P,"0153P Paper Plate Laminated Paper Plate x25",58,20,pc,1.00,case
-406,Y0310P,Y0310P,"Y0310P Bonita Quarter fold Table Napkin Virgin Pulp 1 ply 350 sheets x1",24,8,pc,1.00,case
-407,FE241P,FE241P,"FE241P Unbranded Polishing Pad Blue 16"" x1",5,5,pc,1.00,case
-408,04924P,04924P,"04924P Dustpan Stainless x1",12,1,pc,1.00,pc
-409,GR121P,GR121P,"GR121P 3M Buffer Pad Red 20"" x1",2,5,pc,1.00,case
-410,2114C,24800047840023,"2114C Zonrox Bleach Original 500x36",2,36,case,1.00,case
-411,P2137P,9556076012689,"P2137P Ambi Pur Gel Fresh Refreshing Lemon 180g x1",10,1,,1.00,pc
-412,P2238P,4806501708232,"P2238P Champion Fabric Conditioner Pink Fresh 1L Pouch x1",9,1,pc,1.00,pc
-413,SS1367P,4806501707112,"SS1367P Champion Detergent Bar 370g x1",51,1,pc,4.00,pc
-414,FE161P,FE161P,"FE161P Basong Pinoy Plastic Cups 8 oz x50",60,20,pc,1.00,case
-415,FE299P,FE299P,"FE299P Plastic Hand Brush Heavy Duty x1",23,1,pc,2.00,pc
-416,FE270P,FE270P,"FE270P Carpet Shampoo Orange Scent Gallon x1",6,4,pc,1.00,case
-417,2037P,2037P,"2037P Therma Lotion Pump Bottle 500ml x1",432,1,pc,33.00,pc
-418,FE140P,FE140P,"FE140P Hand Brush (wood Handle) x1",32,1,pc,3.00,pc
-419,P1891P,###,"P1891P Champion Bar with Fabric Conditioner 370g x1",33,1,pc,3.00,pc
+"Serial Number",SKU,EAN,Description,"Sold Qty",Package,"Package Unit","Target Quantity","Main Unit",Category
+1,Q0104P,Q0104P,"Q0104P Pingcon JRT 250m MG x1",158209,12,rolls,989.00,case,non_food
+2,1405P,762112000000,"1405P Starbucks Whole bean House Blend 250g x1",,,,,pc,food
+3,0340P,0340P,"0340P Jumbo Roll Tissue MG 200m individually wrap 80mm x1",100120,12,pc,626.00,case,non_food
+4,KS004P,,"KS004P Interfolded Paper Towel Virgin Pulp 1 ply 175 pulls x1",192211,30,pc,481.00,case,non_food
+5,2053P,4809013751802,"2053P Pingcon Rubbing Alcohol Isopropyl 70% Alcohol with Moisturizer Gallon (3.78Liters) x1",15545,4,pc,292.00,case,non_food
+6,Y0316P,Y0316P,"Y0316P Bathroom Tissue,white, 3 ply, Soft Texture, 100% virgin pulp width of sheet: 10 11 cm, diameter of roll:10 12cm, minimum 200 sheet per roll, biodegradable x1",246720,48,pc,386.00,case,non_food
+7,P2257P,4800580000000,"P2257P Cowbell Condensed Milk 374g x1",,,,,pc,food
+8,MH62P,4801234107727,"MH62P Baygon Multi Insect Killer Odorless 500ml x1",8173,12,pc,52.00,case,non_food
+9,Q0101P,Q0101P,"Q0101P Pingcon JRT 200m Premium MG x1",43620,12,pc,273.00,case,non_food
+10,B23SS0257P,4805360000000,"B23SS0257P Magnolia Quezo De Bola 500g x1",,,,,pc,food
+11,0192P,0192P,"0192P Paper Cups White 8oz x50",43700,20,pc,164.00,case,non_food
+12,0955P,4800250000000,"0955P CDO Karne Norte 150g x1",,,,,pc,food
+13,Z1015P,9556111408088,"Z1015P Lysol Disinfectant Spray Crisp Linen 510g x1",4617,12,pc,29.00,case,non_food
+14,SS1402P,4800360000000,"SS1402P Nestle Coffeemate Creamer 400g x1",,,,,pc,food
+15,P0422P,4808890000000,"P0422P Purefoods Jamon de Bola 1kg x1",,,,,pc,food
+16,SS1561P,4800110000000,"SS1561P Royal Filipino Celebration 1.6kg (Pasta 700g + Spaghetti Sauce 900g) x1",,,,,pc,food
+17,0896P,4800040000000,"0896P Fibisco Chocolate Chip Cookies 80g x1",,,,,pc,food
+18,Y0300P,Y0300P,"Y0300P Bonita Suprema 300 Bathroom Tissue Roll 100% Virgin Pulp 2 ply x 150 300 sheets 100mm x 100mm x1",248500,48,pc,389.00,case,non_food
+19,P0615P,41800716005,"P0615P Welch's Sparkling Red Wine 750mL x1",,,,,pc,food
+20,0345P,0345P,"0345P Interleave Virgin Pulp 2ply x 200 pulls 400 sheets x1",97536,48,pc,153.00,case,non_food
+21,0201P,4809010000000,"0201P Siete Baracos Coffee Blackgold 454g x1",,,,,pc,food
+23,P0137P,748485000000,"P0137P Angel Kremdensada 410ml x1",,,,,pc,food
+25,P1355P,4801980000000,"P1355P Coke Regular 1.5L x1",,,,,pc,food
+26,P0819P,4800250000000,"CDO Beef Loaf 150g x1",,,,,pc,food
+27,P2469P,4808890000000,"P2469P Purefoods Luncheon Meat 340g x1",,,,,pc,food
+28,BC167P,BC167P,"BC167P Ziptie Garbage Bag Clear XL 30"" x 37"" x10",32920,20,pc,124.00,case,non_food
+29,SS1237P,4801980000000,"SS1237P Coke Regular in can 320mL x1",,,,,pc,food
+30,KS001P,,"KS001P Bathroom Tissue Roll Virgin Pulp 3 ply 450sheets x1",118752,48,pc,186.00,case,non_food
+31,P2153P,P2153P,"P2153P Aromatic Solution Green Tea 500mL x1",,,,,pc,food
+32,P0644P,8000500000000,"P0644P Ferrero Rocher Chocolate T24 300g x1",,,,,pc,food
+33,2069P,2069P,"2069P Rubbing Alcohol 70% Ethyl Apple Blast Scent Gallon x1",2396,4,pc,45.00,case,non_food
+34,SS1235P,4801670000000,"SS1235P UFC Swak'to Pack (Spaghetti Pasta 350g + Sweet Filipino with Parmesan Cheese Sauce 500g) x1",,,,,pc,food
+35,P1335P,4806530000000,"P1335P HaoHao Chili sauce 500g",,,,,pc,food
+36,2042P,2042P,"2042P Diswashing Liquid Cleaner Lime Gallon x1",7107,4,pc,134.00,case,non_food
+37,1664P,1664P,"1664P Bonita Jumbo Roll Tissue Class A Virgin Pulp 2 ply 250 meters x1",12144,12,pc,76.00,case,non_food
+38,2102P,4800047840067,"2102P Zonrox Bleach Original Scent gallon x1",7725,3,pc,194.00,case,non_food
+39,SS1240P,4801980000000,"SS1240P Coke Zero in can 320mL x1",,,,,pc,food
+40,MH01P,4801234056728,"MH01P Pledge Lemon 330mL x1",2996,24,pc,10.00,case,non_food
+42,0344P,0344P,"0344P Bathroom Tissue Roll Mixed Grade 2-ply x 150 300 sheets 100mm x 100mm x1",132864,48,pc,208.00,case,non_food
+43,P0319P,4800360000000,"P0319P Milo Active Refil 1kg x1",,,,,pc,food
+45,MH28P,4801234107826,"MH28P Baygon Protector Multi Insect Killer Citrus Scent 500mL x1",2354,12,pc,15.00,case,non_food
+46,SS1693P,4806510000000,"SS1693P Novellino Sparkling Red Grape Juice 750mL x1",,,,,pc,food
+47,0348P,0348P,"0348P Unbranded Interfolded Paper Towel Virgin Pulp 175 pulls 30gsm x1",25080,30,pc,63.00,case,non_food
+48,0494P,0494P,"0494P Ecobag Red Medium x1",,,,,pc,food
+49,P0829P,4808890000000,"P0829P Purefoods Star Corned Beef 150g x1",,,,,pc,food
+50,SS1682P,748485000000,"SS1682P Angel All Purpose Creamer 250mL x1",,,,,pc,food
+51,SS1372P,4800020000000,"SS1372P Del Monte Four Season Sweetened Juice 220mL x1",,,,,pc,food
+52,SS1375P,4800020000000,"SS1375P Del Monte Pineapple Juice 220mL x1",,,,,pc,food
+53,Z1018P,9556111408279,"Z1018P Lysol D. Spray Early Morning Breeze 510g x1",1426,12,pc,9.00,case,non_food
+54,SS1239P,4801980000000,"SS1239P Sprite in can 320mL x1",,,,,pc,food
+55,0200P,4809010000000,"0200P Siete Baracos Coffee All Purpose Grind 454g x1",,,,,pc,food
+56,08105P,4809013751574,"08105P Garbage Bag XXL Black 37 x 40 x .001 x1",154600,100,pc,116.00,case,non_food
+57,SS1319P,4805360000000,"SS1319P Magnolia Daily Quezo 160g x1",,,,,pc,food
+58,Q0108P,Q0108P,"Q0108P Hand Roll Tissue VP 200m x1",4837,12,pc,31.00,case,non_food
+60,SS1373P,4800020000000,"SS1373P Del Monte Mango Sweetened Juice 220mL x1",,,,,pc,food
+61,0922P,4800020000000,"0922P Del Monte Fiesta Fruit Cocktail 432g x1",,,,,pc,food
+62,SS1737P,4800190000000,"SS1737P Pillows Chocolate Crackers 150g x1",,,,,pc,food
+63,P1250P,4800060000000,"Philips Vienna Sausage 70g x1",,,,,pc,food
+64,SS0911P,4800500000000,"SS0911P Hermano Brown Sugar 1kg x1",,,,,pc,food
+65,GR101P,GR101P,"GR101P 3M Scotch Brite Scrub Sponge with foam 100mm x 75mm x 30mm x1",16827,24,pc,53.00,case,non_food
+66,1430P,1430P,"1430P Storage Box 7L",,,,,pc,food
+67,P0188P,4808890000000,"P0188P Purefoods Corned Beef 150g x1",,,,,pc,food
+68,1429P,1429P,"1429P Storage Box 12L",,,,,pc,food
+69,SF0101P,SF0101P,"SF0101P Garbage Bag XXL Black 37"" x 40"" x .001 x1",137800,100,pc,104.00,case,non_food
+70,SS1238P,4801980000000,"SS1238P Coke Light in can 320mL x1",,,,,pc,food
+71,MH07P,4801234061517,"MH07P Glade Air Freshener Lemon 320mL x1",2926,12,pc,19.00,case,non_food
+72,P0126P,4800888181572,"P0126P Surf Detergent Powder Kalamansi 1.1kg x1",5381,12,pc,34.00,case,non_food
+73,SS1241P,4801980000000,"SS1241P Royal Tru-Orange in can 320mL x1",,,,,pc,food
+74,08503P,4800500000000,"08503P Hermano Refined Sugar 1 kg x1",,,,,pc,food
+75,P0129P,4800250000000,"P0129P Highlands Corned Beef 150g x1",,,,,pc,food
+76,P1587P,4800014151240,"P1587P Summit Still Bottled Water 330ml x1",15060,12,pc,95.00,case,non_food
+77,P0912P,37600130783,"P0912P Spam Luncheon Meat Original 12oz x1",,,,,pc,food
+78,08109P,08109P,"08109P Garbage Bag XXL Clear 37"" x 40"" x .001 x1",115200,100,pc,87.00,case,non_food
+79,SS0136P,4800040000000,"SS0136P Fibisco Chocolate Mallows 100g x6",,,,,pc,food
+80,SS0120P,4893050000000,"SS0120P Chips Ahoy Original Blue 38g x1",,,,,pc,food
+81,SF0105P,SF0105P,"SF0105P Garbage Bag XXL Clear 37"" x 40"" x .001 x1",118300,100,pc,89.00,case,non_food
+82,SS1007P,4800580000000,"SS1007P Alaska Condensada 300mL x1",,,,,pc,food
+83,P2276P,8801120000000,"P2276P Lotte Foods Luncheon Meat Chicken 340g x1",,,,,pc,food
+84,Q0111P,Q0111P,"Q0111P Pingcon JRT 180m MG x1",9840,12,pc,62.00,case,non_food
+86,P0220P,6901670000000,"P0220P Chips Ahoy Cookies 85.5g x1",,,,,pc,food
+87,Z1024P,4801002062883,"Z1024P Lysol Disinfectant Spray Fresh Blossoms 510g x1",936,12,pc,6.00,case,non_food
+88,FE131P,FE131P,"FE131P Mop Aluminum Handle Plastic Head Blue x1",1214,1,pc,92.00,pc,non_food
+89,P0656P,4800010000000,"P0656P Delimondo Ranch Style Corned Beef 260g x1",,,,,pc,food
+90,04824P,04824P,"04824P Basket Type D Large (with Varnish)",,,,,pc,food
+91,0342P,0342P,"0342P Hand Roll Tissue VP 180m x1",2418,6,pc,31.00,case,non_food
+92,P1054P,96619107971,"P1054P Kirkland Signature All Chocolate Bag Variety Pack 2.55kg x1",,,,,pc,food
+93,MH16P,4801234108229,"MH16P Baygon Multi Insect Killer Waterbased 500mL x1",1239,12,pc,8.00,case,non_food
+94,P1257P,P1257P,"P1257P Box x1",,,,,pc,food
+95,P2096P,4800090000000,"P2096P Choco Mucho Chocolate 30g x1",,,,,pc,food
+96,P0553P,80135906,"P0553P Ferrero Rocher T5 Box 62.50g x1",,,,,pc,food
+97,MH96P,4801234072124,"MH96P Mr. Muscle Mold And Mildew Refill 500ml x1",2622,12,pc,17.00,case,non_food
+98,1034P,4902430304733,"1034P Ambi Pur Air Freshener LV & C 275g x1",1673,6,pc,21.00,case,non_food
+99,SS1535P,4800040000000,"SS1535P Ricoa Flat Tops Chocolate 10's x1",,,,,pc,food
+100,BC170P,BC170P,"BC170P Non-Bio Ziptie Garbage Bag Natural XXL 37' x 40' x10",7480,20,pc,29.00,case,non_food
+103,Y0350P,Y0350P,"Y0350P Kitchen Towel Virgin Pulp 2 ply x 85 pulls 170 sheets x1",10128,24,pc,32.00,case,non_food
+104,0186P,0186P,"0186P Paper Cups White 6.5oz x50",9780,20,pc,37.00,case,non_food
+105,2014P,2014P,"2014P Liquid Hand Soap Strawberry with moisturizer Gallon x1",2090,4,pc,40.00,case,non_food
+106,P1846P,4800360000000,"P1846P Nescafe Coffee Classic Refill 185g x1",,,,,pc,food
+107,08504P,4800500000000,"08504P Hermano Washed Sugar 1kg x1",,,,,pc,food
+108,BC134P,BC134P,"BC134P Ziptie Garbage Bag Natural Small 18"" x 20"" x20",21800,50,pc,33.00,case,non_food
+109,MH08P,9555222601463,"MH08P Glade Air Freshener Lavender 320mL x1",1712,12,pc,11.00,case,non_food
+110,1056P,4987176160645,"1056P Joy Dishwashing Liquid Lemon Refill 540mL x1",2335,3,pc,59.00,case,non_food
+111,0166P,7914501581407,"0166P Wooden Coffee Stirrer 5"" x1000",1272,10,pc,10.00,case,non_food
+112,2022P,2022P,"2022P Liquid Hand Soap Lemon Gallon x1",2043,4,pc,39.00,case,non_food
+113,04904P,9557601130168,"04904P Great Gloves Disposable Small x100",790,10,pc,6.00,case,non_food
+114,2012P,2012P,"2012P All Purpose Liquid Cleaner Yellow Gallon x1",2170,4,pc,41.00,case,non_food
+115,1552P,4800067600108,"1552P Albatross Lemon Refill 50g x1",9438,12,pc,59.00,case,non_food
+116,GR113P,GR113P,"GR113P Microfiber Cloth Blue x1",4470,50,pc,7.00,case,non_food
+117,P2392P,,"P2392P Tide Detergent Powder Original Scent 1500kg x1",1150,4,pc,22.00,case,non_food
+119,SF0104P,SF0104P,"SF0104P Garbage Bag XL Black PE 30"" x 37"" .001 x1",89600,100,pc,68.00,case,non_food
+120,P1589P,4806513691003,"P1589P Solbac Disinfectant Spray Fresh Linen 400g x1",828,12,pc,6.00,case,non_food
+122,2043P,2043P,"2043P Liquid Hand Soap Lavender Scent Gallon x1",2006,4,pc,38.00,case,non_food
+123,SS0130P,4800010000000,"SS0130P Cream O Vanila 30g x10",,,,,pc,food
+124,Z1014P,9556111408071,"Z1014P Lysol Disinfectant Spray Crisp Linen 340g x1",673,12,pc,5.00,case,non_food
+125,0596P,4800888112996,"0596P Domex Multi-Purpose Cleaner Lemon Fresh 500mL x1",2903,24,pc,10.00,case,non_food
+126,SS0181P,4800250000000,"SS0181P CDO Kaong Red 340g x1",,,,,pc,food
+127,08111P,4809013751567,"08111P Garbage Bag XL Black PE 30 x 37 x .001 x1",83300,100,pc,63.00,case,non_food
+128,Y0351P,Y0351P,"Y0351P Jumbo Roll Tissue MG Plus 2 ply 200m x1",5748,12,pc,36.00,case,non_food
+129,SS1129P,4800250000000,"SS1129P San Marino Corned Tuna 150g x1",,,,,pc,food
+130,04903P,,"04903P Great Gloves Disposable Medium x100",782,10,pc,6.00,case,non_food
+131,P1003P,5762390000000,"P1003P Tulip Pork Luncheon Meat 12oz (340g) x1",,,,,pc,food
+133,Q0103P,Q0103P,"Q0103P Interleave Virgin Pulp 2-ply x 200 pulls 400 sheets x1",18730,60,pc,24.00,case,non_food
+134,GR107P,GR107P,"GR107P 3M Microfiber Cloth Green x1",3853,50,pc,6.00,case,non_food
+136,TM0102P,TM0102P,"TM0102P Diversey Complete Wax 5L x1",91,2,pc,4.00,case,non_food
+137,P0964P,8886470000000,"P0964P Pringles Original 107g x1",,,,,pc,food
+138,SS0976P,4807770000000,"SS0976P Monde Mamon Classic 43g x6",,,,,pc,food
+139,SS1478P,4800040000000,"SS1478P Fibisco Cookies Choco Chip 4s 36g x1",,,,,pc,food
+140,P0633P,80051671,"P0633P Nutella Choco Spread 200g x1",,,,,pc,food
+141,Q0110P,Q0110P,"Q0110P Pingcon Interfolded Paper Towel Regular 1ply 175 pulls x1",9240,30,pc,24.00,case,non_food
+142,P0413P,8886470000000,"P0413P Pringles Original 42g x1",,,,,pc,food
+143,04880P,04880P,"04880P Glomed Surgical Latex Gloves Large x100",552,10,pc,5.00,case,non_food
+144,SS0132P,9556111980720,"SS0132P Lysol Disinfectant Spray Citrus Meadows 510g x1",476,12,pc,3.00,case,non_food
+145,SS1454P,,"SS1454P Tide Detergent Powder Original Scent 1.19kg x1",902,4,pc,17.00,case,non_food
+146,P2293P,4800250000000,"P2293P Danes Quezo De Bola 500g x1",,,,,pc,food
+147,P0692P,8934868115717,"P0692P Domex Toilet Cleaner Ultra Thick Bleach 900ml x1",1531,12,pc,10.00,case,non_food
+148,P1896P,9322210000000,"P1896P Yellow Tail Joey Shiraz 21' 187mL x1",,,,,pc,food
+149,P1531P,4800020000000,"P1531P Dewberry Blueberries 'n Cream 33g x10",,,,,pc,food
+150,SF0106P,SF0106P,"SF0106P Garbage Bag Large Black 26"" x 32"" x .001 x1",81600,100,pc,62.00,case,non_food
+151,P1728P,4800040000000,"P1728P Fibisco Choco Crunchies 200g x1",,,,,pc,food
+152,08107P,08107P,"08107P Garbage Bag Medium Clear 22"" x 24"" x .001 x1",118100,100,pc,89.00,case,non_food
+153,P2369P,4987176280756,"P2369P Downy Sunrise Fresh 750mL x1",1474,8,pc,14.00,case,non_food
+154,KS005P,,"KS005P Interfolded Paper Towel Virgin Pulp 1 ply 150 pulls x1",9570,30,pc,24.00,case,non_food
+155,SS0184P,4800360000000,"SS0184P Bear Brand Powdered Milk 700g x1",,,,,pc,food
+156,FE291P,FE291P,"FE291P Diamond Sealer Finish Wax Gallon x1",268,4,pc,6.00,case,non_food
+157,SS0252P,4800020000000,"SS0252P Jack n Jill Pic-A Ultimate Cheddar Snack mix 90g x1",,,,,pc,food
+158,P1293P,8850720000000,"P1293P Lays Stax Original 105g x1",,,,,pc,food
+159,P1431P,1200110000000,"P1431P Lay's Original Potato Chips 50g x1",,,,,pc,food
+160,SS1218P,4800090000000,"SS1218P Rebisco Hansel Mocha 31g x10",,,,,pc,food
+161,P0184P,4800890000000,"P0184P Lady's Choice Mayonaise Doy Pack 220mL x1",,,,,pc,food
+162,2124P,4800047820458,"2124P Green Cross Isophrophyl Alcohol with Moisturizer 70% Gallon x1",389,3,pc,10.00,case,non_food
+163,SS1481P,4893050000000,"SS1481P Oreo Vanilla Sandwich Cookies 27.6g x9",,,,,pc,food
+164,P1432P,6924740000000,"P1432P Doritos Nacho Cheese 65g x1",,,,,pc,food
+166,2034P,2034P,"2034P Liquid Hand Soap Green Apple Scent Gallon x1",1378,4,pc,26.00,case,non_food
+167,P1765P,9556180000000,"P1765P Cadbury Dairy Milk Chocolate 62g x1",,,,,pc,food
+168,P0983P,8850175010418,"P0983P Glade Automatic Spray Lavender & Vanilla 3in1 Refill x1",703,6,pc,9.00,case,non_food
+170,P1771P,59631896391,"P1771P Lysol Disenfectant Spray Crisp Linen 539g x1",394,12,pc,3.00,case,non_food
+171,P1466P,9300620000000,"P1466P Cadbury Chocolate 30g x1",,,,,pc,food
+172,SS1201P,4800020000000,"SS1201P Dewberry Strawberries 'n Cream 33g x10",,,,,pc,food
+173,04899P,04899P,"04899P Great Gloves Disposable Large x100",414,10,pc,4.00,case,non_food
+174,FE018P,FE018P,"FE018P Toilet Bowl Cleaner Gallon x1",1008,4,pc,19.00,case,non_food
+175,P1039P,4800010000000,"P1039P Delimondo Ranch Style Corned Beef 380g x1",,,,,pc,food
+176,SS1741P,4800190000000,"SS1741P Oishi Popcorn Caramel 60g x1",,,,,pc,food
+177,FE109P,FE109P,"FE109P 3M Microfiber Cloth Yellow x1",2600,50,pc,4.00,case,non_food
+178,P0169P,4806010000000,"P0169P Doña Elena Pure Olive Oil 250mL x1",,,,,pc,food
+180,SS1063P,4800020000000,"SS1063P Great Taste Coffee Premium 50g x1",,,,,pc,food
+181,P0406P,4800580000000,"P0406P Alaska Crema 250mL x1",,,,,pc,food
+183,P0097P,7614500000000,"P0097P Toblerone 100g x1",,,,,pc,food
+185,P1508P,4902430355193,"P1508P Downy Passion Fabric Conditioner Refill 1.2L x1",559,6,pc,7.00,case,non_food
+188,P1653P,6942840000000,"P1653P Hershey's Milk Chocolate 40g x1",,,,,pc,food
+189,FW001P,FW001P,"FW001P Falcon Velocity Cartridge Filter with Sealant x1",109,1,pc,9.00,pc,non_food
+190,TM0114P,,"TM0114P Diversey Go Getter 5L x1",120,2,pc,5.00,case,non_food
+191,P0981P,4800020000000,"P0981P Del Monte Pineapple Juice 1L x1",,,,,pc,food
+192,1673P,1673P,"1673P Facial Tissue Unwrapped Premium Grade 2 ply 75 pulls white off white x1",11334,72,pc,12.00,case,non_food
+193,SS1423P,4800010000000,"SS1423P Presto Cream Peanut Butter 30g x10",,,,,pc,food
+194,SS1199P,4800010000000,"SS1199P Absolute Distilled Water 8L x1",,,,,pc,food
+195,P2378P,4902430245012,"P2378P Downy Sunrise Fresh Refill 1.5L x1",506,6,pc,7.00,case,non_food
+196,FE183P,FE183P,"FE183P Utility Belt Bag x1",989,1,pc,75.00,pc,non_food
+197,2021P,2021P,"2021P Liquid Hand Soap Baby Blossom with moisturizer gallon x1",967,4,pc,19.00,case,non_food
+198,1575P,4800067600382,"1575P Albatross Lemon Refill 100g x1",2832,12,pc,18.00,case,non_food
+199,SS1108P,4800360000000,"SS1108P Nestle Non Fat Milk 1L x1",,,,,pc,food
+200,08104P,4809013751550,"08104P Garbage Bag Large Black 26 x 32 x .001 x1",56600,100,pc,43.00,case,non_food
+201,FE033P,FE033P,"FE033P Dust Mop with handle 36"" x1",181,1,pc,14.00,pc,non_food
+202,MH31P,4801234108236,"MH31P Baygon Multi Insect Killer Waterbased 600mL x1",394,12,pc,3.00,case,non_food
+203,FE110P,FE110P,"FE110P 3M Microfiber Cloth Purple x1",2326,50,pc,4.00,case,non_food
+204,GR108P,GR108P,"GR108P 3M Microfiber Cloth Red x1",2287,50,pc,4.00,case,non_food
+205,P1629P,8935000000000,"P1629P Mentos Candy Mint 100's x1",,,,,pc,food
+206,0541P,4800020000000,"0541P Nissin Cup Noodles Seafood Mini 40g x1",,,,,pc,food
+207,FE099P,32611121126,"FE099P Window Squeegee 12"" x1",264,1,pc,20.00,pc,non_food
+208,P2132P,4808890000000,"P2132P Purefoods Sizzling Sisig 150g x1",,,,,pc,food
+209,SS0187P,4800020000000,"SS0187P Piattos Cheese Small 40g x1",,,,,pc,food
+211,SS1576P,4801980000000,"SS1576P Minute Maid Fresh Apple 180mL x1",,,,,pc,food
+212,P0086P,4800020000000,"P0086P Granny Goose Tortillos Cheese 160g x1",,,,,pc,food
+213,FREIGHT,FREIGHT,FREIGHT,,,,,pc,food
+214,0526P,750515000000,"0526P SkyFlakes Biscuit Original 25g x10",,,,,pc,food
+216,Q0105P,Q0105P,"Q0105P Intefolded Paper Towel VP 1ply 175 pulls x1",5070,30,pc,13.00,case,non_food
+217,SS0013P,4800010000000,"SS0013P Summit Spring Water 350mL x1",,,,,pc,food
+218,FE130P,FE130P,"FE130P Mop Aluminum Handle Plastic Head Yellow x1",339,1,pc,26.00,pc,non_food
+219,Z1033P,9556111996097,"Z1033P Lysol Disinfectant Multi-Action Cleaner Lavender 900ml x1",750,12,pc,5.00,case,non_food
+220,P1835P,4987176043917,"P1835P Joy Diswashing Liquid Lemon 1050mL x1",483,6,pc,7.00,case,non_food
+222,08103P,4809013751543,"08103P Garbage Bag Medium Black 22 x 24 x .001 x1",77510,100,pc,59.00,case,non_food
+223,FE048P,6943925101534,"FE048P Plastic Broom x1",1773,1,pc,133.00,pc,non_food
+224,P2248P,4800090000000,"P2248P Cupp Keyk Choco Mocha 33g x10",,,,,pc,food
+225,08108P,08108P,"08108P Garbage Bag Large Clear 26"" x 32"" x .001 x1",46700,100,pc,36.00,case,non_food
+226,P0606P,8000500000000,"P0606P Ferrero Rocher Chocolate T3 37.5g x1",,,,,pc,food
+227,BC137P,BC137P,"BC137P Ziptie Garbage Bag Natural Large 26"" x 32"" x10",5350,50,pc,9.00,case,non_food
+228,SS1425P,4800010000000,"SS1425P Presto Cream Chocolate 30g x10",,,,,pc,food
+229,GR102P,GR102P,"GR102P 3M Scotch Brite Scrubing Pad 4.5 in x 6 in x1",5248,48,pc,9.00,case,non_food
+230,MH70P,4801234140113,"MH70P Glade Scented Gel Lavender 180g x1",846,12,pc,6.00,case,non_food
+232,P1435P,8801060000000,"P1435P Nescafe Gold Coffee 200g x1",,,,,pc,food
+233,FE242P,FE242P,"FE242P Mop Head Rayon Heavy Duty No. 400 x1",1645,1,pc,124.00,pc,non_food
+234,SS0928P,4800040000000,"SS0928P Fibisco Choco Chip Cookies 200g",,,,,pc,food
+235,P0016P,4800550000000,"P0016P Chips Delight Cookies 200g x1",,,,,pc,food
+236,P1005P,4808890000000,"P1005P Purefoods Star Corned Beef 175g x1",,,,,pc,food
+237,SS1101P,,"SS1101P Downy Sunrise Fresh 1.48L Pouch x1",372,6,pc,5.00,case,non_food
+238,P1616P,4800220000000,"P1616P Leslie's Cheezy Corn Crunch 70g x1",,,,,pc,food
+241,P0308P,19200997843,"P0308P Lysol Disinfectant Spray Crisp Linen Scent 538g x1",242,12,pc,2.00,case,non_food
+242,JU0109P,JU0109P,"JU0109P Mop Head cotton 400g x1",1744,1,pc,131.00,pc,non_food
+243,SF0113P,SF0113P,"SF0113P Garbage Bag Medium Black 22"" x 24"" x .001 x1",68500,100,pc,52.00,case,non_food
+244,SS1127P,4800020000000,"SS1127P Calbee Honey Butter 60g x1",,,,,pc,food
+245,2117P,2117P,"2117P Zonrox Gallon Lemon x1",880,3,pc,22.00,case,non_food
+246,SS1738P,4800040000000,"SS1738P Ricoa Curly Tops 12's x1",,,,,pc,food
+247,P1943P,5000160000000,"P1943P Mars Mix Minis 17.64oz x1",,,,,pc,food
+249,P1544P,8720610000000,"P1544P Lipton Yellow Label Tea Bags x50",,,,,pc,food
+250,P2414P,4902430412551,"P2414P Tide Perfect Clean Original Scent 715g x1",1000,12,pc,7.00,case,non_food
+251,04821P,04821P,"04821P Basket Type A Small (with Varnish) x1",,,,,pc,food
+252,08102P,4809013751536,"08102P Garbage Bag Small Black 18 x 18 x .001 x1",95400,100,pc,72.00,case,non_food
+253,P0181P,39000086639,"P0181P Libby's Vienna Sausage 4oz (130g) x1",,,,,pc,food
+254,1584P,1584P,"1584P 3M Microfiber Cloth Blue x10",157,5,pc,3.00,case,non_food
+255,P0913P,37600240345,"P0913P Spam Luncheon Meat Less Salt 12oz x1",,,,,pc,food
+256,1642P,8888089419515,"1642P Boncafe Coffee Filter 1x4 (8 12 cups) x40",494,1,pc,38.00,pc,non_food
+257,OC0103P,OC0103P,"OC0103P Power Clean Non Buffable Wax Supreme Gallon x1",114,4,pc,3.00,case,non_food
+258,MH112P,9555222605089,"MH112P Glade Automatic Spray Ocean Escape Refill 175g x1",416,6,pc,6.00,case,non_food
+259,P1236P,716221000000,"P1236P Cebu Dried Mango 100g x1",,,,,pc,food
+260,FE266P,FE266P,"FE266P Wooden Spoon x25",1862,100,pc,2.00,case,non_food
+261,P2422P,4800360000000,"P2422P Nescafe Coffee Classic Refill 80g x1",,,,,pc,food
+262,1334P,4800020000000,"1334P Del Monte Pasta 900g + Del Monte Filipino Spaghetti Sauce 1kg x1",,,,,pc,food
+263,FE215P,FE215P,"FE215P Round rugs White MAKAPAL x35",1384,1,pc,104.00,pc,non_food
+264,SS0004P,4800190000000,"SS0004P Oishi Bread Pan Cheese & Onion Flavor 24g x1",,,,,pc,food
+266,SS0931P,9556000000000,"SS0931P Kitkat 4F 35g x1",,,,,pc,food
+267,P1268P,4800020000000,"P1268P Pic-A Cheese 180g x1",,,,,pc,food
+268,FE283P,FE283P,"FE283P Dust Mop with Handle Set 24"" x1",100,1,pc,8.00,pc,non_food
+269,04874P,4806530870542,"04874P Indoplas Facemask 3ply x50",1293,40,pc,3.00,case,non_food
+270,P1856P,,"P1856P Tide Perfect Clean Original Fresh 565g x1",934,12,pc,6.00,case,non_food
+271,P0755P,4800020000000,"P0755P Del Monte Four Season Juice 1L x1",,,,,pc,food
+272,2040P,2040P,"2040P Unbranded All Purpose Detergent Powder 1kg x1",3710,30,pc,10.00,case,non_food
+273,SS1522P,4807770000000,"SS1522P Nissin Vanilla Wafer 12g x20",,,,,pc,food
+274,SS1666P,4807770000000,"SS1666P Nissin Wafer Yummy Butter 12g x20",,,,,pc,food
+275,Y0309P,Y0309P,"Y0309P Bonita Pre cut Table Napkin Mixed Grade 1 ply 1000 sheets x1",2525,5,pc,38.00,case,non_food
+276,SS1037P,4800190000000,"SS1037P Oishi Potato Chips Plain Salted 60g x1",,,,,pc,food
+277,SS1290P,4800090000000,"SS1290P Rebisco Bravo Biscuit 30g x10",,,,,pc,food
+278,08118P,08118P,"08118P Garbage Bag XL Clear 30"" x 37"" x .0010 x1",26500,100,pc,20.00,case,non_food
+279,FE039P,FE039P,"FE039P Soft Broom Makapal x1",491,1,pc,37.00,pc,non_food
+280,FE193P,FE193P,"FE193P Rubber Gloves Makapal Medium pair x1",1374,1,pc,104.00,pc,non_food
+281,FE248P,FE248P,"FE248P Rubber Gloves Makapal Large pair x1",1480,1,pc,111.00,pc,non_food
+282,FE267P,FE267P,"FE267P Wooden Fork x25",1655,100,pc,2.00,case,non_food
+283,P1741P,8000500000000,"P1741P Nutella 680g x1",,,,,pc,food
+284,Q0109P,Q0109P,"Q0109P Pingcon Interfolded Paper Towel Premium MG 1 ply 175 pulls 34gsm x1",3660,30,pc,10.00,case,non_food
+285,P1883P,1200110000000,"P1883P Lay's Potato Chips Original 170g x1",,,,,pc,food
+286,P0539P,4809010000000,"P0539P Lemon Square Cheese Cake 30g x10",,,,,pc,food
+287,FE021P,FE021P,"FE021P Spray Gun 500mL x1",2005,1,pc,151.00,pc,non_food
+288,SS1255P,4800250000000,"Bingo Corned Beef 150g x1",,,,,pc,food
+290,P2391P,4902430452779,"P2391P Downy Garden Bloom 750mL x1",648,8,pc,7.00,case,non_food
+291,0562P,4800040000000,"0562P Fibisco Butter Cookies 600g x1",,,,,pc,food
+292,SS1318P,4902430867290,"SS1318P Joy Dishwashing Liquid Lemon Bottle 475mL x1",704,24,pc,3.00,case,non_food
+293,2112P,4800047841705,"2112P Zonrox Color Safe Bleach 900mL x1",1435,24,pc,5.00,case,non_food
+294,P1549P,4800047847370,"P1549P Zonrox Colorsafe Bleach Blossom Fresh 3600mL x1",370,3,pc,10.00,case,non_food
+295,FE192P,FE192P,"FE192P Trash Can with Small Cover x1",1169,1,pc,88.00,pc,non_food
+296,P0416P,4893050000000,"P0416P Chips Ahoy Cookies 142.5g x1",,,,,pc,food
+297,P0890P,4800250000000,"P0890P Highlands Corned Beef 180g x1",,,,,pc,food
+298,SS0053P,4800360000000,"SS0053P Nestea Lemon 250g",,,,,pc,food
+299,1432P,1432P,"1432P Calypso Plastic 16' x 24' x .0011 PP x1",,,,,pc,food
+300,P1000P,7622210000000,"P1000P Eden Cheese Sulit Pack 45g x1",,,,,pc,food
+301,SS1359P,4807770000000,"SS1359P Monde Mamon Mini Classic 23g x8",,,,,pc,food
+302,FE062P,86876176421,"FE062P Rubbermaid Mop Squeezer Side Press x1",13,1,pc,1.00,pc,non_food
+303,SS1301P,4800360000000,"SS1301P Nestle Fresh Milk 1L x1",,,,,pc,food
+304,SS1479P,4800320000000,"SS1479P White Rabbit Butter Toffee Candy 100's x1",,,,,pc,food
+305,P2516P,4808680000000,"P2516P Best Foods Mayonaise 80mL x1",,,,,pc,food
+306,0463P,0463P,"0463P Ecobag Small Red x1",,,,,pc,food
+307,P1084P,75069350120,"P1084P Prem Luncheon Meat 340g x1",,,,,pc,food
+308,SS1267P,4800360000000,"SS1267P Milo 24g x12",,,,,pc,food
+309,2101P,4800047840012,"2101P Zonrox Bleach Original 1L x1",2166,24,pc,7.00,case,non_food
+311,P1376P,8886470000000,"P1376P Pringles Sour Cream & Onion 107g x1",,,,,pc,food
+313,SS1665P,4807770000000,"Nissin Butter Coconut 10g x12",,,,,pc,food
+314,FE002P,FE002P,"FE002P Dust Pan Black Big x1",1682,1,pc,127.00,pc,non_food
+315,04974P,04974P,"04974P Sleeves 12L 33 x 4.25in x1",,,,,pc,food
+316,P2287P,800054000000,"P2287P Growers Garlic Flavor Peanuts 30g x1",,,,,pc,food
+317,FE049P,FE049P,"FE049P Pail 4 gallon x1",1495,1,pc,113.00,pc,non_food
+319,Y0303P,Y0303P,"Y0303P Bonita Ultima 450 Bathroom Tissue Roll 100% Virgin Pulp 3 ply x 150 450 sheets 100mm x 100mm x1",8496,48,pc,14.00,case,non_food
+320,SF0111P,SF0111P,"SF0111P Garbage Bag Large Clear 26"" x 32"" x .001 x1",28500,100,pc,22.00,case,non_food
+321,P0219P,71287460412,"P0219P Brew Rite Coffee Filter #4 x40",,,,,pc,food
+322,P1627P,4800312274146,"P1627P Perwoll Laundry Detergent Liquid 1 Gallon x1",123,4,pc,3.00,case,non_food
+323,SS1314P,4806520000000,"SS1314P Goya Milk Chocolate 30g x1",,,,,pc,food
+324,P1750P,8992760000000,"P1750P Oreo Vanilla 119.6g x1",,,,,pc,food
+325,1499P,1499P,"1499P Unbranded White Sugar Sachet x100",511,50,pc,1.00,case,non_food
+326,P0148P,4800040000000,"P0148P Flat Tops x30",,,,,pc,food
+327,04973P,04973P,"04973P Sleeves 7L 27.5 x 4.25in x1",,,,,pc,food
+328,SS1002P,85000001882,"SS1002P Carlo Rossi Red Wine 750mL",,,,,pc,food
+329,P0970P,71615901372,"P0970P Hereford Cooked Ham 454g",,,,,pc,food
+330,SS0122P,4800040000000,"SS0122P Ricoa Flat Tops Chocolate x100's",,,,,pc,food
+331,FE253P,FE253P,"FE253P Welcome Mat x1",1269,1,pc,96.00,pc,non_food
+332,SF0109P,SF0109P,"SF0109P Garbage Bag Small Black 18"" x 18"" x .001 x1",60000,100,pc,45.00,case,non_food
+333,TM0101P,TM0101P,"TM0101P Diversey Forward Disinfectant Cleaner 5L x1",57,2,pc,3.00,case,non_food
+334,0523P,4800020000000,"0523P Magic Flakes Original 28g x10",,,,,pc,food
+335,P1004P,4800250000000,"P1004P Highlands Corned Beef Gold 260g x1",,,,,pc,food
+336,P0091P,750515000000,"P0091P SkyFlakes Biscuit Original 25g x24",,,,,pc,food
+337,FE224P,FE224P,"FE224P Tong Standard x1",,,,,pc,food
+338,P1424P,6914970000000,"P1424P Snickers Chocolate Classic fun size 240g x1",,,,,pc,food
+339,P1944P,4806520000000,"P1944P Kettle Corn Salted Caramel 120g x1",,,,,pc,food
+340,SS1247P,4800020000000,"SS1247P Swiss Miss Milk Chocolate 260g x1",,,,,pc,food
+341,P2037P,4800550000000,"P2037P Chips Delights Chocolate Chip Cookies 80g x1",,,,,pc,food
+342,P1540P,4800020000000,"P1540P V Cut Cheese 60g x1",,,,,pc,food
+343,P0791P,4800820000000,"P0791P Potchie x50",,,,,pc,food
+344,SS0934P,8886470000000,"SS0934P Pringles Cheese 107g x1",,,,,pc,food
+345,MH114P,9555222605461,"MH114P Glade Automatic Spray Morning Freshness Refill 175g x1",262,6,pc,4.00,case,non_food
+346,FE187P,FE187P,"FE187P Mop Aluminum Handle Plastic Head Green x1",184,1,pc,14.00,pc,non_food
+347,2125P,4800047820465,"2125P Green Cross Ethyl Alcohol 70% Solution Gallon x1",129,3,pc,4.00,case,non_food
+348,P0195P,4800020000000,"P0195P Del Monte Elbow Macaroni 200g x1",,,,,pc,food
+349,0865P,4800020000000,"0865P Nissin Cup Noodles Batchoy Mini 40g x1",,,,,pc,food
+350,P1324P,28400020893,"P1324P Ruffles Original 6.5oz x1",,,,,pc,food
+351,1587P,4800067600443,"1587P Albatross Strawberry Refill 100g x1",1282,12,pc,9.00,case,non_food
+352,Z1035P,19200850896,"Z1035P Lysol Disinfectant Spray for Baby's Room 510g x1",140,12,pc,1.00,case,non_food
+353,TM0105P,TM0105P,"TM0105P Diversey Step Off Floor Stripper 5L x1",79,2,pc,3.00,case,non_food
+354,MH35P,4801234071943,"MH35P Mr. Muscle All Purpose Cleaner Lemon 500mL x1",781,24,pc,3.00,case,non_food
+355,SS1501P,4807770000000,"SS1501P Nissin Eggnog Cookies 18g x10",,,,,pc,food
+356,2027P,4809013751888,"2027P Pingcon Hand Sanitizer 70% Apple Punch with Moisturizer Gallon (3.78Liters) x1",171,4,pc,4.00,case,non_food
+358,TPSAKURA,TPSAKURA,"TPSAKURA TPSAKURA Bonita Bathroom Tissue Roll Singles 2 ply 300 sheets x1",9530,48,pc,15.00,case,non_food
+359,P0194P,76145513,"P0194P Toblerone 50g x1",,,,,pc,food
+360,VA002P,4806013230078,"VA002P Glad Aluminum Foil 30cm x 7m x1",561,24,pc,2.00,case,non_food
+361,SS1584P,4808650000000,"SS1584P Tang Powder Orange Juice 250g x1",,,,,pc,food
+362,P1952P,4806520000000,"P1952P Kettle Korn Butterlicious 120g x1",,,,,pc,food
+363,FE136P,4800117120471,"FE136P Wipe Out Dirt and Stain Remover 250g x1",772,24,pc,3.00,case,non_food
+364,08124P,08124P,"08124P Garbage Bag XL Yellow PE 30"" x 37"" x .001 x1",16800,100,pc,13.00,case,non_food
+365,P1923P,4809010000000,"P1923P Farmboy Sinandomeng Rice 5kg x1",,,,,pc,food
+366,08160P,08160P,"08160P Garbage Bag Green XL 30"" x 37"" .001 x1",17000,100,pc,13.00,case,non_food
+367,OC0105P,OC0105P,"OC0105P Power Clean Carpet Shampoo Gallon x1",104,4,pc,2.00,case,non_food
+368,OC0102P,OC0102P,"OC0102P Power Clean Wax Stripper Supreme Gallon x1",116,4,pc,3.00,case,non_food
+369,SS0149P,4800360000000,"SS0149P Milo 300g x1",,,,,pc,food
+370,P1649P,6914970000000,"P1649P M&M Milk Chocolate Funsize175.5g x1",,,,,pc,food
+372,1468P,4800067600344,"1468P Albatross Jasmine Refill 100g x1",1183,12,pc,8.00,case,non_food
+373,MH129P,9555222606741,"MH129P Mr. Muscle Fresh Discs Starter Lavender 38g x1",440,1,,33.00,pc,non_food
+374,GR103P,GR103P,"GR103P 3M Polishing Pad 16"" White x1",157,5,pc,3.00,case,non_food
+375,FE107P,FE107P,"FE107P Complete Wax Generic Gallon x1",78,4,pc,2.00,case,non_food
+376,P0824P,4800020000000,"P0824P Mr. Chips 100g x1",,,,,pc,food
+377,P0479P,4800020000000,"P0479P Nova Country Cheddar 40g x1",,,,,pc,food
+378,Z1017P,9556111408262,"Z1017P Lysol Disinfectant Spray Early Morning Breeze 340g x1",156,12,pc,1.00,case,non_food
+379,SF0108P,SF0108P,"SF0108P Garbage Bag Medium Clear 22"" x 24"" x .001 x1",35000,100,pc,27.00,case,non_food
+380,TM0108P,TM0108P,"TM0108P Diversey View Quick 5L x1",49,2,pc,2.00,case,non_food
+381,P1584P,3179730000000,"P1584P Perrier Sparkling Water 330ml x1",,,,,pc,food
+382,P0858P,4809010000000,"P0858P Unbranded Creamer sachet 5g x100",,,,,pc,food
+384,P1726P,8000380000000,"P1726P Loacker Napolitaner Minis 200g x1",,,,,pc,food
+385,P2427P,,"P2427P Downy Fabric Conditioner Garden Bloom 1.5L x1",180,6,pc,3.00,case,non_food
+386,1559P,4800067600061,"1559P Albatross Strawberry Refill 50g x1",1784,12,pc,12.00,case,non_food
+387,SS0070P,4803930000000,"SS0070P Gatorade Blue Bolt 500mL x1",,,,,pc,food
+388,P1507P,4902430452816,"P1507P Downy Garden Bloom Fabric Conditioner Refill 1.48L x1",182,6,pc,3.00,case,non_food
+390,SS0137P,4800020000000,"SS0137P Granny Goose Tortillos Barbeque 160g x1",,,,,pc,food
+391,P0302P,4800360000000,"P0302P Nestle Coffeemate Creamer 5g x48",,,,,pc,food
+392,04896P,04896P,"04896P Surgitech Surgical Latex Gloves Large x100",,,,,pc,food
+393,P1654P,8851020000000,"P1654P Glico Pocky Strawberry 38g x1",,,,,pc,food
+394,TM0111P,807174526714,"TM0111P Diversey Good Sense Odor Eliminator Gallon x1",31,2,x1,2.00,case,non_food
+395,P0734P,748485000000,"P0734P Century Tuna Flakes in Oil 155g x1",,,,,pc,food
+396,MH57P,4801234056711,"MH57P Pledge Furniture Polish Lemon 180ml x1",286,24,pc,1.00,case,non_food
+397,2129P,4800047847288,"2129P Zonrox Multi Clean Floral Blast Scent 900ml x1",434,24,pc,2.00,case,non_food
+398,Z1034P,9556111996035,"Z1034P Lysol Disinfectant Multi-Action Cleaner Lemon 900ml x1",311,24,pc,1.00,case,non_food
+401,1976P,1200110000000,"1976P Ruffles Original 170g x1",,,,,pc,food
+402,SS0164P,4800210000000,"SS0164P Mentos Mint x50",,,,,pc,food
+403,P1420P,8935000000000,"P1420P Mentos Fruit Bag 50's x1",,,,,pc,food
+406,P1745P,74923405273,"P1745P Pik-Nik Original 9oz x1",,,,,pc,food
+407,MH86P,4801234071523,"MH86P Mr. Muscle All Purpose Cleaner Fresh Lemon 1L x1",331,12,pc,3.00,case,non_food
+408,P0724P,8851020000000,"P0724P Glico Pocky Chocolate 40g x1",,,,,pc,food
+409,SS0904P,4800010000000,"SS0904P Absolute Water 500ml x1",,,,,pc,food
+410,P0645P,62385061731,"P0645P Tulip Jamonilla 340g x1",,,,,pc,food
+411,SS1225P,4808650000000,"SS1225P Tang Powder Pineapple Juice 250g x1",,,,,pc,food
+412,FE017P,FE017P,"FE017P Muriatic Acid Gallon x1",296,4,pc,6.00,case,non_food
+413,P0082P,4801234074012,"P0082P Mr. Muscle Stick on Toilet Bowl Cleaning Strip Citrus Scent 10g x3",679,24,pc,3.00,case,non_food
+414,2076P,4806029930405,"2076P Swakto Concentrated Fabric Conditioner Antibac Gallon x1",173,4,pc,4.00,case,non_food
+415,MH119P,,"MH119P Mr. Muscle Glass & Multi-Surface Cleaner Primary Fresh Fragrance 500mL x1",315,24,pc,1.00,case,non_food
+416,08117P,08117P,"08117P Garbage Bag XXL Green 37"" x 40"" x .001 x1",10600,100,pc,8.00,case,non_food
+417,SS1541P,4800360000000,"SS1541P Nescafe Coffee Classic Refill 46g x1",,,,,pc,food
+418,SS0887P,748485000000,"SS0887P Angel Condensada 380mL x1",,,,,pc,food
+419,P1594P,8801060000000,"P1594P Lotte Pepero Almond & Choco 32g x1",,,,,pc,food
+420,P1469P,9556170000000,"P1469P Lays Stax Original 135g x1",,,,,pc,food
+421,P0568P,4800047841408,"P0568P Del Fabric Conditioner 1000mL x1",308,12,pc,2.00,case,non_food
+422,1052P,4902430468701,"1052P Joy Dishwashing Liquid Lemon Bottle 780mL x1",248,1,pc,19.00,pc,non_food
+424,1385P,4800067600542,"1385P Albatross Lemon with handle 50g x1",1187,12,pc,8.00,case,non_food
+425,2086P,,"2086P Rubbing Alcohol Isopropyl Nature Fresh Scent with Moisturizer Gallon x1",163,4,pc,4.00,case,non_food
+426,MH05P,4801234140014,"MH05P Glade Scented GEL Lemon 180mL x1",323,24,pc,2.00,case,non_food
+427,P2199P,4800580000000,"P2199P Krem Top Coffee Creamer 400g x1",,,,,pc,food
+428,GR134P,4800314100344,"GR134P 3M Super Shine 3.8L x1",31,4,pc,1.00,case,non_food
+429,SS1233P,4800220000000,"SS1233P Clover Chips Cheese 85g x1",,,,,pc,food
+430,P0572P,8000500000000,"P0572P Ferrero Rocher T8 Box 100g x1",,,,,pc,food
+431,P1652P,93682961,"P1652P M&M's Milk Chocolate 37g x1",,,,,pc,food
+432,BC210P,BC210P,"BC210P Quicktie Garbage Bag Green XL 30"" x 37"" x10",1280,20,pc,5.00,case,non_food
+433,P1537P,7622210000000,"P1537P Cadbury Dairy Fruit & Nuts Bar 160g x1",,,,,pc,food
+434,P0728P,80001218,"P0728P Loacker Napolitaner Classic 45g x1",,,,,pc,food
+435,P1580P,4902430412643,"P1580P Tide Detergent Powder 2.45kg x1",90,4,pc,2.00,case,non_food
+436,P0780P,4800047840593,"P0780P Zonrox Floral Scent Gallon x1",335,3,pc,9.00,case,non_food
+437,GR132P,GR132P,"GR132P 3M Floor Sealer 3.8L x1",33,4,pc,1.00,case,non_food
+438,SS1106P,4800888181640,"SS1106P Surf Detergent Powder Antibacterial 1.1kg x1",391,12,pc,3.00,case,non_food
+439,P1936P,6922880000000,"P1936P Skippy Peanut Butter 340g x1",,,,,pc,food
+440,Y0326P,Y0326P,"Y0326P Facial Tissue Virgin Pulp 2 ply x 60 pulls 120 sheets x1",3096,72,pc,4.00,case,non_food
+441,TM0117P,,"TM0117P Diversey Ecko Screen pack of 2 x1",35,1,pc,3.00,pc,non_food
+443,MH115P,,"MH115P Mr. Muscle Stick on Strip Toilet Bowl Cleaning Citrus Scent 10g x1",1500,72,pc,2.00,case,non_food
+444,04895P,04895P,"04895P Glomed Gloves Disposable Small x100",115,10,pc,1.00,case,non_food
+445,SS1427P,4806520000000,"SS1427P Knick Knacks Milk 21g x1",,,,,pc,food
+446,SF0112P,SF0112P,"SF0112P Garbage Bag XL Clear 30"" x 37"" x .0010 x1",12300,100,pc,10.00,case,non_food
+447,08106P,08106P,"08106P Garbage Bag Small Clear 18"" x 18"" x .001 x1",28200,100,pc,22.00,case,non_food
+448,FE254P,FE254P,"FE254P Tornado Mop x1",100,1,pc,8.00,pc,non_food
+449,08112P,08112P,"08112P Garbage Bag XXL Yellow 37"" x 40"" x .001 x1",9200,100,pc,7.00,case,non_food
+452,FE025P,FE025P,"FE025P Penguin Steel Wool x16",350,25,pc,2.00,case,non_food
+453,SS1219P,4800120000000,"SS1219P Sunflower Butter Cream Original Crackers 25g x10",,,,,pc,food
+454,P0593P,4800250000000,"P0593P CDO Luncheon Meat Chinese 165g x1",,,,,pc,food
+455,P1298P,4806013250076,"P1298P Pine-Sol Multi-Surface Cleaner & Deodizer Lavander Clean 500mL x1",368,24,pc,2.00,case,non_food
+456,P1409P,4800010000000,"P1409P Delimondo Ranch Style Corned Beef 175g x1",,,,,pc,food
+457,SS1591P,4800320000000,"SS1591P Vi-Va Caramel Candy 100s x1",,,,,pc,food
+458,P1704P,9556000000000,"P1704P KitKat 2F 17g x6",,,,,pc,food
+459,Y0325P,Y0325P,"Y0325P Tork Paper Towel Dispenser x1",,,,,pc,food
+460,SS0933P,4800020000000,"SS0933P Roller Coaster Cheddar 85g x1",,,,,pc,food
+461,0953P,9403150000000,"0953P Palm Corned Beef 326g x1",,,,,pc,food
+462,SS1480P,4800190000000,"SS1480P Pillows Chocolate Crackers 38g x1",,,,,pc,food
+463,CR0101P,CR0101P,"CR0101P Victor Floor Polisher 16"" x1",,,,,pc,food
+464,1471P,4800067600387,"1471P Albatross lemon with holder 100g x1",594,12,pc,4.00,case,non_food
+465,P0520P,P0520P,"P0520P Unbranded Brown sugar sachet 5g x100",256,50,pc,1.00,case,non_food
+466,FE038P,FE038P,"FE038P Round Rugs Colored x35",523,1,pc,40.00,pc,non_food
+467,SS1312P,4800360000000,"SS1312P Nescafe Blend & Brew Original 26g x10",,,,,pc,food
+468,P0771P,4800045310296,"P0771P Pride with Antibacterial 1000g x1",411,12,pc,3.00,case,non_food
+469,FE185P,FE185P,"FE185P Mop Aluminum Handle Plastic Head Red x1",98,1,pc,8.00,pc,non_food
+470,PMS0040400018,GR133P,"GR133P 3M Floor Stripper 3.8L x1",40,3,pc,1.00,case,non_food
+471,2025P,2025P,"2025P Cosab Bleach Gallon x1",366,4,pc,7.00,case,non_food
+472,SS1245P,4800020000000,"SS1245P Vcut Spicy BBQ 60g x1",,,,,pc,food
+473,TM0103P,TM0103P,"TM0103P Diversey Taski Over and Under 5L x1",14,2,pc,1.00,case,non_food
+474,P2114P,4800190000000,"P2114P Oishi Bread Pan Toasted Garlic 24g x1",,,,,pc,food
+475,FE024P,FE024P,"FE024P Glass Cleaner Gallon x1",185,4,pc,4.00,case,non_food
+476,FE166P,FE166P,"FE166P Pranela Blue with edging x1",1511,1,pc,114.00,pc,non_food
+477,FE175P,FE175P,"FE175P Saver Paper Plates #9 x25",,,,,pc,food
+478,P0725P,8888080000000,"P0725P Meiji Hello Panda Chocolate 35g x1",,,,,pc,food
+480,SS0922P,38000138416,"SS0922P Pringles Original 147g x1",,,,,pc,food
+481,2016P,2016P,"2016P Liquid Hand Soap Peppermint Gallon x1",203,4,pc,4.00,case,non_food
+482,04897P,792536229122,"04897P Glomed Surgical Latex Gloves Medium x100",102,10,pc,1.00,case,non_food
+483,04810P,04810P,"04810P Calypso Plastic 12"" x 18"" x .0011 PP x1",,,,,pc,food
+485,1046P,9556076012672,"1046P AmbiPur Gel Relaxing Lavender 180g x1",220,1,pc,17.00,pc,non_food
+486,P1347P,731126000000,"P1347P Nagaraya Original Cracker Nuts 80g x1",,,,,pc,food
+487,P2115P,4800190000000,"P2115P Oishi Bread Pan Buttered Toast 24g x1",,,,,pc,food
+488,P1614P,6942840000000,"P1614P Hershey's Creamy Milk with Almonds 40g x1",,,,,pc,food
+489,MH32P,4801230000000,"MH32P Pledge Pronto Liquid Wax Natural 1L x1",,,,,pc,food
+490,P1642P,4808890000000,"P1642P Purefoods Chinese Style Luncheon Meat 350g x1",,,,,pc,food
+491,0532P,4800020000000,"0532P Nissin Cup Noodles Seafood 60g x1",,,,,pc,food
+492,SS1483P,8992800000000,"SS1483P Fitbar Tiramisu Cereal Bar 22g x1",,,,,pc,food
+494,SS1593P,4803930000000,"SS1593P Mountain Dew in can 320mL x1",,,,,pc,food
+495,P2213P,8998670000000,"P2213P Kopiko Brown Coffee 3in1 Twin Pack 53g x5",,,,,pc,food
+496,1537P,1537P,"1537P 3M Microfiber Cloth Red x10",46,5,pc,1.00,case,non_food
+497,P1599P,8801060000000,"P1599P Lotte Pepero Crunchy 32g x1",,,,,pc,food
+498,P0134P,750515000000,"P0134P Fita Crackers 30g x10",,,,,pc,food
+499,P1309P,8996000000000,"P1309P Kopiko Brown Coffee 27.5g x10",,,,,pc,food
+500,SS1392P,4800090000000,"SS1392P Fudgee Bar Chocolate 40g x10",,,,,pc,food
+501,P0109P,4800250000000,"P0109P San Marino Corned Tuna Regular 180g x1",,,,,pc,food
+502,P0214P,70177010775,"P0214P Twinings English Breakfast Black Tea 50g x25",,,,,pc,food
+503,P2155P,7622300000000,"P2155P Tiger Energy Biscuit 22.8g x10",,,,,pc,food
+504,1022P,4902430389570,"1022P Joy Dishwashing Liquid Lemon 20mL x1",6048,1,pc,454.00,pc,non_food
+505,SS1645P,4800045310272,"SS1645P Smart Dishwashing Paste 400g Kalamansi with canister x1",699,1,,53.00,pc,non_food
+506,P1506P,4902430504560,"P1506P Downy Mystique Fabric Conditioner Refill 1.2L x1",100,1,pc,8.00,pc,non_food
+507,P1764P,4800090000000,"P1764P Happy Peanuts Garlic 100g x1",,,,,pc,food
+508,GR110P,GR110P,"GR110P Unbranded Floor Pad 20"" Red x 1",60,5,pc,1.00,case,non_food
+509,1063P,4902430468756,"1063P Joy Dishwashing Liquid Antibac Refill 540mL x1",195,3,pc,5.00,case,non_food
+510,OC0101P,OC0101P,"OC0101P Power Clean Buffable Emulsion Wax Supreme Gallon x1",53,4,pc,1.00,case,non_food
+511,1977P,1200110000000,"1977P Lay's Sour Cream and Onion 50g x1",,,,,pc,food
+512,SS0955P,4808890000000,"SS0955P Purefoods Corned Beef 210g x1",,,,,pc,food
+513,0206P,4809010000000,"0206P Siete Baracos Coffee Espesso Blend 454g x1",,,,,pc,food
+514,P0320P,6914970000000,"P0320P Snickers Classic 51g x1",,,,,pc,food
+516,FE022P,FE022P,"FE022P Carpet Shampoo Gallon x1",145,4,pc,3.00,case,non_food
+517,FE041P,FE041P,"FE041P Pranela Big Blue yard x1",405,1,pc,31.00,pc,non_food
+519,0551P,4800888181572,"0551P Surf Powder Kalamansi 1kg x1",300,12,pc,2.00,case,non_food
+520,P0911P,6942840000000,"P0911P Hershey's Kisses Milk Chocolate 146g x1",,,,,pc,food
+521,P0590P,4800010000000,"P0590P Great Taste Coffee Granules 100g x1",,,,,pc,food
+523,P1051P,4800020000000,"P1051P Del Monte Pasta 400g + Del Monte Spaghetti Sweet Style Sauce 500g x1",,,,,pc,food
+524,SS1364P,4800090000000,"SS1364P Rebisco Hansel Choco 31g x10",,,,,pc,food
+525,04926P,,"04926P Glomed Latex Gloves Black Large x100",90,10,pc,1.00,case,non_food
+526,P1858P,P1858P,"P1858P Cleanaide Microfiber Yellow x1",415,1,pc,32.00,pc,non_food
+527,GR117P,21200510083,"GR117P 3M Outdoor Gloves pair x1",182,1,pc,14.00,pc,non_food
+528,1588P,4800067600764,"1588P Albatross Strawberry with Holder 100g x1",446,12,pc,3.00,case,non_food
+529,FE026P,FE026P,"FE026P Unbranded Stripping pad Black 16"" x1",60,5,pc,1.00,case,non_food
+531,0558P,4902430093767,"0558P Joy Dishwash Liquid Lemon 250mL x1",358,20,pc,2.00,case,non_food
+532,P1561P,9556000000000,"P1561P Kitkat Chunky 38g x1",,,,,pc,food
+534,P0891P,8850175010500,"P0891P Glade Scented GEL Ocean Escape 180ml x1",188,6,pc,3.00,case,non_food
+535,P0781P,4800888189813,"P0781P Surf Detergent Powder Cherry Blossom 1.1kg x1",259,12,pc,2.00,case,non_food
+536,SS1569P,4800820000000,"SS1569P Monami Strawberry & Cream 150g x50",,,,,pc,food
+537,SS1125P,4800888112972,"SS1125P Domex Multi-Purpose Cleaner Classic 1L Bottle x1",161,1,pc,13.00,pc,non_food
+538,P2413P,,"P2413P Downy Parfum Passion Refill 1.5L x1",91,1,pc,7.00,pc,non_food
+539,Z1023P,4801002062906,"Z1023P Lysol Disinfectant Spray Fresh Blossoms 340g x1",62,12,pc,1.00,case,non_food
+540,FE279P,FE279P,"FE279P Window Squeegee 15"" x1",48,1,pc,4.00,pc,non_food
+541,P0263P,4800090000000,"P0263P Dingdong Mixed Nuts 100g x1",,,,,pc,food
+542,MH95P,4801234072216,"MH95P Mr. Muscle Total Kitchen Cleaner Primary 500ml x1",145,24,pc,1.00,case,non_food
+543,P1247P,4800020000000,"P1247P Maxx Candy Yellow x50",,,,,pc,food
+544,SS0264P,4800020000000,"SS0264P C2 Green Tea Apple Solo 230mL x1",,,,,pc,food
+545,1048P,4987176156167,"1048P Joy Dishwashing Liquid Antibac Refill 1Liter x1",93,1,pc,7.00,pc,non_food
+546,P1254P,4902430000000,"P1254P Safeguard Liquid Hand Soap 450mL x1",,,,,pc,food
+547,SS0088P,4808890000000,"SS0088P Colgate Toothbrush Medium x1",,,,,pc,food
+548,P1881P,1200110000000,"P1881P Cheetos Crunchy 95g x1",,,,,pc,food
+549,P2254P,4800270000000,"P2254P Quaker Cookies Chocolate Chips 25g x1",,,,,pc,food
+550,GR116P,GR116P,"GR116P Unbranded Polishing Pad White 16"" x1",74,5,pc,2.00,case,non_food
+552,SS0258P,4800020000000,"SS0258P Nissin Cup Noodles Bulalo Mini 40g x1",,,,,pc,food
+553,P0117P,4800020000000,"P0117P Del Monte Fiesta Fruit Cocktail 836g x1",,,,,pc,food
+554,P1647P,4808650000000,"P1647P Eden Cheese 160g x1",,,,,pc,food
+555,P1471P,4800010000000,"P1471P Cloud 9 Mini 7g x36",,,,,pc,food
+557,P1318P,4800360000000,"P1318P Nestle Bear Brand Powdered Milk 320g x1",,,,,pc,food
+558,2083P,2083P,"2083P Liquid Detergent Fresh Petal Gallon x1",158,4,pc,3.00,case,non_food
+560,SS1079P,4806500000000,"SS1079P Primo Juice Sparkling Red Grape 750ml x1",,,,,pc,food
+561,04977P,04977P,"04977P Urinal Screen with Enzyme for Male Urinals Lemon x1",107,1,pc,9.00,pc,non_food
+563,SS1667P,4806530000000,"SS1667P Rite 'n Lite Orange in can 250mL x1",,,,,pc,food
+564,P1538P,8996000000000,"P1538P Cal Cheese 48g x1",,,,,pc,food
+565,1372P,1372P,"1372P Packaging Plastic 3.25 x 3 x 9.75 x 0.0012 PE for BNTY0308 Sulit x1",,,,,pc,food
+566,FE189P,FE189P,"FE189P Unbranded Floor Pad Black 20"" x1",48,5,pc,1.00,case,non_food
+567,FE243P,FE243P,"FE243P Mop Head Rayon Heavy Duty No. 500 x1",306,1,pc,23.00,pc,non_food
+568,SS1181P,8996000000000,"SS1181P Kopiko Blanca Coffee 3in1 30g x1",,,,,pc,food
+571,SS1571P,7622300000000,"SS1571P Tang Powdered Juice Orange 19g x1",,,,,pc,food
+573,SS1185P,4800067601860,"SS1185P Gleam Liquid Sosa 1L x1",127,12,pc,1.00,case,non_food
+575,08119P,08119P,"08119P Garbage Bag Medium Yellow 22"" x 24"" x .001 x1",11800,100,pc,9.00,case,non_food
+577,SS0222P,4800050000000,"SS0222P Growers Mix Nuts 80g x1",,,,,pc,food
+578,P1418P,8720610000000,"P1418P Lipton Green Tea Bags 1.5g x50",,,,,pc,food
+579,BC138P,BC138P,"BC138P Non-Bio Ziptie Garbage Bag Black Large 26"" x 32"" x10",1000,50,pc,2.00,case,non_food
+580,2106P,4800047820182,"2106P Green Cross Alcohol 70% w/ Moisturizer 500mL x1",287,24,pc,1.00,case,non_food
+581,SS1443P,4800360000000,"SS1443P Nestle Bear Brand Milk 135g x1",,,,,pc,food
+582,BC187P,BC187P,"BC187P Biodegradable Ziptie Garbage Bag Black XXL 37"" x 40"" x .001 x10",440,20,pc,2.00,case,non_food
+583,04978P,04978P,"04978P Urinal Screen with Enzyme for Male Urinals Strawberry x1",92,1,pc,7.00,pc,non_food
+584,0924P,4800360000000,"0924P Nestle All Purpose Cream 250mL x1",,,,,pc,food
+585,P0939P,748486000000,"P0939P Argentina Corned Beef 175g x1",,,,,pc,food
+586,1538P,1538P,"1538P 3M Microfiber Cloth Yellow x10",32,5,pc,1.00,case,non_food
+587,GR105P,GR105P,"GR105P 3M Stripping Pad 16"" Black x1",38,5,pc,1.00,case,non_food
+589,SS1224P,34800000000000,"SS1224P Energizer Battery AAA x2",,,,,pc,food
+590,FE019P,FE019P,"FE019P Plastic Dipper or tabo x1",1237,1,pc,93.00,pc,non_food
+591,SS1216P,4800360000000,"SS1216P Nestle Carnation Condensed Milk 388g x1",,,,,pc,food
+592,SS1131P,8850010000000,"SS1131P Colgate Toothpaste Regular 37g x1",,,,,pc,food
+593,SS1447P,4803930000000,"SS1447P Pepsi in can 320mL x1",,,,,pc,food
+595,SS0944P,4800110000000,"SS0944P White King Fiesta Elbow Macaroni 400g x1",,,,,pc,food
+597,P1024P,4807770000000,"P1024P Lucky Me Instant Pancit Canton Chili-Mansi 80g x1",,,,,pc,food
+598,SS1115P,748486000000,"SS1115P 555 Tuna Afritada 155g x1",,,,,pc,food
+599,P1464P,8801060000000,"P1464P Nescafe Gold Blend 50g x1",,,,,pc,food
+600,SS0998P,4807770000000,"SS0998P Nissin Wafer Chocolate 12g x20",,,,,pc,food
+602,04898P,04898P,"04898P Storage Box 20L x1",,,,,pc,food
+603,P0882P,4808680000000,"P0882P Best Foods Real Mayonnaise Mayo Magic Pouch 220mL x1",,,,,pc,food
+604,P2430P,4800040000000,"P2430P Fibisco Choco Chip Cookies 400g x1",,,,,pc,food
+606,SS1671P,4806530000000,"SS1671P Rite 'n Lite Peach in can 250mL x1",,,,,btl,food
+607,P1859P,P1859P,"P1859P Cleanaide Microfiber Green x1",316,50,pc,1.00,case,non_food
+608,P1556P,7177118563,"P1556P Twinings Lemon & Ginger Tea 1.5g x25",,,,,pc,food
+609,P1263P,4806501705040,"P1263P Champion Supra Clean Detergent Powder 800g x1",223,1,pc,17.00,pc,non_food
+610,FE133P,FE133P,"FE133P Generic Mop Squeezer Side Press x1",7,1,pc,1.00,pc,non_food
+611,1576P,4800067600405,"1576P Albatross Sampaguita Refill 100g x1",391,12,pc,3.00,case,non_food
+612,P2393P,,"P2393P Downy Premium Parfum Passion 750mL x1",139,8,pc,2.00,case,non_food
+613,SS0173P,4800020000000,"SS0173P Jack 'n Jill Chippy BBQ 110g x1",,,,,pc,food
+614,MH127P,8850175020479,"MH127P Glade Scented Gel Sakura & Waterlily 180g x1",133,12,,1.00,case,non_food
+615,P0795P,4800067601846,"P0795P Gleam Liquid Sosa 500mL x1",125,24,pc,1.00,case,non_food
+616,2107P,4800047840265,"2107P Zonrox Bleach Lemon Scent 1L x1",504,24,pc,2.00,case,non_food
+617,SS1169P,4800047841422,"SS1169P Del Fabric Softener Lavender Breeze 1000mL x1",139,12,pc,1.00,case,non_food
+618,FE157P,FE157P,"FE157P Plastic Stirrer x1000",111,1,pc,9.00,pc,non_food
+619,SS1254P,4800020000000,"SS1254P Calbee Potato Chips Honey Butter 170g x1",,,,,pc,food
+620,0511P,4800020000000,"0511P Nissin Cup Noodles Beef 60g x1",,,,,pc,food
+621,P2186P,4800270000000,"P2186P Quaker Cookies Honey Nuts 27g x1",,,,,pc,food
+622,SS0910P,4800010000000,"SS0910P Absolute Water 350mL x1",,,,,pc,food
+623,FE211P,FE211P,"FE211P Car Shampoo Gallon x1",91,4,pc,2.00,case,non_food
+624,SS0880P,4800010000000,"SS0880P Cloud 9 Chocolate 28g x1",,,,,pc,food
+625,SS0008P,4800020000000,"SS0008P Nissin Cup Noodles Beef Mini 40g x1",,,,,pc,food
+626,GR127P,01593100630589451024G0337391,"GR127P Scotch-Brite 96 GP Scouring Pad 6"" x 9"" x1",488,50,pc,1.00,case,non_food
+627,SS1061P,4800020000000,"SS1061P Del Monte Elbow Macaroni 1kg",,,,,pc,food
+628,Y0321P,Y0321P,"Y0321P Kitchen Towel 2 ply x 85 170 sheets x1",552,24,pc,2.00,case,non_food
+629,SS1147P,4800030000000,"SS1147P Ideal Gourmet Lasagna 454g x1",,,,,pc,food
+630,P0757P,4800020000000,"Del Monte Pasta 900g + Del Monte Sweet Spaghetti Sauce 1kg x1",,,,,pc,food
+631,SF0107P,SF0107P,"SF0107P Garbage Bag Small Clear 18"" x 18"" x .001 x1",13100,100,pc,10.00,case,non_food
+632,SS0927P,4801980000000,"SS0927P Wilkins Mineral Water 330mL x1",,,,,pc,food
+634,TM0104P,TM0104P,"TM0104P Diversey Snapback Floor Restorer 5L x1",8,1,pc,1.00,pc,non_food
+635,FE298P,FE298P,"FE298P Push Brush with Plastic Handle x1",138,1,pc,11.00,pc,non_food
+637,GR138P,4800314009692,"GR138P 3M Scotch Brite Scrub Sponge Mini 75mm x 75mm x 30mm x1",576,1,pc,44.00,pc,non_food
+639,1644P,1644P,"1644P Broom Stick x1",746,1,pc,56.00,pc,non_food
+640,FE052P,FE052P,"FE052P Liquid Declogger Gallon x1",68,4,pc,2.00,case,non_food
+641,P0312P,731126000000,"P0312P Nagaraya Original 160g x1",,,,,pc,food
+642,SS1246P,8886470000000,"SS1246P Pringles Original 134g x1",,,,,pc,food
+645,0471-INP,0471-INP,"0471-INP IN House Calypso 7 x 12 0.0004 no print x1",,,,,pc,food
+646,VA001P,4806013230016,"VA001P Glad Cling Wrap 30m x 30cm x1",142,24,pc,1.00,case,non_food
+647,P2395P,4801980000000,"P2395P Coke Zero 1.5L x1",,,,,pc,food
+648,FE088P,FE088P,"FE088P Degreaser Gallon x1",98,1,pc,8.00,pc,non_food
+649,P1665P,4800888112965,"P1665P Domex Multi-Purpose Cleaner Classic 500ml Blue Bottle x1",192,24,pc,1.00,case,non_food
+650,FE153P,FE153P,"FE153P Toilet Brush with handle and case x1",282,1,pc,22.00,pc,non_food
+652,P1548P,9556030000000,"P1548P Ajax All Purpose Cleaners Lavander Fresh 1L x1",,,,,pc,food
+653,GR109P,GR109P,"GR109P 3M Buffing Pad Red 16"" x1",44,5,pc,1.00,case,non_food
+654,FE144P,FE144P,"FE144P Push Brush 12"" with wood handle x1",125,1,pc,10.00,pc,non_food
+655,FE032P,FE032P,"FE032P Unbranded Buffer Pad Red 16"" x1",46,5,pc,1.00,case,non_food
+656,FE121P,FE121P,"FE121P Paint Brush 1 1/2 x1",428,1,pc,33.00,pc,non_food
+658,SS1283P,4800090000000,"SS1283P Rebisco Combi Triple Choco 30g x10",,,,,pc,food
+659,MH111P,8850175011408,"MH111P Glade Automatic Spray Ocean Escape Primary 175g x1",40,4,pc,1.00,case,non_food
+661,GR136P,4800314032102,"GR136P Scotch Brite Broom Walis Tibay x1",53,1,pc,4.00,pc,non_food
+662,FE035P,FE035P,"FE035P Spatula #3 (Putty Knife) x1",578,1,pc,44.00,pc,non_food
+663,SS1150P,4902430622080,"SS1150P Downy Premium Parfum Passion 600mL Refill x1",105,1,pc,8.00,pc,non_food
+664,P1860P,P1860P,"P1860P Cleanaide Microfiber Blue x1",246,5,pc,4.00,case,non_food
+665,SS1331P,4806500000000,"SS1331P Snow Bear Candy Menthol 50s x1",,,,,pc,food
+666,P0176P,748486000000,"P0176P Argentina Corned Beef 150g x1",,,,,pc,food
+667,P1433P,4806530000000,"P1433P Rite n' Lite Lemon Soda 250mL x1",,,,,pc,food
+668,0969P,722776000000,"0969P Splenda No Calorie Sweetener 100g x1",,,,,pc,food
+669,TM0112P,,"TM0112P Diversey Shine Up 5L x1",11,1,pc,1.00,pc,non_food
+670,PP0001P,PP0001P,"PP0001P Bonita Quarter Fold Table Napkins Virgin Pulp 1 ply 350 sheets x1",221,8,pc,3.00,case,non_food
+671,P0687P,,"P0687P Domex Toilet Bowl Cleaner Ultra Thick 500mL x1",157,1,pc,12.00,pc,non_food
+672,2074P,2074P,"2074P Liquid Disinfectant Concentrated Gallon x1",22,4,pc,1.00,case,non_food
+673,P0087P,4800020000000,"P0087P Pic-A BBQ 180g x1",,,,,pc,food
+674,P0943P,4800020000000,"P0943P Nips Chocolate Peanut Deluxe 90g x1",,,,,pc,food
+675,08121P,08121P,"08121P Garbage Bag Medium Green 22"" x 24"" x .001 x1",8300,100,pc,7.00,case,non_food
+676,SS1306P,4808650000000,"SS1306P Cheez Whiz Plain Bottle 210g x1",,,,,pc,food
+677,P1543P,4902430304726,"P1543P Ambi Pur Air Effects Freshener Blossom & Breeze Spray 275g x1",66,1,pc,5.00,pc,non_food
+678,1971P,8850720000000,"1971P Lay's Wavy BBQ 50g x1",,,,,pc,food
+679,MH133P,9555222606758,"MH133P Mr. Muscle Fresh Discs Starter Citrus 38g x1",105,1,pc,8.00,pc,non_food
+680,P1097P,4800047820427,"P1097P Green Cross Isopropyl 70% with Pump 1000mL x1",75,6,pc,1.00,case,non_food
+681,SS1332P,4800360000000,"SS1332P Nestle Chuckie 110mL x1",,,,,pc,food
+683,P2171P,4800170000000,"P2171P Stik-O Chocolate Wafer Stick 850g x1",,,,,pc,food
+684,P0731P,748486000000,"P0731P Argentina Meat Loaf 170g x1",,,,,pc,food
+685,SS1154P,4806510000000,"SS1154P Magnolia Pancake Plus with Maple Syrup 200g x1",,,,,pc,food
+687,FE199P,FE199P,"FE199P Pranela Big Pink yard x1",206,1,pc,16.00,pc,non_food
+688,MH60P,4801230000000,"MH60P Pledge Pronto Liquid Wax 500ml Natural x1",,,,,pc,food
+689,SS1273P,4800110000000,"SS1273P Royal Sweet Celebration (Pasta 800 + Spaghetti Sauce 1kg) x1",,,,,pc,food
+690,2015P,2015P,"2015P Liquid Hand Soap Dispenser Wall Mount x1",,,,,pc,food
+692,SS1066P,748485000000,"SS1066P Century Tuna Hot and Spicy Flakes in Oil 155g x1",,,,,pc,food
+693,MH04P,4801230000000,"MH04P Mr. Muscle Mold and Mildew Cleaner Primary 500mL x1",,,,,pc,food
+694,MH09P,4801234072612,"MH09P Mr. Muscle Glass Cleaner Primary 500mL x1",97,12,pc,1.00,case,non_food
+695,SS0271P,4800888181596,"SS0271P Surf Powder Soap Sunrise Fresh 1.1 kg x1",140,12,pc,1.00,case,non_food
+696,MH54P,4801234100018,"MH54P Pledge Metal Polish 150ml x1",79,24,pc,1.00,case,non_food
+699,SS0037P,24000010920,"SS0037P Del Monte Fruitcocktail Imported 825g x1",,,,,pc,food
+701,10009P,4808890000000,"10009P Axion Dishwashing Paste Lemon Tub 350g x1",,,,,pc,food
+702,0384P,4800150000000,"0384P Zim Glass Cleaner Regular 250ml x1",,,,,pc,food
+703,SS0186P,4800090000000,"SS0186P Fudgee Bar Dark Chocolate 38g x10",,,,,pc,food
+704,SS1269P,8935000000000,"SS1269P Mentos Candy Tropical Mix 50's x1",,,,,pc,food
+705,P0364P,4801234071981,"P0364P Mr. Muscle All Purpose Cleaner Lavender 500mL x1",154,24,pc,1.00,case,non_food
+707,Z1003P,4801002457818,"Z1003P Lysol Disinfectant Spray Crisp Berry 510g x1",26,12,pc,1.00,case,non_food
+709,FE135P,6950266583769,"FE135P Chamois with case x1",218,1,pc,17.00,pc,non_food
+710,MH48P,4801234072629,"MH48P Mr. Muscle Glass and Multi Surface Cleaner Refill 500ml x1",145,24,pc,1.00,case,non_food
+711,FE128P,FE128P,"FE128P Rectangular Cotton Doormat 2' x 3' x1",294,1,pc,23.00,pc,non_food
+712,PR0101P,,"PR0101P Primesol Disinfectant Gallon x1",50,4,pc,1.00,case,non_food
+715,P2309P,,"P2309P Tide Perfect Clean Downy Garden Bloom 1220g x1",51,4,pc,1.00,case,non_food
+717,04909P,04909P,"04909P Mega Box Storage Box 15L x1",,,,,pc,food
+718,TM0110P,,"TM0110P Lysol All-in One Disinfectant Concentrate Pine Scent 1Liter x1",40,1,pc,3.00,pc,non_food
+719,SS1354P,4801980000000,"SS1354P Minute Maid Fresh Orange 180mL x1",,,,,pc,food
+720,SS1356P,4801670000000,"SS1356P UFC Spaghetti Sauce Supreme Party Pack (Pasta 900g + Sweet Filipino with Parmesan Cheese Sauce 1kg) x1",,,,,pc,food
+722,04866P,04866P,"04866P Slatted Box Crate Small x1 (10"" x 12"" x 5"")",,,,,pc,food
+723,MH102P,4801230000000,"MH102P Baygon Fly Paper x2",,,,,pc,food
+724,P1068P,4800190000000,"P1068P Pillows Chocolate Crackers 24g x1",,,,,pc,food
+725,1366P,1366P,"1366P Packaging Plastic 6 x 9.5 x 1.25 x 0.0015 PE Opaque white 3 color 2 side for BNT1677P Prima x1",,,,,pc,food
+726,P1317P,8888080000000,"P1317P Meiji Hello Panda Double Choco 35g x1",,,,,pc,food
+727,KG0144P,KG0144P,"KG0144P Ettore 55024 Straight Floor Squeegee 24"", Aluminum x1",,,,,pc,food
+728,MH121P,4801230000000,"MH121P Baygon Multi Insect Killer Odorless 300mL x1",,,,,pc,food
+729,FE126P,FE126P,"FE126P Generic Carpet Stain Remover Gallon x1",64,4,pc,2.00,case,non_food
+730,GR119P,GR119P,"GR119P Unbranded Floor Pad 20"" White x",24,5,pc,1.00,case,non_food
+731,P1758P,6914970000000,"P1758P M&M Peanut Funsize 175.5g x1",,,,,pc,food
+732,FE205P,FE205P,"FE205P Pranela Big Yellow yard x1",175,1,pc,14.00,pc,non_food
+733,SS0034P,4800010000000,"SS0034P Summit Spring Water 500mL x1",,,,,pc,food
+734,P1995P,4800360000000,"P1995P Milo Activ Go Winner 600g x1",,,,,pc,food
+735,SS1217P,4800090000000,"SS1217P Rebisco Sandwich Strawberry 32g x10",,,,,pc,food
+736,SS1231P,4806010000000,"SS1231P Super Q Bihon 227g x1",,,,,pc,food
+737,FE164P,FE164P,"FE164P Pranela Pink with edging x1",550,1,pc,42.00,pc,non_food
+739,SS1223P,4800040000000,"SS1223P Energizer Battery AA x2",,,,,pc,food
+740,P1791P,4800360000000,"P1791P Bear Brand Fortified Powdered Milk 840g x1",,,,,pc,food
+741,SS1213P,4800090000000,"SS1213P Rebisco Hansel Crackers 32g x10",,,,,pc,food
+742,OC0104P,OC0104P,"OC0104P Power Clean Protective Sealer - Supreme Gallon x1",13,4,pc,1.00,case,non_food
+743,GR118P,GR118P,"GR118P Unbranded Floor Pad 20"" Green x 1",23,5,pc,1.00,case,non_food
+744,P1630P,9556170000000,"P1630P Lay's Stax Extra Cheese 135g x1",,,,,pc,food
+745,FE093P,FE093P,"FE093P Mop Head Cotton 500g x1",151,1,pc,12.00,pc,non_food
+746,FE068P,FE068P,"FE068P Mop Handle Wood Roscas x1",88,1,pc,7.00,pc,non_food
+747,SS0143P,4800010000000,"SS0143P Cream O Chocolate 30g x10",,,,,pc,food
+748,08113P,08113P,"08113P Garbage Bag Small Yellow 18"" x 18"" x .001 x1",7500,100,pc,6.00,case,non_food
+749,SS0059P,4800067601747,"SS0059P Gleam Muriatic Acid 500mL x1",221,24,pc,1.00,case,non_food
+750,TM0116P,,"TM0116P Diversey Suma Calc 5L x1",10,1,pc,1.00,pc,non_food
+751,SS0118P,4800020000000,"Jack 'n Jill Chippy BBQ Red 27g x1",,,,,pc,food
+752,0471P,0471P,"0471P Packaging Plastic Calypso 7 x 12 0.0004 no print x1",,,,,pc,food
+753,P1350P,731126000000,"P1350P Nagaraya Garlic Cracker Nuts 80g x1",,,,,pc,food
+754,0543P,748485000000,"0543P Century Tuna Flakes in Oil 180g x1",,,,,pc,food
+755,P0161P,4800580000000,"P0161P Alaska Evaporada 370mL x1",,,,,pc,food
+757,FE141P,FE141P,"FE141P Doormat Oval x1",219,1,pc,17.00,pc,non_food
+758,P0241P,4800020000000,"P0241P Dynamite Blue Candy x50",,,,,pc,food
+759,SS1437P,4800820000000,"SS1437P Frutos Soft Chewy Candy x50",,,,,pc,food
+760,0919P,4800360000000,"0919P Nescafe Classic Instant Coffee Sticks 2g x48",,,,,pc,food
+761,SS1694P,34800000000000,"SS1694P Energizer Batterry AA x4",,,,,pc,food
+766,0498P,0498P,"0498P Plastic Broom with Plastic Dustpan Set x1",74,1,pc,6.00,pc,non_food
+767,FE155P,FE155P,"FE155P Toilet Pump Big x1",179,1,pc,14.00,pc,non_food
+768,MH117P,4801234165512,"MH117P Mr. Muscle Toilet Bowl Cleaner Citrus Scent 500mL x1",106,1,pc,8.00,pc,non_food
+769,P1444P,4893050000000,"P1444P Chips Ahoy Cookies 266g x1",,,,,pc,food
+770,SS1287P,8996000000000,"SS1287P Fres Candy Cherry 3g x50",,,,,pc,food
+771,MH15P,4801230000000,"MH15P Baygon Multi-Insect Killer Waterbased 300mL x1",,,,,pc,food
+772,P1480P,4800140000000,"P1480P Maya Hotcake Mix 500g x1",,,,,pc,food
+773,GR129P,48011140025,"GR129P 3M Stainless Steel Cleaner 600g x1",,,,,pc,food
+774,P1066P,4800580000000,"P1066P Krem-Top Coffee Creamer 250g x1",,,,,pc,food
+776,0346P,,"0346P Interfolded Paper Towel Virgin Pulp 175 pulls 30gsm x1",300,30,pc,1.00,case,non_food
+777,P1795P,1200110000000,"P1795P Lay's Sour Cream & Onion 170g x1",,,,,pc,food
+779,GR111P,GR111P,"GR111P 3M Microfiber Cloth Purple x10",15,5,pc,1.00,case,non_food
+780,FE090P,FE090P,"FE090P Wax Stripper Gallon x1",42,1,pc,4.00,pc,non_food
+782,P1022P,4800020000000,"P1022P Del Monte Creamy and Cheese Spaghetti Sauce 500g x1",,,,,pc,food
+783,P1071P,4800250000000,"P1071P San Marino Corned Tuna 85g x1",,,,,pc,food
+784,FE059P,FE059P,"FE059P Disposable Plastic Gloves x100",205,1,pc,16.00,pc,non_food
+787,1372-INP,1372-INP,"1372-INP IN House for BNTY0308 Sulit x1",,,,,pc,food
+788,SS0163P,8996000000000,"SS0163P Fres Mint Barley 3g x50",,,,,pc,food
+789,P0982P,8850180000000,"P0982P Glade Automatic Spray 3in1 Lavender and Vanilla Scent 175g Primary x1",,,,,pc,food
+790,P2148P,,"P2148P Downy Garden Bloom Pouch 660mL x1",64,8,,1.00,case,non_food
+791,Y0349P,Y0349P,"Y0349P Hand Roll Tissue MG 1ply 200m x1",60,12,pc,1.00,case,non_food
+792,P1115P,4804890000000,"P1115P Zesto Juice Drink 200ml Regular x1",,,,,pc,food
+793,P0697P,4800130000000,"P0697P Biogenic Alcohol Isopropyl Spray 70% 330ml x1",,,,,pc,food
+794,MH68P,9555220000000,"MH68P Glade Sensation Bathroom Lavender 8g x1",,,,,pc,food
+795,P2084P,,"P2084P Tide Detergent Powder 1160g x1",36,1,,3.00,pc,non_food
+796,SS1291P,4800020000000,"SS1291P XO Caramel Candy x50",,,,,pc,food
+797,FE301P,FE301P,"FE301P Dust Mop with Aluminum handle 36"" x1",,,,,pc,food
+798,0956P,4800020000000,"0956P Today's Fruit Cocktail 432g x1",,,,,pc,food
+799,MH135P,,"MH135P Glade Scented Gel Morning Freshness 180g x1",60,12,pc,1.00,case,non_food
+800,SS1210P,4806500000000,"SS1210P Champion Supra Clean Original 2kg x1",,,,,pc,food
+801,BC145P,BC145P,"BC145P Non-Bio Ziptie Garbage Bag Natural Medium 22"" x 24"" x20",400,50,pc,1.00,case,non_food
+802,P2117P,34000134113,"P2117P Hershey's Kisses Classic Milk Chocolate 150g x1",,,,,pc,food
+803,P1743P,4800360000000,"P1743P Milo Cereals 170g x1",,,,,pc,food
+805,FE249P,FE249P,"FE249P Rubber Gloves Makapal XL pair x1",138,1,pc,11.00,pc,non_food
+806,P2198P,8991000000000,"P2198P Delfi Treasure Golden Almond 36g x1",,,,,pc,food
+807,0377P,4800150000000,"0377P Zim Glass Cleaner Lemon With Spray 500mL x1",,,,,pc,food
+808,P2098P,4800520000000,"P2098P Tomi Super Sweet Corn 25g x1",,,,,pc,food
+809,P0719P,7622200000000,"P0719P Toblerone Mini 200g x1",,,,,pc,food
+810,SS1261P,8996000000000,"SS1261P Kopiko Candy Coffeeshot Coffee 175g x1",,,,,pc,food
+811,MH71P,4801234074029,"MH71P Mr. Muscle Stick on Toilet Bowl Cleaning Strip Lavender Scent 10g x3",129,24,pc,1.00,case,non_food
+812,P2222P,4902430000000,"P2222P Ambi Pur Car Freshener Lavender Scent Mini Clip 2.2 mL x1",,,,,pc,food
+816,KG0148P,KG0148P,"KG0148P RCP 9S09-25 Stable Safety Sign with Wet Floor Symbol, Yellow x1",,,,,pc,food
+823,SS1214P,4800090000000,"SS1214P Rebisco Sandwich Choco 32g x10",,,,,pc,food
+824,BC211P,BC211P,"BC211P Biodegradable Garbage Bag XL Black 30"" x 37"" x10",,,,,pc,food
+825,SS1669P,4806530000000,"SS1669P Rite 'n Lite Cucumber in can 250mL x1",,,,,pc,food
+826,P0784P,70177086664,"P0784P Twinings Pure Green Tea 50g x25",,,,,pc,food
+828,P0789P,4800070000000,"P0789P Gleam Liquid Sosa 250mL x1",,,,,pc,food
+829,SS1574P,4803930000000,"SS1574P Gatorade Blue Bolt 350mL x1",,,,,pc,food
+830,1373P,1373P,"1373P Packaging Plastic 12 + 4 tbg x 10 1/2 x .0015 PE for BNTY1662 IFPT x1",,,,,pc,food
+833,FE202P,FE202P,"FE202P 3M Polishing Pad 20"" White x1",,,,,pc,food
+834,P1327P,4800170000000,"P1327P Junior Stik-O Chocolate 380g x1",,,,,pc,food
+835,P1019P,4800020000000,"P1019P Del Monte Spaghetti Pasta 400g + Del Monte Spaghetti Sauce Filipino Style 500g x1",,,,,pc,food
+836,P1920P,4800040000000,"Fibisco Butter Cookies 70g x1",,,,,pc,food
+837,P0301P,9321780000000,"P0301P Equal Sweetener x100",,,,,pc,food
+842,SS1196P,4800020000000,"SS1196P Piattos Roadhouse Barbecue 85g x1",,,,,pc,food
+843,P1462P,4800010000000,"P1462P Delimondo Garlic and Chili Corned Beef 260g x1",,,,,pc,food
+844,P1453P,4800050000000,"P1453P Del Fabric Softener with Fragrance Pearls Shower Fresh 1000ml x1",,,,,pc,food
+845,P1562P,8801060000000,"P1562P Lotte Pepero Snowy Almond 32g x1",,,,,pc,food
+846,P0805P,4800270000000,"P0805P Quaker Mini Oats Cookies 28g x1",,,,,pc,food
+848,SS1662P,4800500000000,"SS1662P Hermano Refined Sugar 500g x1",,,,,pc,food
+849,P2272P,4800150000000,"P2272P Zim Cleaning Pads Scrub Pad Sulit Size Medium x1",,,,,pc,food
+850,08158P,08158P,"08158P Garbage Bag XXL Black 37'' x 40"" x 0.0015 x1",1300,100,pc,1.00,case,non_food
+852,P0118P,4800250000000,"P0118P CDO Nata de Coco White 12oz",,,,,pc,food
+853,1551P,4800067600283,"1551P Albatross Sampaguita Refill 50g x1",227,12,pc,2.00,case,non_food
+854,FE165P,FE165P,"FE165P Pranela Yellow with edging x1",305,1,pc,23.00,pc,non_food
+855,P1662P,9321780000000,"P1662P Equal Classic Sweetener 1g x50",,,,,pc,food
+857,SS0248P,4800190000000,"SS0248P Oishi Bread Pan Buttered Toast 42g x1",,,,,pc,food
+858,P1775P,8992800000000,"P1775P Fitbar Fruits 24g x1",,,,,pc,food
+860,SS1500P,4804890000000,"SS1500P Zesto Juice Drink Apple 200mL x1",,,,,pc,food
+861,SS0971P,4804890000000,"SS0971P Zesto Orange Juice 200mL x1",,,,,pc,food
+862,SS1421P,4800020000000,"SS1421P Jack 'n Jill Hello! Vanilla-Coated Wafer Sandwich 150g x10",,,,,pc,food
+863,SS1266P,4809010000000,"SS1266P Boy Bawang Cornick Garlic 90g x1",,,,,pc,food
+864,FE252P,FE252P,"FE252P Baby Paper Plates Silver x25",249,20,pc,1.00,case,non_food
+865,P2205P,4806510000000,"P2205P Splenda Furniture Polish Lemon 330mL x1",,,,,pc,food
+866,BC153P,BC153P,"BC153P Biodegradable Ziptie GB Natural Large 26"" x 32"" x10",200,20,pc,1.00,case,non_food
+867,FE020P,FE020P,"FE020P Toilet Pump Small x1",124,1,pc,10.00,pc,non_food
+868,SS1681P,806505000000,"SS1681P Mega Sardines Tomato 155g x1",,,,,pc,food
+869,SS1706P,8998670000000,"SS1706P Kopiko Blanca Twin Pack 58g x10",,,,,pc,food
+870,1055P,4902430000000,"1055P Joy Dishwashing Liquid Kalamansi 780mL x1",,,,,pc,food
+874,SS1093P,4800050000000,"SS1093P Nature's Spring Water 500mL x1",,,,,pc,food
+875,BC185P,BC185P,"BC185P Biodegradable Ziptie Garbage Bag Natural XXL 37"" x 40"" x10",,,,,pc,food
+877,BC154P,BC154P,"BC154P Biodegradable Ziptie GB Natural XL 30"" x 37"" x10",,,,,pc,food
+879,FE226P,FE226P,"FE226P Sulit Fork White x25",231,1,pc,18.00,pc,non_food
+880,04925P,04925P,"04925P Magic Mop x1",30,1,pc,3.00,pc,non_food
+881,SS0241P,4800250000000,"SS0241P CDO Karne Norte 100g x1",,,,,pc,food
+882,Z1013P,9556111408064,"Z1013P Lysol D. Spray Crisp Linen 170g x1",27,12,pc,1.00,case,non_food
+883,OC0108P,,"OC0108P Power Clean Solution Multi Purpose Cleaner Gallon x1",28,4,pc,1.00,case,non_food
+886,2028P,2028P,"2028P Body Wash Garden of Lavander Gallon x1",22,4,pc,1.00,case,non_food
+887,SS0939P,4807770000000,"SS0939P Lucky Me Supreme LaPaz Batchoy 70g x1",,,,,pc,food
+889,P0726P,4800020000000,"P0726P Jack 'n Jill Hello! Chocolate Choco-Coated Wafer Sandwich 150g x10",,,,,pc,food
+891,P1903P,,"P1903P Surf Detergent Powder Kalamansi 2.2kg x1",26,4,pc,1.00,case,non_food
+892,P1930P,4806020000000,"P1930P Lemon Square Whatta Tops Chocolate Cupcake 35g x10",,,,,pc,food
+893,04923P,04923P,"04923P Manual Liquid Soap Dispenser 1000mL x1",,,,,pc,food
+894,FE177P,FE177P,"FE177P Air Freshener Lemon Scent Gallon x1",40,4,pc,1.00,case,non_food
+895,P1818P,4902430627528,"P1818P Downy Antibac Fabric Conditioner Refill 690mL x1",40,8,pc,1.00,case,non_food
+896,P1908P,4806020000000,"P1908P Lemon Square Assorted Flavor 30g x10",,,,,pc,food
+898,SS1330P,4800020000000,"SS1330P Jack 'n Jill Maxx Cherry Mentol Candy 50's x1",,,,,pc,food
+899,SS1705P,,"SS1705P Pride Powder Washing Machine (Light Blue) 40g x1",1500,1,pc,113.00,pc,non_food
+900,P2082P,8993180000000,"P2082P Richeese Cheese 48g x1",,,,,pc,food
+901,SS0142P,4800020000000,"SS0142P Nissin Cup Noodles Batchoy 60g x1",,,,,pc,food
+902,08140P,08140P,"08140P Garbage Bag XXL Clear 37"" x 40"" x .0015 x1",900,100,pc,1.00,case,non_food
+903,04981P,04981P,"04981P Heavy Duty Plastic Broom with Plastic Dustpan Set x1",13,1,pc,1.00,pc,non_food
+904,SS1403P,4800010000000,"SS1403P Dole Pineapple Chunks 227g x1",,,,,pc,food
+905,FE054P,FE054P,"FE054P Plastic Laundry Brush x1",193,1,pc,15.00,pc,non_food
+906,P1854P,1200110000000,"P1854P Ruffles Cheddar & Sour Cream 170g x1",,,,,pc,food
+907,1374P,1374P,"1374P Packaging Plastic 10 x 16 3/4 + 5 tbg x .0015 PE for BNTY0309P Pre cut x1",,,,,pc,food
+909,P1633P,7614500000000,"P1633P Toblerone Milk Chocolate Bar 200g x1",,,,,pc,food
+910,SS1360P,4800220000000,"SS1360P Clover Chips Cheese 55g x1",,,,,pc,food
+912,P1843P,,"P1843P Joy Dishwashing Liquid Kalamansi Refill 540mL x1",42,3,pc,2.00,case,non_food
+913,P1918P,6924740000000,"P1918P Doritos Smokin' BBQ 65g x1",,,,,pc,food
+915,P2383P,,"P2383P Albatross Apple with Holder 100g x1",94,12,pc,1.00,case,non_food
+916,0165P,0165P,"0165P Twin Flying Horse Disposable Plastic Cups 8oz x50",240,20,pc,1.00,case,non_food
+917,FE273P,FE273P,"FE273P Generic Polisher Nylon Brush 16"" x1",8,1,pc,1.00,pc,non_food
+918,P0309P,3400249862,"P0309P Hersheys Chocolate 43g x1",,,,,pc,food
+922,FE234P,FE234P,"FE234P Sulit Spoon x25",205,100,pc,1.00,case,non_food
+923,0529P,4801980000000,"0529P Sprite Regulat PET Bottle 1.5L x1",,,,,pc,food
+924,08122P,08122P,"08122P Garbage Bag Small Green PE 18"" x 18"" x .001 x1",4000,100,pc,3.00,case,non_food
+925,P1522P,722776000000,"P1522P Splenda No Calorie Sweetener 1.7oz x50",,,,,pc,food
+926,P1210P,4807770000000,"P1210P Lucky Me Instant Pancit Canton Sweet & Spicy 80g x1",,,,,pc,food
+927,P1320P,4800360000000,"P1320P Nestle Bear Brand Powdered Milk 1200g x1",,,,,pc,food
+928,P2279P,4800020000000,"P2279P Jack 'N Jill Vcut Potato Chips Cheese 25g x1",,,,,pc,food
+930,FE191P,FE191P,"FE191P Window Squeegee 8"" w/ foam and handle (ordinary,china) x1",,,,,pc,food
+931,P0071P,95502489,"P0071P Nestle Kitkat 2F 17g x1",,,,,pc,food
+932,SS1440P,,"SS1440P Surf Detergent Powder Blossom Fresh 1.1kg x1",51,12,pc,1.00,case,non_food
+933,FE043P,FE043P,"FE043P Feather Duster x1",79,1,pc,6.00,pc,non_food
+934,1350P,4800020000000,"1350P Del Monte Fit N Right Pineapple 330ml x1",,,,,pc,food
+936,SS0125P,4800020000000,"SS0125P Piattos Sour Cream & Onion 40g x1",,,,,pc,food
+937,P1377P,4800020000000,"P1377P Piattos Roadhouse Barbecue 40g x1",,,,,pc,food
+938,SS1307P,4800020000000,"SS1307P Pretzel Chocolate Mini 28g x1",,,,,pc,food
+939,P1857P,p1857p,"P1857P Cleanaide Microfiber Red x1",70,50,pc,1.00,case,non_food
+940,SS0084P,4800045310159,"SS0084P Smart Dishwashing Paste 400g with canister x1",116,1,pc,9.00,pc,non_food
+941,0908P,37600336161,"0908P Spam Luncheon Meat Lite 12oz x1",,,,,pc,food
+943,P2206P,8801060000000,"P2206P Lotte Pepero Original 47g x1",,,,,pc,food
+945,FE167P,FE167P,"FE167P Laundry Brush Fish Net x1",187,1,pc,15.00,pc,non_food
+948,P2004P,4806501709178,"P2004P Calla Detergent Powder Floral Scent 1.6kg x1",26,1,,2.00,pc,non_food
+949,GR137P,GR137P,"GR137P 3M Scotch Brite Scrub Sponge with Foam Regular 150mm x 95mm x1",69,1,pc,6.00,pc,non_food
+951,MH63P,4801230000000,"MH63P Baygon Cockroach Killer Aerosol 500ml x1",,,,,pc,food
+952,P1474P,9556180000000,"P1474P Cadbury Dairy Milk Chocolate 15g x1",,,,,pc,food
+953,SS0967P,4800070000000,"SS0967P Gleam Muriatic Acid 250ml x1",,,,,pc,food
+955,1060P,4902430000000,"1060P Joy Expert Dishwashing Liquid Antibac Bottle 475mL x1",,,,,pc,food
+957,FE281P,FE281P,"FE281P Megatop Plastic Cups 8 oz x50",204,20,pc,1.00,case,non_food
+958,GR115P,GR115P,"GR115P Unbranded Polishing Pad Green 16"" x1",14,5,pc,1.00,case,non_food
+961,P2592P,51000012616,"P2592P Campbell's Cream of Mushroom Soup 298g x1",,,,,pc,food
+962,P1213P,8000380000000,"P1213P Loacker Mini's 200g x1",,,,,pc,food
+963,0831P,4800020000000,"0831P Del Monte Fit n Right Four Seasons 330mL x1",,,,,pc,food
+964,P1086P,9555220000000,"P1086P Glade Sensation Lemon 8g x1",,,,,pc,food
+965,OC0106P,,"OC0106P Power Clean Spray Buff Solution Supreme Gallon x1",7,4,pc,1.00,case,non_food
+967,04836P,04836P,"04836P Ribbon x1",,,,,pc,food
+968,0550P,4803930000000,"0550P Root Beer 330mL x1",,,,,pc,food
+969,OC0109P,,"OC0109P Power Clean Toilet Bowl Cleaner Gallon 3.4L x1",20,4,pc,1.00,case,non_food
+971,SS0985P,480067600740,"SS0985P Albatross Sampaguita 100g with holder x1",75,12,pc,1.00,case,non_food
+972,04843P,04843P,"04843P Ecobox XL x1 (LxWxH: 13 x 11.5 x 12)",,,,,pc,food
+974,FE203P,FE203P,"FE203P Rubber Gloves Super Thick Black pair x1",55,1,pc,5.00,pc,non_food
+976,2123P,4800047840258,"2123P Zonrox Bleach Fresh Scent Gallon x1",33,3,pc,1.00,case,non_food
+977,SS1680P,4848570004,"SS1680P 555 Tuna Flakes Mechado 155g x1",,,,,pc,food
+978,GR106P,GR106P,"GR106P 3M Scrubbing Pad 16"" Blue x1",9,5,pc,1.00,case,non_food
+979,P2310P,4800400000000,"P2310P Liberty Ham Luncheon Meat 375g x1",,,,,pc,food
+980,MH88P,4801230000000,"MH88P Baygon 24-hr Roach Killer x6",,,,,pc,food
+981,MH73P,4801234014728,"MH73P Mr. Muscle Glass & Multi-Surface Cleaner Primary - Lemon Lime 500ml x1",30,1,pc,3.00,pc,non_food
+982,08120P,08120P,"08120P Garbage Bag Large Yellow 26"" x 32"" .001 x1",1400,100,pc,2.00,case,non_food
+983,MH77P,,"MH77P Mr. Muscle Toilet Bowl Cleaner 500ml Citrus Scent x1",42,24,pc,1.00,case,non_food
+988,P0066P,76145759,"P0066P Toblerone 35g x1",,,,,pc,food
+989,P1461P,75069350137,"P1461P Prem Lite Luncheon Meat 340g x1",,,,,pc,food
+990,P1011P,4800020000000,"P1011P Del Monte Original Blend Ketchup Pouch 320g x1",,,,,pc,food
+991,2062P,4809013751796,"2062P Rubbing Alcohol 70% Isopropyl Alcohol with moisturizer Fresh Petal Scent 500ml pump bottle with front sticker x1",48,4,pc,1.00,case,non_food
+993,FE303P,,"FE303P Rubber Gloves Makapal Small Pair x1",63,1,pc,5.00,pc,non_food
+997,SS1110P,4800020000000,"SS1110P Nissin Cup Noodles Chicken Sotanghon 30g x1",,,,,pc,food
+998,FE275P,FE275P,"FE275P Broom Stick with Handle x1",31,1,pc,3.00,pc,non_food
+999,SS1068P,4800020000000,"SS1068P Nissin Cup Noodles Chicken 40g x1",,,,,pc,food
+1000,P2075P,4800020000000,"P2075P Nissin Yakisoba Spicy Chicken 59g x1",,,,,pc,food
+1001,SS1268P,4809010000000,"SS1268P Boy Bawang Cornick Adobo 90g x1",,,,,pc,food
+1002,P1553P,4902430867306,"P1553P Joy Dishwashing Liquid Kalamansi Bottle 475ml x1",30,1,pc,3.00,pc,non_food
+1004,P2017P,,"P2017P Champion Fabric Conditioner 1L Pouch x1",24,1,pc,2.00,pc,non_food
+1005,SS1294P,,"SS1294P Pride with Fabric Conditioner Detergent Sakura Blossom 2kg x1",21,1,pc,2.00,pc,non_food
+1006,0389P,4800147200099,"0389P Zim Scouring Pad With Sponge Small 75x100x30mm x1",153,1,pc,12.00,pc,non_food
+1008,P1281P,4800020000000,"P1281P Great Taste Coffee Premium 100g x1",,,,,pc,food
+1009,Y0320P,Y0320P,"Y0320P Interfolded Paper Towel Dispenser White Small x1",,,,,pc,food
+1011,FE160P,FE160P,"FE160P Dust Mop Head 36"" x1",7,1,pc,1.00,pc,non_food
+1012,SS1748P,4800050000000,"SS1748P Natures Spring Water 350mL x1",,,,,pc,food
+1013,MH87P,4801234071622,"MH87P Mr. Muscle All Purpose Cleaner Wild Lavender 1L x1",23,12,pc,1.00,case,non_food
+1015,GR139P,GR139P,"GR139P 3M Microfiber Cloth White x1",50,50,pc,1.00,case,non_food
+1016,SS0048P,4800020000000,"SS0048P Nissin Cup Noodles Spicy Seafood 60g x1",,,,,pc,food
+1017,BC162P,BC162P,"BC162P Ziptie Garbage Bag Black XL 30"" x 37"" x .0010 x10",100,100,pc,1.00,case,non_food
+1018,FE169P,FE169P,"FE169P Floor Squeegee 2 ft (24 inches) ordinary x1 (old price)",,,,,pc,food
+1019,SS1520P,8996000000000,"SS1520P Kopiko Ready to Drink Lucky Day Coffee 180mL x1",,,,,pc,food
+1020,BC147P,BC147P,"BC147P Biodegradable Ziptie Garbage Bag Black Medium 22"" x 24"" x20",,,,,pc,food
+1021,P1001P,4800020000000,"P1001P Del Monte Spaghetti Sauce Filipino Style 500g x1",,,,,pc,food
+1022,P0844P,P0844P,"P0844P 3M Scotch Brite Scrubbing Pad 75mm x 75mm x 8mm x1 (old stock and old price)",,,,,pc,food
+1023,P1996P,4800250000000,"P1996P CDO Meat Loaf 150g x1",,,,,pc,food
+1024,P2291P,8886470000000,"P2291P Pringles Sour Cream & Onion 134g x1",,,,,pc,food
+1025,SD0101P,SD0101P,"SD0101P Biogesic 500mg Tablet x10",,,,,pc,food
+1026,SS1076P,4800250000000,"SS1076P CDO Karne Norte 260g x1",,,,,pc,food
+1028,SF0117P,SF0117P,"SF0117P Garbage Bag XL Yellow 30"" x 37"" x .001 x1",1000,100,pc,1.00,case,non_food
+1029,MH104P,4801230000000,"MH104P Mr. Muscle All Purpose Cleaner Floral Perfection 1L x1",,,,,pc,food
+1031,P2240P,4280000000000,"P2240P Nescafe Creamy White 25.5g x30",,,,,pc,food
+1033,P1326P,4807770000000,"P1326P Lucky Me Supreme Jjamppong 35g x1",,,,,pc,food
+1034,0380P,4800147210654,"0380P Zim 2N1 Scrubbing sponge Jr x1",166,1,pc,13.00,pc,non_food
+1035,P2270P,4800090000000,"P2270P Cupp Keyk Nutty Choco 33g x10",,,,,pc,food
+1037,P0823P,28400017053,"P0823P Ruffles Cheddar & Sour Cream 6.5oz x1",,,,,pc,food
+1040,SS1302P,8886470000000,"SS1302P Pringles Cheese 134g x1",,,,,pc,food
+1041,1047P,4902430000000,"1047P Safeguard Pure White Tripid Bar Soap 85g x3",,,,,pc,food
+1042,SF0102P,SF0102P,"SF0102P Garbage Bag XXL Green 37"" x 40"" x .001 x1",700,100,pc,1.00,case,non_food
+1043,08134P,08134P,"08134P Garbage Bag Large Green 26"" x32"" x .001 x1",1100,100,pc,1.00,case,non_food
+1044,SS1293P,8996000000000,"SS1293P Fres Candy Apple Peach 50's x1",,,,,pc,food
+1045,MH25P,,"MH25P Baygon Multi-Insect Killer Kerosene Based 500mL x1",11,12,pc,1.00,case,non_food
+1046,P1667P,,"P1667P Del Fabric Conditioner Gentle Protect Refill 1L x1",18,12,pc,1.00,case,non_food
+1048,0477P,0477P,"0477P Mop Handle Heavy Duty Rubbermaid Aluminum x1",2,1,pc,1.00,pc,non_food
+1050,FE145P,FE145P,"FE145P Air Freshener Strawberry Scent Gallon x1",19,4,pc,1.00,case,non_food
+1054,P1479P,4806010000000,"P1479P Jolly Mushroom 284g x1",,,,,pc,food
+1055,SS1556P,4800020000000,"SS1556P Nissin Yakisoba Savory Beef 59g x1",,,,,pc,food
+1056,P1552P,4800020000000,"P1552P Great Taste White Caramel Twin Pack 50g x1",,,,,pc,food
+1057,MH110P,4801234056827,"MH110P Pledge Furniture Cleaner Rain Shower 330mL x1",10,24,pc,1.00,case,non_food
+1058,P2268P,4800090000000,"P2268P Dingdong Snack Mix 95g x1",,,,,pc,food
+1059,0875P,4800020000000,"0875P Nissin Minicup Noodles Spicy Seafood 40g x1",,,,,pc,food
+1060,0347P,4806500000000,"0347P Sanicare Cleansing Wipes Bamboo 80 Sheets x1",,,,,pc,food
+1062,P1855P,1200110000000,"P1855P Ruffles Sour Cream & Onion 170g x1",,,,,pc,food
+1065,SS1456P,4800090000000,"SS1456P Rebisco Extreme Choco-Coat 25g x10",,,,,pc,food
+1066,04927P,04927P,"04927P Stainless Steel Paper Towel Dispenser x1",,,,,pc,food
+1071,1363P,1363P,"1363P Plastic Packaging for BNTY0306P 3p12 x1",,,,,pc,food
+1072,1366-INP,1366-INP,"1366 INP IN House for BNT1677P Prima x1",,,,,pc,food
+1075,MH100P,9555220000000,"MH100P Glade Air Freshener Ocean Escape 320ml x1",,,,,pc,food
+1076,P1611P,4800890000000,"P1611P Domex Multi Purpose Cleaner Lemon Bottle 1000mL x1",,,,,pc,food
+1080,SS1118P,4801670000000,"SS1118P Papa Sweet-Sarap Spaghetti Pack 1.7kg (Pasta 800g + Sauce 900g) x1",,,,,pc,food
+1081,SS1434P,4800020000000,"SS1434P Magic Flakes Cheese Cracker 28g x10",,,,,pc,food
+1082,SS0979P,4801980000000,"SS0979P Coke Regular 2L x1",,,,,pc,food
+1083,SS0115P,4800020000000,"SS0115P C2 Apple Green Tea 355mL",,,,,pc,food
+1086,P2337P,7622200000000,"P2337P Cadbury Dairy Milk Bites Hazelnut 50g x1",,,,,pc,food
+1090,0350P,0350P,"0350P Bathroom Tissue Roll Virgin Pulp 3ply 600sheets x1",192,48,pc,1.00,case,non_food
+1091,TI002P,TI002P,"TI002P Packaging Plastic with Perforation 7 1/2 L x 7 1/2 W x 4 tbg x .0015 PE color for BNTY0302P Jumbo Pop Up x1",,,,,pc,food
+1093,SS1439P,4801980000000,"SS1439P Minute Maid Fresh Mango 180mL x1",,,,,pc,food
+1094,P1299P,4806013250052,"P1299P Pine-Sol Multi-Surface Cleaner & Deodizer Lemon Fresh 500mL x1",23,24,pc,1.00,case,non_food
+1096,P2781P,,"P2781P Albatross Apple Refill 100g x1",45,12,x1,1.00,case,non_food
+1101,0836P,4801000000000,"0836P Lysol Disinfectant Concentrate Pine Scent 500mL x1",,,,,pc,food
+1103,SS1670P,4806530000000,"SS1670P Rite 'n Lite Lemon-Lime in can 250mL x1",,,,,btl,food
+1104,SS0141P,4800020000000,"SS0141P Nissin Cup Noodles Bulalo 60g x1",,,,,pc,food
+1105,1389P,1389P,"1389P Stainless Steel Jumbo Roll Tissue Dispenser (LX841030) x1",,,,,pc,food
+1107,Y0348P,Y0348P,"Y0348P Jumbo Roll Tissue Dispenser Black Round x1",,,,,pc,food
+1108,P1208P,4807770000000,"P1208P Lucky Me Instant Pancit Canton Kalamansi 80g x1",,,,,pc,food
+1109,SS1321P,4800020000000,"SS1321P Del Monte Pineapple Tidbits 200g x1",,,,,pc,food
+1110,FE046P,FE046P,"FE046P Knitted Gloves pair x1",100,1,pc,8.00,pc,non_food
+1112,SS1626P,4800020000000,"SS1626P Del Monte Sweetened Pineapple Juice 220mL x1",,,,,pc,food
+1113,FE029P,FE029P,"FE029P Ceiling Broom x1",32,1,pc,3.00,pc,non_food
+1114,SS1504P,750515000000,"SS1504P SkyFlakes Crackers Sandwich Condensada 30g x10",,,,,pc,food
+1116,2109P,4800050000000,"2109P Green Cross Isoprophyl Alcohol 70% with moisturizer 150mL x1",,,,,pc,food
+1118,SS1470P,748485000000,"SS1470P Angel Coffee Creamer 200g x1",,,,,pc,food
+1121,P2071P,4800070000000,"P2071P Gleam Muriatic Acid 1L x1",,,,,pc,food
+1123,0205P,4809010000000,"0205P Siete Baracos Blackgold Whole Beans 454g x1",,,,,pc,food
+1124,SS1554P,4800090000000,"SS1554P Fudgee Bar Flavor Combo 39.5g x10",,,,,pc,food
+1126,P2246P,34000134311,"P2246P Hershey's Kisses Milk Chocolate with Almonds 150g x1",,,,,pc,food
+1127,P1533P,4800190000000,"P1533P Oishi Grab Nuts Roasted Almonds 30g x1",,,,,pc,food
+1128,P1344P,7622210000000,"P1344P Cadbury Dairy Milk Fruit & Nut 62g x1",,,,,pc,food
+1130,P0551P,4002310000000,"P0551P Goya Double Hazelnut Spread 350g x1",,,,,pc,food
+1131,0387P,4800150000000,"0387P Zim Powder Cleanser Floral Scent Canister 350g x1",,,,,pc,food
+1132,P1239P,4800020000000,"P1239P Del Monte Pineapple Tidbits 227g",,,,,pc,food
+1133,P1593P,4987180000000,"P1593P Tide Perfect Clean Detergent Powder Antibac 1510g x1",,,,,pc,food
+1135,SS0977P,4801980000000,"SS0977P Sprite Regular 2L x1",,,,,pc,food
+1137,2085P,2085P,"2085P Swakto Fabric Conditioner Duo with Antibacterial 40mL x1",432,144,pc,1.00,case,non_food
+1139,Z1020P,9556110000000,"Z1020P Lysol D. Spray Citrus Meadows 340g x1",,,,,pc,food
+1140,BC152P,BC152P,"BC152P Biodegradable Ziptie GB Natural Medium 22"" x24"" x20",,,,,pc,food
+1141,P1700P,4800310000000,"P1700P Scotch-Brite Delicate Care Net Sponge 80mm x 140mm x1",,,,,pc,food
+1142,P2093P,4800220000000,"P2093P Clover Chips Cheesier 24g x1",,,,,pc,food
+1143,FE007P,FE007P,"FE007P Hand Brush Big Heavy Duty x1",33,1,pc,3.00,pc,non_food
+1145,SS1343P,4800020000000,"SS1343P Great Taste Choco Twin Pack 50g x10",,,,,pc,food
+1146,SS1405P,4800090000000,"SS1405P Rebisco Sandwich Peanut Butter 33g x10",,,,,pc,food
+1148,MH81P,9555220000000,"MH81P Glade Automatic Spray Sakura & Waterlily Refill 175g x1",,,,,pc,food
+1149,SS1162P,748485000000,"555 Sardines in Tomato Sauce 155g x1",,,,,pc,food
+1150,P1735P,4987180000000,"P1735P DownySunrise Fabric Conditioner Refill 660mL x1",,,,,pc,food
+1153,FE244P,FE244P,"FE244P Pranela Green with edging x1",81,1,pc,7.00,pc,non_food
+1155,P2106P,4807770000000,"P2106P Nissin Bread Stix 20g x10",,,,,pc,food
+1157,SS1631P,4801690000000,"SS1631P Regent Assorted Cakes 20g x10",,,,,pc,food
+1158,FE287P,FE287P,"FE287P Generic Furniture Polish Gallon x1",4,1,pc,1.00,pc,non_food
+1159,SS0978P,8886470000000,"SS0978P Pringles Cheese 42g x1",,,,,pc,food
+1160,2128P,4800047841736,"2128P Zonrox Bleach Plus 900ml x1",32,24,pc,1.00,case,non_food
+1161,0987P,4800020000000,"0987P Del Monte Spaghetti Pasta 400g x1",,,,,pc,food
+1163,2114P,4800047840029,"2114P Zonrox Bleach Original 500mL",63,36,pc,1.00,case,non_food
+1164,0153P,0153P,"0153P Paper Plate Laminated Paper Plate x25",58,20,pc,1.00,case,non_food
+1165,Y0310P,Y0310P,"Y0310P Bonita Quarter fold Table Napkin Virgin Pulp 1 ply 350 sheets x1",24,8,pc,1.00,case,non_food
+1168,SS1466P,4902430000000,"SS1466P Ariel Powder Sunrise Fresh Jumbo 70g x1",,,,,pc,food
+1169,PT0001P,4806510000000,"PT0001P Top Hat Spoon White x25",,,,,pc,food
+1170,P1634P,750515000000,"P1634P Fita Crackers Singles 30g x15",,,,,pc,food
+1171,0549P,4801980000000,"0549P Royal True Orange 1.5L x1",,,,,pc,food
+1172,P1383P,4800190000000,"P1383P Oishi Potato Fries Cheese 50g x1",,,,,pc,food
+1173,FE241P,FE241P,"FE241P Unbranded Polishing Pad Blue 16"" x1",5,5,pc,1.00,case,non_food
+1174,PT0002P,4806510000000,"PT0002P Top Hat Fork White x25",,,,,pc,food
+1175,P2358P,4806510000000,"P2358P Magnolia Pancake Plus with Mapple Syrup 480g x1",,,,,pc,food
+1176,SS1194P,748486000000,"SS1194P Argentina Beef Loaf 170g x1",,,,,pc,food
+1177,B23P1947P,8801120000000,"B23P1947P Lotte Luncheon Meat 340g x1",,,,,pc,food
+1178,04924P,04924P,"04924P Dustpan Stainless x1",12,1,pc,1.00,pc,non_food
+1179,SS1067P,4800020000000,"SS1067P Nissin Cup Noodles Creamy Seafood 40g x1",,,,,pc,food
+1180,SS1428P,4800020000000,"SS1428P Mang Juan Chik'n Skin 17g x1",,,,,pc,food
+1181,P1621P,7622210000000,"P1621P Cadbury Dairy Milk Chocolate Mini Bites Share Bag 81g x1",,,,,pc,food
+1183,SS1274P,4800020000000,"SS1274P Dewberry Blueberry Cheesecake 33g x10",,,,,pc,food
+1184,Y0318P,Y0318P,"Y0318P Jumbo Roll Tissue Dispenser Plain White Round x1",,,,,pc,food
+1185,P2353P,3179730000000,"P2353P Perrier Sparkling Water 750ml x1",,,,,pc,food
+1186,SS1508P,4801960000000,"SS1508P Ajinomoto Crispy Fry Breading Mix Original 62g x1",,,,,pc,food
+1187,SS1054P,4807770000000,"SS1054P Lucky Me Mini Bulalo 40g x1",,,,,pc,food
+1188,P1961P,8801060000000,"P1961P Lotte Pepero White Cookie 32g x1",,,,,pc,food
+1191,GR121P,GR121P,"GR121P 3M Buffer Pad Red 20"" x1",2,5,pc,1.00,case,non_food
+1194,2114C,24800047840023,"2114C Zonrox Bleach Original 500x36",2,36,case,1.00,case,non_food
+1195,P2402P,4800250000000,"P2402P CDO Meat Loaf Spicy 150g x1",,,,,pc,food
+1196,P2137P,9556076012689,"P2137P Ambi Pur Gel Fresh Refreshing Lemon 180g x1",10,1,,1.00,pc,non_food
+1197,SS1160P,4800010000000,"SS1160P Nestea Iced Tea Lemon 500mL x1",,,,,pc,food
+1198,P2238P,4806501708232,"P2238P Champion Fabric Conditioner Pink Fresh 1L Pouch x1",9,1,pc,1.00,pc,non_food
+1199,SS1367P,4806501707112,"SS1367P Champion Detergent Bar 370g x1",51,1,pc,4.00,pc,non_food
+1200,FE161P,FE161P,"FE161P Basong Pinoy Plastic Cups 8 oz x50",60,20,pc,1.00,case,non_food
+1201,P2147P,4902430000000,"P2147P Downy Sunrise Fresh Pouch 660mL x1",,,,,pc,food
+1202,10002P,4808890000000,"10002P Axion Dishwashing Paste Lemon Refill 350g x1",,,,,pc,food
+1203,P1216P,4800580000000,"P1216P Kremtop 170g x1",,,,,pc,food
+1204,SS1528P,729461000000,"SS1528P Regent Cheese Ring 25g x1",,,,,pc,food
+1205,SS0937P,4807770000000,"SS0937P Lucky Me Supreme Bulalo 70g x1",,,,,pc,food
+1206,1373-INP,1373-INP,"1373-INP IN House for BNTY1662 IFPT x1",,,,,pc,food
+1207,P0058P,4902430000000,"P0058P Safeguard Soap White 60g x1",,,,,pc,food
+1208,04900P,4806520000000,"04900P Surgitech Surgical Latex Gloves Medium x100",,,,,pc,food
+1210,BC151P,BC151P,"BC151P Biodegradable Ziptie Garbage Bag Natural Small 18"" x 20"" x20",,,,,pc,food
+1211,SS1627P,4800090000000,"SS1627P Rebisco Crackers Plain 33g x20",,,,,pc,food
+1212,FE299P,FE299P,"FE299P Plastic Hand Brush Heavy Duty x1",23,1,pc,2.00,pc,non_food
+1213,P0949P,4801980000000,"P0949P Royal 2L x1",,,,,pc,food
+1214,04868P,04868P,"04868P Bouffant Cap White x100",,,,,pc,food
+1215,1442P,1442P,"1442P Hair Net x10",,,,,pc,food
+1218,P1781P,748485000000,"P1781P Birch Tree Fortified 33g x1",,,,,pc,food
+1223,SS1625P,4800020000000,"SS1625P Del Monte Pineapple Orange Juice 220mL x1",,,,,pc,food
+1224,P0113P,4800060000000,"OK Cheese 200g x1",,,,,pc,food
+1226,MH124P,4801230000000,"MH124P Baygon Protector Multi Insect Killer Citrus Scent 300mL x1",,,,,pc,food
+1228,SS0894P,4801980000000,"SS0894P Wilkins Pure Water 500mL x1",,,,,pc,food
+1230,P2280P,4801230000000,"P2280P Pledge Paste Wax Red 90g x1",,,,,pc,food
+1231,P2281P,4801230000000,"P2281P Pledge Paste Wax Colorless 90g x1",,,,,pc,food
+1233,FE270P,FE270P,"FE270P Carpet Shampoo Orange Scent Gallon x1",6,4,pc,1.00,case,non_food
+1240,SS1388P,4809010000000,"SS1388P Boy Bawang Chicharon 100g x1",,,,,pc,food
+1242,2037P,2037P,"2037P Therma Lotion Pump Bottle 500ml x1",432,1,pc,33.00,pc,non_food
+1246,SS0962P,4807770000000,"SS0962P Lucky Me Mini cup LaPaz Batchoy 40g x1",,,,,pc,food
+1248,P0908P,8000380000000,"P0908P Loacker Quadratini Wafer Biscuit 125g x1",,,,,pc,food
+1249,SS1124P,4800050000000,"SS1124P Zonrox Original 250ml x1",,,,,pc,food
+1250,P0865P,748486000000,"P0865P Argentina Meat Loaf 150g x1",,,,,pc,food
+1251,SS1212P,8888440000000,"SS1212P Cowhead Pure Milk 1L x1",,,,,pc,food
+1252,1045P,4902430000000,"1045P Joy Diswashing Liquid Antibac Expert Bottle 240mL x1",,,,,pc,food
+1254,P2260P,4801980000000,"P2260P Minute Maid Fresh Orange 250mL x1",,,,,pc,food
+1257,SS1165P,8850010000000,"SS1165P Colgate Toothpaste Regular 24g x1",,,,,pc,food
+1258,P0807P,4800010000000,"P0807P Delimondo Garlic & Chili Corned Beef 380g x1",,,,,pc,food
+1259,BC173P,BC173P,"BC173P Non-Bio Ziptie Garbage Bag Black XXL 37' x 40' XXL x10",,,,,pc,food
+1261,FE140P,FE140P,"FE140P Hand Brush (wood Handle) x1",32,1,pc,3.00,pc,non_food
+1263,P2416P,4806530000000,"P2416P Farmboy Pandan Rice 5kg x1",,,,,pc,food
+1268,SS1747P,4800020000000,"SS1747P Jack 'n Jill Maxx Fresh 50's x1",,,,,pc,food
+1271,P1891P,,"P1891P Champion Bar with Fabric Conditioner 370g x1",33,1,pc,3.00,pc,non_food
+1272,P0465P,4800150000000,"P0465P Zim Liquid Sosa 500ml x 1",,,,,pc,food
+1275,SS1495P,4803930000000,"SS1495P Gatorade Grape Pet Bottle 500mL x1",,,,,pc,food
+1277,0458P,0458P,"0458P Good Morning Towel x12",,,,,pc,food
+1278,P1351P,731126000000,"P1351P Nagaraya Barbecue Cracker Nuts 80g x1",,,,,pc,food
+1279,SS1538P,8996000000000,"SS1538P Kopiko Black 3in1 Coffee 30g x10",,,,,pc,food
+1280,04989P,04989P,"04989P Mop Head Rayon Heavy Duty No. 400 Green x1",,,,,pc,food
+1282,P1449P,49024300000000,"P1449P Safeguard Liquid Hand Soap White Refill 420ml x1",,,,,pc,food
+1283,2064P,4809010000000,"2064P Liquid Hand Soap Lavender 500ml pump bottle with front sticker x1",,,,,pc,food
+1285,P2191P,4800020000000,"P2191P V-Cut Spicy BBQ 25g x1",,,,,pc,food
+1287,P1009P,4800020000000,"P1009P Del Monte Creamy and Cheese Spaghetti Sauce 900g x1",,,,,pc,food
+1288,P0998P,4807770000000,"P0998P Lucky Me Chicken Mini 40g x1",,,,,pc,food
+1291,SS1357P,4800020000000,"SS1357P Jack 'n Jill Berry Knots 28g x1",,,,,pc,food
+1292,P1657P,4800020000000,"P1657P Cream All Creamer 250g x1",,,,,pc,food
+1293,FE031P,4809010000000,"FE031P MC Metal Polish 125ml x1",,,,,pc,food
+1294,P1083P,4902430000000,"P1083P Ambi Pur Car Freshener mini clip x1",,,,,pc,food
+1298,FE132P,FE132P,"FE132P Mop Aluminum Handle Plastic Head Violet x1",,,,,pc,food
+1300,BC135P,BC135P,"BC135P Non-Bio Ziptie Garbage Bag Black Small 18' x 20' x20",,,,,pc,food
+1301,SS0101P,4808680000000,"SS0101P Lady's Choice Mayonnaise Bottle 220ml",,,,,pc,food
+1303,P2271P,6924740000000,"P2271P Doritos Nacho Cheese 190g x1",,,,,pc,food
+1306,SS0197P,4801690000000,"SS0197P Regent Cheese Ring 60g x1",,,,,pc,food
+1307,P2156P,4800190000000,"P2156P Oishi Cracklings Salt & Vinegar 24g x1",,,,,pc,food
+1308,SS0989P,4800070000000,"SS0989P Albatross Sampaguita with holder 50g x1",,,,,pc,food
+1309,1054P,4902430000000,"1054P Joy Dishwashing Liquid Antibac Bottle 780mL x1",,,,,pc,food
+1310,P0999P,4807770000000,"P0999P Lucky Me Beef mini 40g x1",,,,,pc,food
+1311,P0310P,6942840000000,"P0310P Hershey's Kisses Creamy Milk Choco 36g x1",,,,,pc,food
+1313,P0133P,28400017244,"P0133P Cheetos 226g x1",,,,,pc,food
+1314,SS1534P,4800320000000,"SS1534P Vi-Va Caramel Candy 50's x1",,,,,pc,food
+1315,P14446P,8000500000000,"P14446P Ferrero Rocher Chocolate T16 200g x1",,,,,pc,food
+1317,SS1087P,4902430000000,"SS1087P Safeguard Liquid Hand Soap Lemon Scent 225ml x1",,,,,pc,food
+1321,TI002-INP,TI002-INP,"TI002-INP IN House for BNTY0302P Jumbo Pop Up x1",,,,,pc,food
+1323,SS1362P,4806500000000,"SS1362P Calla Powder with Fabric Conditioner Floral Fresh Violet 800g x1",,,,,pc,food
+1324,SS1678P,4848570002,"SS1678P 555 Tuna Flakes Afritada 155g x1",,,,,pc,food
+1325,P0475P,4800310000000,"P0475P Scotch Brite Heavy Duty Scrubbing Pad Mini x 1",,,,,pc,food
+1326,P0166P,4800360000000,"P0166P Nestle Coffeemate 80g x1",,,,,pc,food
+1329,FE200P,FE200P,"FE200P BNW Spoon White x25",,,,,pc,food
+1330,2134P,4800050000000,"2134P Zonrox Multi Clean Lemon 900mL x1",,,,,pc,food
+1333,SS1220P,4800220000000,"SS1220P Clover Chips Barbeque 85g x1",,,,,pc,food
+1340,SS0036P,4800020000000,"SS0036P Del Monte Spaghetti Sauce Sweet Style 1kg x1",,,,,pc,food
+1343,P1057P,4280000000000,"P1057P Nescafe 3in1 Original 28g x30",,,,,pc,food
+1347,1360P,1360P,"1360P Packaging Plastic 7 + 3 x 14 x 0.0012 PE 3 colors for BNTY0304P 2p4 x1",,,,,pc,food
+1350,P1346P,4902430000000,"P1346P Tide Detergent Bar with Downy Garden Bloom 450g",,,,,pc,food
+1354,1969P,1200110000000,"1969P Lay's Cheese 50g x1",,,,,pc,food
+1355,2073P,2073P,"2073P Liquid Hand Soap Green Apple 500mL pump bottle x1",,,,,pc,food
+1361,SS1599P,4800100000000,"SS1599P Judge Gum Bricks Spearmint 50s x1",,,,,pc,food
+1362,SS1725P,8935000000000,"SS1725P Mentos Strawberry Mix 50's x1",,,,,pc,food
+1364,04894P,04894P,"04894P Heng De Disposable Facemask 3ply x50",,,,,pc,food
+1365,0685P,4801230000000,"0685P Mr. Muscle Sink & Drain Declogger 500ml x1",,,,,pc,food
+1367,FE239P,FE239P,"FE239P Trigem Paper Plate Silver x25",,,,,pc,food
+1368,JU0116P,JU0116P,"JU0116P Rubber Gloves Ordinary Large pair x1",,,,,pc,food
+1370,SS0968P,4800070000000,"SS0968P Albatross Jasmin Refill 50g x1",,,,,pc,food
+1371,1371P,1371P,"1371P Packaging Plastic 4 3/4"" x 5"" x 1/2"" x .0015"" two side print for BNTV1303C Solo x1",,,,,pc,food
+1372,0376P,4800150000000,"0376P Zim Scrub Jr x1",,,,,pc,food
+1373,P1535P,4800890000000,"P1535P Surf Detergent Bar 120g x1",,,,,pc,food
+1374,P1384P,4800190000000,"P1384P Oishi Potato Fries Plain Salted 50g x1",,,,,pc,food
+1375,P1718P,4806520000000,"P1718P Goya Dark Chocolate 30g x1",,,,,pc,food
+1378,FE030P,FE030P,"FE030P Cotton Duster x1",,,,,pc,food
+1380,0385P,4800150000000,"0385P Zim Powder Cleanser Calamansi Refill 350g x1",,,,,pc,food
+1382,P2073P,4902430000000,"P2073P Tide Garden Bloom 585g x1",,,,,pc,food
+1383,SS1410P,4800020000000,"SS1410P Nissin Cup Yakisoba Spicy Chicken 77g x1",,,,,pc,food
+1384,P1899P,4800090000000,"P1899P Happy Peanut BBQ 100g x1",,,,,pc,food
+1386,SS0952P,4800020000000,"SS0952P Del Monte Pineapple Tidbits 822g x1",,,,,pc,food
+1387,SS1578P,4800090000000,"SS1578P Fudgee Bar Macapuno 39g x10",,,,,pc,food
+1388,P1292P,9300680000000,"P1292P M&M Chocolate 46g x1",,,,,pc,food
+1390,SS1119P,4807770000000,"SS1119P Lucky Me Mini Seafood 40g x1",,,,,pc,food
+1393,P1844P,9556180000000,"P1844P Cadbury Dairy Milk Chocolate Bar 160g x1",,,,,pc,food
+1400,P1312P,4800190000000,"P1312P Oishi Potato Fries Tomato Ketchup Flavor 50g x1",,,,,pc,food
+1402,P1408P,4800890000000,"P1408P Surf Detergent Bar Fresh Blossoms 360g x1",,,,,pc,food
+1403,SS1401P,4806520000000,"SS1401P Knick Knacks Chocolate 21g x1",,,,,pc,food
+1404,SS1263P,750515000000,"SS1263P M.Y. San Grahams Honey Crackers 210g x1",,,,,pc,food
+1406,P1563P,8996000000000,"P1563P Kopiko Brown Coffee Pouch 27.5g x30",,,,,pc,food
+1407,P2329P,6942840000000,"P2329P Hershey's Creamy Milk Chocolate 40g x1",,,,,pc,food
+1408,P2196P,4800040000000,"P2196P Lily's Classic Peanut Butter 224g x1",,,,,pc,food
+1409,P0963P,4800250000000,"P0963P CDO Meat Loaf 210g x1",,,,,pc,food
+1410,FE277P,FE277P,"FE277P G8 Fork White x25",,,,,pc,food
+1412,P2194P,6924740000000,"P2194P Doritos Tortilla Taco 65g x1",,,,,pc,food
+1417,04990P,04990P,"04990P Mop Head Rayon Heavy Duty No. 400 Yellow x1",,,,,pc,food
+1419,SS1270P,4809010000000,"SS1270P Boy Bawang Cornick BBQ 90g x1",,,,,pc,food
+1420,P0917P,4800890000000,"P0917P Lady's Choice Mayonnaise Pouch 470mL x1",,,,,pc,food
+1422,FE296P,FE296P,"FE296P Mop Head Cotton Blue 500g x1",,,,,pc,food
+1423,FE297P,FE297P,"FE297P Mop Head Cotton Green 500g x1",,,,,pc,food
+1429,SS1728P,4800190000000,"SS1728P Oishi O-Puff Chocolate Cream 84g x1",,,,,pc,food
+1430,P1759P,8992760000000,"P1759P Oreo Chocolate 119.6g x1",,,,,pc,food
+1431,P1285P,4800040000000,"P1285P Curly Tops x30",,,,,pc,food
+1432,P0931P,4805360000000,"P0931P Magnolia All Purpose Cream 250ml x1",,,,,pc,food
+1433,SS1624P,4800050000000,"SS1624P Pride Powder Washing Machine 2000g x1",,,,,pc,food
+1435,P1880P,4902430000000,"P1880P Ariel Detergent Powder Antibac 60g x1",,,,,pc,food
+1437,P1055P,4800020000000,"P1055P Del Monte Sweet Blend Ketchup with Spout 320g x1",,,,,pc,food
+1438,SS0907P,SS0907P,"SS0907P Savers Spoon x25",,,,,pc,food
+1439,SS0250P,4800020000000,"SS0250P Del Monte Pineapple Tidbits 115g x1",,,,,pc,food
+1440,04887P,04887P,"04887P Packaging Plastic 8 x 16 x .0012 PE for BNTY0321 Kitchen Towel x1",,,,,pc,food
+1442,P1955P,4800140000000,"P1955P ABC Jelly 12's x1",,,,,pc,food
+1444,SS1502P,4800360000000,"SS1502P Maggi Magic Sarap 150g x1",,,,,pc,food
+1445,FE247P,FE247P,"FE247P Rubber Gloves Ordinary XL pair x1",,,,,pc,food
+1446,SS1433P,4800550000000,"SS1433P Chips Delight Peanut & Caramel 40g x1",,,,,pc,food
+1447,P1348P,731126000000,"P1348P Nagaraya Adobo Cracker Nuts 80g x1",,,,,pc,food
+1449,FE159P,FE159P,"FE159P Styro Cups Coffee Express 8oz x25",,,,,pc,food
+1450,SS1057P,4800020000000,"SS1057P Chippy Chili & Cheese 110g x1",,,,,pc,food
+1452,SS1530P,14285000921,"SS1530P UFC Golden Fiesta Cooking Oil 950mL x1",,,,,pc,food
+1454,P2258P,4800090000000,"P2258P Rebisco Frootees Strawberry 32g x10",,,,,pc,food
+1455,1371-INP,1371-INP,"1371-INP IN House for BNTV1303C Solo x1",,,,,pc,food
+1456,P1360P,4806010000000,"P1360P Jolly Mushroom Pieces and Stems 400g x1",,,,,pc,food
+1457,P0420P,4800020000000,"P0420P Del Monte Spaghetti Pasta 900g x1",,,,,pc,food
+1458,P2321P,4800110000000,"P2321P Royal Salad Macaroni 200g x1",,,,,pc,food
+1459,P1064P,4800250000000,"P1064P CDO Kaong White 340g x1",,,,,pc,food
+1460,0846P,4808680000000,"0846P Knorr Liquid Seasoning 250mL x1",,,,,pc,food
+1461,0959P,4800020000000,"0959P Del Monte Spaghetti Sauce Filipino Style 250g x1",,,,,pc,food
+1462,1498P,1498P,"1498P Unbranded Styro Cup 8oz x25",,,,,pc,food
+1463,SS1736P,748486000000,"SS1736P Argentina Spicy Sisig 150g x1",,,,,pc,food
+1464,SS1304P,4800020000000,"SS1304P Roller Coaster Snack Chiz 24g x1",,,,,pc,food
+1465,P2386P,4806020000000,"P2386P Lemon Square ChooChoo Choco Vanilla 38g x10",,,,,pc,food
+1466,1360-INP,1360-INP,"1360-INP IN House for BNTY0304P 2p4 x1",,,,,pc,food
+1467,0977P,4800150000000,"0977P Zim Dishwashing foam only x1",,,,,pc,food
+1469,1368P,1368P,"1368P Packaging Plastic 9 + 7 x 20 x 0015 PE no print for BNTBSY0300P TPROSE x1",,,,,pc,food
+1470,P1477P,8996000000000,"P1477P Fres Candy Grapemint 3g x50",,,,,pc,food
+1475,SS0888P,4800020000000,"SS0888P C2 Green Tea Apple 500mL x1",,,,,pc,food
+1477,SS1640P,4800020000000,"SS1640P Del Monte Tomato Paste 150g x1",,,,,pc,food
+1479,1362P,1362P,"1362P Packaging Plastic for BNTY0305P 2p12 x1",,,,,pc,food
+1480,SS1462P,4801670000000,"SS1462P Datu Puti Soy Sauce 1L x1",,,,,pc,food
+1482,FE285P,FE285P,"FE285P Royal Plastic Cups 8oz x50",,,,,pc,food
+1487,0845P,4801670000000,"0845P Datu Puti Vinegar 1L x1",,,,,pc,food
+1490,2127P,4800050000000,"2127P Zonrox Blossom Fresh 450ml x1",,,,,pc,food
+1491,SS1488P,14285000891,"SS1488P UFC Sweet Chili Sauce 340g x1",,,,,pc,food
+1493,FE047P,FE047P,"FE047P Paint brush No. 2 x1",,,,,pc,food
+1495,P2397P,4801670000000,"P2397P Mang Tomas All Around Sarsa 325g x1",,,,,pc,food
+1497,P2384P,4800890000000,"P2384P Surf Bar Tawas 360g x1",,,,,pc,food
+1498,1362-INP,1362-INP,"1362-INP IN House BNTY0305P 2p12 x1",,,,,pc,food
+1499,1368-INP,1368-INP,"1368-INP IN House for BNTBSY0300P TPROSE x1",,,,,pc,food
+1502,P2226P,4800360000000,"P2226P Nescafe Coffeemate Creamer 150g x1",,,,,pc,food
+1506,04907P,04907P,"04907P Customized Sticker Gift Card x1",,,,,pc,food
+1514,10318P,10318P,"10318P Interleave White Single Dispenser Wall Mounted x1",,,,,pc,food
+1519,FB012P,4800250000000,"FB012P CDO Nata De Coco 240g x1",,,,,pc,food
+1523,NS125,NS125,"NS125 SM Gift Check PHP100.00",,,,,pc,food
+1528,P0201P,4800090000000,"P0201P Choco Mucho Dark Chocolate 30g x1",,,,,pc,food
+1529,P0621P,4800020000000,"P0621P Del Monte Elbow Macaroni 400g x1",,,,,pc,food
+1530,P0655P,4800580000000,"P0655P Carnation Evap 370mL x1",,,,,pc,food
+1533,P2157P,P2157P,"P2157P Flowers",,,,,pc,food
+1537,P2302P,4800030000000,"P2302P Ideal Elbow Macaroni 200g x1",,,,,pc,food
+1538,P2307P,4800360000000,"P2307P Milo 150g x1",,,,,pc,food
+1539,P2512P,4800030000000,"P2512P Sunshine Elbow Macaroni 400g x1",,,,,pc,food
+1573,SS0098P,4800110000000,"SS0098P Royal Elbow Macaroni 400g x1",,,,,pc,food
+1577,SS1629P,4800020000000,"SS1629P Magic Cream Chocolate 28g x10",,,,,pc,food
+1578,SS1697P,6901010000000,"SS1697P Maling Luncheon Meat Easy 340g x1",,,,,pc,food
+1580,WS001P,WS001P,"WS001P Round Gift Box x1",,,,,pc,food
+1587,P0247P,4805360000000,"P0247P Magnolia Quezo de Bola 350g x1",,,,,pc,food
+1589,P0178P,4800020000000,"P0178P Today's Fruitcocktail 836g x1",,,,,pc,food
+1590,P2478P,4800250000000,"P2478P CDO Chinese Style Luncheon Meat 350g x1",,,,,pc,food
