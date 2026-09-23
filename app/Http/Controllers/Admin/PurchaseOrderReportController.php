@@ -31,6 +31,10 @@ class PurchaseOrderReportController extends Controller
     public function orderedItems(Request $request): Response
     {
         [$monthStart, $monthEnd, $month] = $this->monthFilters($request);
+        $category = trim((string) $request->input('category', ''));
+        if (! in_array($category, ['food', 'non_food'], true)) {
+            $category = '';
+        }
 
         $rows = PurchaseOrderItemFulfillment::query()
             ->with(['schedule', 'poExtraction.aiExtraction', 'poItem'])
@@ -58,7 +62,7 @@ class PurchaseOrderReportController extends Controller
                 $orderedQuantity = $fulfillments->sum(fn (PurchaseOrderItemFulfillment $fulfillment): float => (float) $fulfillment->ordered_quantity);
                 $arrivals = $arrivalsBySchedule->get($scheduleId, collect());
                 $arrivedQuantity = $arrivals->sum(fn (PurchaseOrderItemArrival $arrival): float => (float) $arrival->arrived_quantity);
-                $targetQuantity = (float) $schedule->target_quantity;
+                $targetQuantity = $schedule->target_quantity !== null ? (float) $schedule->target_quantity : null;
                 $waitingDays = $arrivals
                     ->map(fn (PurchaseOrderItemArrival $arrival): ?int => $this->waitingDays($arrival))
                     ->filter(fn (?int $days): bool => $days !== null)
@@ -78,16 +82,17 @@ class PurchaseOrderReportController extends Controller
                     'sku_number' => $schedule->sku_number,
                     'ean_barcode' => $schedule->ean_barcode,
                     'description' => $schedule->description,
+                    'category' => $schedule->category ?? 'non_food',
                     'target_quantity' => $targetQuantity,
                     'package_quantity' => $schedule->package_quantity !== null ? (float) $schedule->package_quantity : null,
                     'package_unit' => $schedule->package_unit,
                     'ordered_quantity' => $orderedQuantity,
                     'arrived_quantity' => $arrivedQuantity,
-                    'remaining_quantity' => max(0, $targetQuantity - $orderedQuantity),
+                    'remaining_quantity' => $targetQuantity !== null ? max(0, $targetQuantity - $orderedQuantity) : 0,
                     'arrival_remaining_quantity' => max(0, $orderedQuantity - $arrivedQuantity),
                     'unit' => $schedule->unit,
                     'expected_week' => null,
-                    'schedule_label' => 'Monthly target',
+                    'schedule_label' => $targetQuantity !== null ? 'Monthly target' : 'No target set',
                     'first_arrival_date' => $arrivals
                         ->map(fn (PurchaseOrderItemArrival $arrival): ?string => $arrival->arrival_date?->toDateString())
                         ->filter(fn (?string $date): bool => $date !== null)
@@ -155,9 +160,13 @@ class PurchaseOrderReportController extends Controller
             ->values()
             ->all();
 
+        if ($category !== '') {
+            $rows = collect($rows)->filter(fn (array $row): bool => ($row['category'] ?? 'non_food') === $category)->values()->all();
+        }
+
         return Inertia::render('admin/purchase-orders/reports/ordered-items', [
             'rows' => $rows,
-            'filters' => ['month' => $month, 'week' => null],
+            'filters' => ['month' => $month, 'week' => null, 'category' => $category],
             'summary' => [
                 'item_count' => count($rows),
                 'fulfilled_count' => collect($rows)->whereIn('status', ['fulfilled', 'over_target'])->count(),
@@ -177,6 +186,8 @@ class PurchaseOrderReportController extends Controller
                     ->whereBetween('po_date', [$monthStart->toDateString(), $monthEnd->toDateString()]);
             }])
             ->where('is_active', true)
+            ->whereNotNull('target_quantity')
+            ->where('target_quantity', '>', 0)
             ->orderByRaw('serial_number ASC NULLS LAST')
             ->orderBy('description')
             ->get();
@@ -203,6 +214,7 @@ class PurchaseOrderReportController extends Controller
                     'sku_number' => $schedule->sku_number,
                     'ean_barcode' => $schedule->ean_barcode,
                     'description' => $schedule->description,
+                    'category' => $schedule->category ?? 'non_food',
                     'target_quantity' => $targetQuantity,
                     'package_quantity' => $schedule->package_quantity !== null ? (float) $schedule->package_quantity : null,
                     'package_unit' => $schedule->package_unit,
@@ -251,6 +263,8 @@ class PurchaseOrderReportController extends Controller
     {
         $rows = PurchaseOrderItemSchedule::query()
             ->where('is_active', true)
+            ->whereNotNull('target_quantity')
+            ->where('target_quantity', '>', 0)
             ->orderByRaw('serial_number ASC NULLS LAST')
             ->orderBy('description')
             ->orderBy('id')
@@ -261,6 +275,7 @@ class PurchaseOrderReportController extends Controller
                 'sku_number' => $schedule->sku_number,
                 'ean_barcode' => $schedule->ean_barcode,
                 'description' => $schedule->description,
+                'category' => $schedule->category ?? 'non_food',
                 'target_quantity' => (float) $schedule->target_quantity,
                 'package_quantity' => $schedule->package_quantity !== null ? (float) $schedule->package_quantity : null,
                 'package_unit' => $schedule->package_unit,
@@ -298,15 +313,17 @@ class PurchaseOrderReportController extends Controller
     private function serialNumbersForUploadIds(Collection $uploadIds): array
     {
         $ids = $uploadIds
+            ->filter(fn (mixed $id): bool => is_numeric($id))
             ->map(fn (mixed $id): int => (int) $id)
-            ->filter(fn (int $id): bool => $id > 0)
             ->unique()
             ->values();
+
         if ($ids->isEmpty()) {
             return [];
         }
 
         $uploads = ReceivingUpload::query()
+            ->select(['id', 'serial_number'])
             ->with('uploadType:id,workflow')
             ->whereIn('id', $ids)
             ->get();
@@ -314,8 +331,12 @@ class PurchaseOrderReportController extends Controller
         return $this->serials->numbersFor($uploads);
     }
 
-    private function quantityStatus(float $orderedQuantity, float $targetQuantity): string
+    private function quantityStatus(float $orderedQuantity, ?float $targetQuantity): string
     {
+        if ($targetQuantity === null) {
+            return 'fulfilled';
+        }
+
         if ($targetQuantity <= 0 && $orderedQuantity > 0) {
             return 'fulfilled';
         }

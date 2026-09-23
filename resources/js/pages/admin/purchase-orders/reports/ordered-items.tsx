@@ -38,7 +38,10 @@ type Row = {
     schedule_id: number;
     sku_number: string | null;
     description: string;
-    target_quantity: number;
+    category?: string;
+    target_quantity: number | null;
+    package_quantity: number | null;
+    package_unit: string | null;
     ordered_quantity: number;
     arrived_quantity: number;
     remaining_quantity: number;
@@ -87,6 +90,11 @@ function GroupedWeekRows({ weekLabel, rows }: { weekLabel: string; rows: Row[] }
                         <p className="font-medium">{row.description}</p>
                         <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-black/60">
                             <span>{row.sku_number || 'No SKU'}</span>
+                            {row.category === 'food' && (
+                                <span className="rounded bg-emerald-100 px-1 py-0.2 text-[9px] font-medium text-emerald-800">
+                                    Food
+                                </span>
+                            )}
                             {row.has_unverified_data && (
                                 <span className="text-orange-600 text-xs">
                                     Contains unverified data
@@ -110,7 +118,9 @@ function GroupedWeekRows({ weekLabel, rows }: { weekLabel: string; rows: Row[] }
                         </div>
                     </td>
                     <td className="px-2 py-1.5 text-right tabular-nums">
-                        {formatQuantity(row.target_quantity)} {row.unit ?? ''}
+                        {row.target_quantity !== null
+                            ? `${formatQuantity(row.target_quantity)} ${row.unit ?? ''}`
+                            : '-'}
                     </td>
                     <td className="px-2 py-1.5 text-right font-bold tabular-nums">
                         {formatQuantity(row.ordered_quantity)} {row.unit ?? ''}
@@ -246,7 +256,10 @@ function _arrivalStatusLabel(status: string) {
     );
 }
 
-function formatQuantity(value: number) {
+function formatQuantity(value: number | null | undefined) {
+    if (value === null || value === undefined) {
+        return '-';
+    }
     return value.toLocaleString(undefined, {
         maximumFractionDigits: 3,
     });

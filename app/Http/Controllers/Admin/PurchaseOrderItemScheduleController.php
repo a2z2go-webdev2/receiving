@@ -22,10 +22,12 @@ class PurchaseOrderItemScheduleController extends Controller
         $validated = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', Rule::in(['active', 'inactive'])],
+            'category' => ['nullable', Rule::in(['food', 'non_food'])],
         ]);
 
         $search = trim((string) ($validated['search'] ?? ''));
         $status = (string) ($validated['status'] ?? '');
+        $category = (string) ($validated['category'] ?? '');
 
         $items = PurchaseOrderItemSchedule::query()
             ->when($search !== '', function (Builder $query) use ($search): void {
@@ -39,6 +41,7 @@ class PurchaseOrderItemScheduleController extends Controller
                 });
             })
             ->when($status !== '', fn (Builder $query) => $query->where('is_active', $status === 'active'))
+            ->when($category !== '', fn (Builder $query) => $query->where('category', $category))
             ->orderBy('is_active', 'desc')
             ->orderByRaw('serial_number ASC NULLS LAST')
             ->orderBy('description')
@@ -51,6 +54,7 @@ class PurchaseOrderItemScheduleController extends Controller
             'filters' => [
                 'search' => $search,
                 'status' => $status,
+                'category' => $category,
             ],
         ]);
     }
@@ -90,18 +94,19 @@ class PurchaseOrderItemScheduleController extends Controller
             'sku_number' => ['nullable', 'string', 'max:100'],
             'ean_barcode' => ['nullable', 'string', 'max:100'],
             'description' => ['required', 'string', 'max:1000'],
-            'target_quantity' => ['required', 'numeric', 'min:0', 'max:999999999.999'],
+            'target_quantity' => ['nullable', 'numeric', 'min:0', 'max:999999999.999'],
             'package_quantity' => ['nullable', 'numeric', 'min:0', 'max:999999999.999'],
             'package_unit' => ['nullable', 'string', 'max:50'],
             'sold_quantity' => ['nullable', 'numeric', 'min:0', 'max:999999999.999'],
             'unit' => ['nullable', 'string', 'max:50'],
+            'category' => ['nullable', Rule::in(['food', 'non_food'])],
             'is_active' => ['required', 'boolean'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
     }
 
     /** @param array<string, mixed> $data @return array<string, mixed> */
-    private function attributes(array $data): array
+    private function attributes(array $data, ?PurchaseOrderItemSchedule $item = null): array
     {
         $skuNumber = trim((string) ($data['sku_number'] ?? ''));
         $eanBarcode = trim((string) ($data['ean_barcode'] ?? ''));
@@ -114,7 +119,9 @@ class PurchaseOrderItemScheduleController extends Controller
             'ean_barcode_normalized' => $this->normalizer->normalizeIdentifier($eanBarcode),
             'description' => $description,
             'description_normalized' => $this->normalizer->normalizeDescription($description) ?? '',
-            'target_quantity' => $this->normalizer->decimalString((float) $data['target_quantity']),
+            'target_quantity' => isset($data['target_quantity']) && is_numeric($data['target_quantity'])
+                ? $this->normalizer->decimalString((float) $data['target_quantity'])
+                : null,
             'package_quantity' => isset($data['package_quantity']) && is_numeric($data['package_quantity'])
                 ? $this->normalizer->decimalString((float) $data['package_quantity'])
                 : null,
@@ -123,6 +130,7 @@ class PurchaseOrderItemScheduleController extends Controller
                 ? $this->normalizer->decimalString((float) $data['sold_quantity'])
                 : null,
             'unit' => trim((string) ($data['unit'] ?? '')) ?: null,
+            'category' => (string) ($data['category'] ?? ($item?->category ?? 'non_food')),
             'expected_week' => null,
             'is_special_order' => false,
             'is_active' => (bool) $data['is_active'],
@@ -141,14 +149,15 @@ class PurchaseOrderItemScheduleController extends Controller
             'sku_number' => $item->sku_number,
             'ean_barcode' => $item->ean_barcode,
             'description' => $item->description,
-            'target_quantity' => (float) $item->target_quantity,
+            'category' => $item->category ?? 'non_food',
+            'target_quantity' => $item->target_quantity !== null ? (float) $item->target_quantity : null,
             'package_quantity' => $item->package_quantity !== null ? (float) $item->package_quantity : null,
             'package_unit' => $item->package_unit,
             'sold_quantity' => $item->sold_quantity !== null ? (float) $item->sold_quantity : null,
             'unit' => $item->unit,
             'expected_week' => null,
-            'schedule_type' => 'monthly',
-            'schedule_label' => 'Monthly target',
+            'schedule_type' => $item->target_quantity !== null ? 'monthly' : 'unassigned',
+            'schedule_label' => $item->target_quantity !== null ? 'Monthly target' : 'No target set',
             'is_special_order' => false,
             'is_active' => $item->is_active,
             'notes' => $item->notes,

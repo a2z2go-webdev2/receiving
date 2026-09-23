@@ -33,7 +33,8 @@ type ScheduledItem = {
     sku_number: string | null;
     ean_barcode: string | null;
     description: string;
-    target_quantity: number;
+    category?: 'food' | 'non_food' | string;
+    target_quantity: number | null;
     package_quantity: number | null;
     package_unit: string | null;
     sold_quantity: number | null;
@@ -49,6 +50,7 @@ type ScheduledItem = {
 type Filters = {
     search: string;
     status: string;
+    category?: string;
 };
 
 type Paginator<T> = {
@@ -63,7 +65,8 @@ const emptyForm = {
     sku_number: '',
     ean_barcode: '',
     description: '',
-    target_quantity: '0',
+    category: 'non_food',
+    target_quantity: '',
     package_quantity: '',
     package_unit: '',
     sold_quantity: '',
@@ -99,7 +102,11 @@ export default function PurchaseOrderItemsIndex({
             sku_number: item.sku_number ?? '',
             ean_barcode: item.ean_barcode ?? '',
             description: item.description,
-            target_quantity: String(item.target_quantity),
+            category: item.category ?? 'non_food',
+            target_quantity:
+                item.target_quantity !== null && item.target_quantity !== undefined
+                    ? String(item.target_quantity)
+                    : '',
             package_quantity: item.package_quantity !== null ? String(item.package_quantity) : '',
             package_unit: item.package_unit ?? '',
             sold_quantity: item.sold_quantity !== null ? String(item.sold_quantity) : '',
@@ -138,7 +145,7 @@ export default function PurchaseOrderItemsIndex({
     }
 
     function clearFilters() {
-        const next = { search: '', status: '' };
+        const next = { search: '', status: '', category: '' };
         setFilterValues(next);
         router.get('/admin/purchase-orders/items', next, {
             preserveScroll: true,
@@ -146,9 +153,13 @@ export default function PurchaseOrderItemsIndex({
         });
     }
 
-    const hasActiveFilters = Boolean(filters.search) || Boolean(filters.status);
-    const hasActiveFilterValues = Boolean(filterValues.search) || Boolean(filterValues.status);
-    const advancedFilterCount = [filterValues.status].filter(Boolean).length;
+    const hasActiveFilters =
+        Boolean(filters.search) || Boolean(filters.status) || Boolean(filters.category);
+    const hasActiveFilterValues =
+        Boolean(filterValues.search) ||
+        Boolean(filterValues.status) ||
+        Boolean(filterValues.category);
+    const advancedFilterCount = [filterValues.status, filterValues.category].filter(Boolean).length;
 
     return (
         <>
@@ -198,10 +209,22 @@ export default function PurchaseOrderItemsIndex({
                                 <div>
                                     <h2 className="font-semibold text-sm">More filters</h2>
                                     <p className="mt-1 text-muted-foreground text-xs">
-                                        Narrow PO item records by active status.
+                                        Narrow PO item records by category and active status.
                                     </p>
                                 </div>
-                                <div>
+                                <div className="space-y-3">
+                                    <FilterSelect
+                                        id="category-filter"
+                                        label="Category"
+                                        value={filterValues.category ?? ''}
+                                        onChange={(category) =>
+                                            setFilterValues((current) => ({ ...current, category }))
+                                        }
+                                        options={[
+                                            { value: 'non_food', label: 'Non-Food' },
+                                            { value: 'food', label: 'Food' },
+                                        ]}
+                                    />
                                     <FilterSelect
                                         id="status-filter"
                                         label="Status"
@@ -223,6 +246,7 @@ export default function PurchaseOrderItemsIndex({
                                             setFilterValues((current) => ({
                                                 ...current,
                                                 status: '',
+                                                category: '',
                                             }))
                                         }
                                     >
@@ -287,7 +311,18 @@ export default function PurchaseOrderItemsIndex({
                                         <div className="flex items-start gap-2">
                                             <ClipboardList className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
                                             <div>
-                                                <p className="font-medium">{item.description}</p>
+                                                <div className="flex items-center gap-1.5">
+                                                    <p className="font-medium">{item.description}</p>
+                                                    {item.category === 'food' ? (
+                                                        <span className="inline-flex items-center rounded bg-amber-500/10 px-1.5 py-0.5 font-medium text-[10px] text-amber-700 dark:text-amber-400">
+                                                            Food
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center rounded bg-blue-500/10 px-1.5 py-0.5 font-medium text-[10px] text-blue-700 dark:text-blue-400">
+                                                            Non-Food
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <p className="text-muted-foreground">
                                                     <span className="font-mono">
                                                         SKU: {item.sku_number || 'N/A'}
@@ -304,7 +339,13 @@ export default function PurchaseOrderItemsIndex({
                                     </td>
                                     <td className="px-3 py-2">{item.schedule_label}</td>
                                     <td className="px-3 py-2 text-right tabular-nums">
-                                        {formatQuantity(item.target_quantity)} {item.unit ?? ''}
+                                        {item.target_quantity !== null && item.target_quantity !== undefined ? (
+                                            <>
+                                                {formatQuantity(item.target_quantity)} {item.unit ?? ''}
+                                            </>
+                                        ) : (
+                                            <span className="text-muted-foreground">-</span>
+                                        )}
                                     </td>
                                     <td className="px-3 py-2 text-right text-muted-foreground tabular-nums">
                                         {item.package_quantity !== null && item.package_unit ? (
@@ -386,8 +427,8 @@ export default function PurchaseOrderItemsIndex({
                         }}
                     >
                         <div className="space-y-2.5 p-4">
-                            {/* Row 1: SKU & EAN */}
-                            <div className="grid gap-2.5 sm:grid-cols-2">
+                            {/* Row 1: SKU, EAN & Category */}
+                            <div className="grid gap-2.5 sm:grid-cols-3">
                                 <div className="space-y-0.5">
                                     <Label htmlFor="sku-number" className="text-xs">
                                         SKU number
@@ -416,6 +457,24 @@ export default function PurchaseOrderItemsIndex({
                                     />
                                     <InputError message={form.errors.ean_barcode} />
                                 </div>
+                                <div className="space-y-0.5">
+                                    <Label htmlFor="category" className="text-xs">
+                                        Category
+                                    </Label>
+                                    <Select
+                                        value={form.data.category}
+                                        onValueChange={(value) => form.setData('category', value)}
+                                    >
+                                        <SelectTrigger id="category" className="h-7 text-xs">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="non_food">Non-Food</SelectItem>
+                                            <SelectItem value="food">Food</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError message={form.errors.category} />
+                                </div>
                             </div>
 
                             {/* Row 2: Description */}
@@ -439,7 +498,8 @@ export default function PurchaseOrderItemsIndex({
                             <div className="grid gap-2.5 sm:grid-cols-3">
                                 <div className="space-y-0.5 sm:col-span-2">
                                     <Label htmlFor="target-quantity" className="text-xs">
-                                        Monthly target quantity
+                                        Monthly target quantity{' '}
+                                        {form.data.category === 'food' ? '(Optional)' : ''}
                                     </Label>
                                     <Input
                                         id="target-quantity"
@@ -447,11 +507,15 @@ export default function PurchaseOrderItemsIndex({
                                         type="number"
                                         min="0"
                                         step="0.001"
+                                        placeholder={
+                                            form.data.category === 'food'
+                                                ? 'N/A (No target)'
+                                                : '0'
+                                        }
                                         value={form.data.target_quantity}
                                         onChange={(event) =>
                                             form.setData('target_quantity', event.target.value)
                                         }
-                                        required
                                     />
                                     <InputError message={form.errors.target_quantity} />
                                 </div>
@@ -635,7 +699,10 @@ function FilterSelect({
     );
 }
 
-function formatQuantity(value: number) {
+function formatQuantity(value: number | null | undefined) {
+    if (value === null || value === undefined) {
+        return '-';
+    }
     return value.toLocaleString(undefined, {
         maximumFractionDigits: 3,
     });

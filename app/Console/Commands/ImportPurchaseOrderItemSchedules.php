@@ -8,10 +8,10 @@ use Illuminate\Console\Command;
 class ImportPurchaseOrderItemSchedules extends Command
 {
     protected $signature = 'receiving:import-po-items
-        {path? : CSV file path. Defaults to database/seeders/data/po_item_records.csv}
-        {--keep-missing : Keep previously imported CSV rows active when they are absent from this file}';
+        {path? : CSV/Markdown file or directory path. Defaults to database/seeders/data/po_item_records.csv}
+        {--keep-missing : Keep previously imported rows active when they are absent from this source}';
 
-    protected $description = 'Import scheduled purchase-order item targets from the PO item records CSV.';
+    protected $description = 'Import scheduled purchase-order item records from CSV, Markdown, or items directory.';
 
     public function handle(PurchaseOrderItemScheduleImporter $importer): int
     {
@@ -29,7 +29,7 @@ class ImportPurchaseOrderItemSchedules extends Command
             return self::FAILURE;
         }
 
-        $this->components->twoColumnDetail('CSV rows read', (string) $stats['rows']);
+        $this->components->twoColumnDetail('Source rows read', (string) $stats['rows']);
         $this->components->twoColumnDetail('Item records', (string) $stats['records']);
         $this->components->twoColumnDetail('Created', (string) $stats['created']);
         $this->components->twoColumnDetail('Updated', (string) $stats['updated']);
