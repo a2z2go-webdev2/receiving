@@ -81,6 +81,7 @@ class UploadRecordController extends Controller
                 'review_status' => $upload->review_status->value,
                 'can_resend' => $request->user()?->can('resendNotification', $upload) ?? false,
                 'can_manage_purchase_order_links' => $request->user()?->can(Permission::RetryOperations->value) ?? false,
+                'can_delete' => $request->user()?->can('delete', $upload) ?? false,
                 'receiving_email_failed' => $upload->email_status->value === 'failed',
                 'can_retry_ai' => in_array($upload->ai_status, [AiStatus::Failed, AiStatus::PartialFailed], true)
                     && ($request->user()?->can('retryExtraction', $upload) ?? false),

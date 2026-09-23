@@ -130,7 +130,7 @@ class PurchaseOrderItemScheduleController extends Controller
                 ? $this->normalizer->decimalString((float) $data['sold_quantity'])
                 : null,
             'unit' => trim((string) ($data['unit'] ?? '')) ?: null,
-            'category' => (string) ($data['category'] ?? ($item?->category ?? 'non_food')),
+            'category' => (string) ($data['category'] ?? ($item !== null ? $item->category : 'non_food')),
             'expected_week' => null,
             'is_special_order' => false,
             'is_active' => (bool) $data['is_active'],

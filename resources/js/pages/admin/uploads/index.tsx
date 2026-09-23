@@ -8,6 +8,7 @@ import {
     RefreshCw,
     ScanSearch,
     Search,
+    Trash2,
     X,
 } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
@@ -80,6 +81,7 @@ type Upload = {
     can_resend_receiving: boolean;
     can_resend_review: boolean;
     can_reprocess: boolean;
+    can_delete: boolean;
 };
 type Paginator<T> = {
     data: T[];
@@ -121,7 +123,9 @@ export default function UploadsIndex({
     useLivePageData(['uploads']);
 
     const [reprocessing, setReprocessing] = useState<Upload | null>(null);
+    const [deleting, setDeleting] = useState<Upload | null>(null);
     const [submitting, setSubmitting] = useState(false);
+    const [deletingSubmit, setDeletingSubmit] = useState(false);
     const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
     const [filterValues, setFilterValues] = useState(filters);
     const purchaseOrderView = pageMode === 'purchase_orders';
@@ -138,6 +142,16 @@ export default function UploadsIndex({
                 onFinish: () => setSubmitting(false),
             },
         );
+    }
+
+    function destroyUpload() {
+        if (!deleting) return;
+        setDeletingSubmit(true);
+        router.delete(`/admin/uploads/${deleting.id}`, {
+            preserveScroll: true,
+            onSuccess: () => setDeleting(null),
+            onFinish: () => setDeletingSubmit(false),
+        });
     }
 
     function applyFilters(event: FormEvent<HTMLFormElement>) {
@@ -584,7 +598,9 @@ export default function UploadsIndex({
                                             </Button>
                                             <UploadActions
                                                 upload={upload}
+                                                purchaseOrderView={purchaseOrderView}
                                                 onReprocess={() => setReprocessing(upload)}
+                                                onDelete={() => setDeleting(upload)}
                                             />
                                         </div>
                                     </td>
@@ -645,6 +661,45 @@ export default function UploadsIndex({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <Dialog
+                open={deleting !== null}
+                onOpenChange={(open) => !open && !deletingSubmit && setDeleting(null)}
+            >
+                <DialogContent hideCloseButton>
+                    <DialogHeader>
+                        <DialogTitle>
+                            Delete {purchaseOrderView ? 'purchase order' : 'receive log'}{' '}
+                            {deleting?.serial_prefix}-{deleting?.serial_number}?
+                        </DialogTitle>
+                        <DialogDescription>
+                            This will permanently delete {deleting?.serial_prefix}-
+                            {deleting?.serial_number} from the system, including its files from
+                            storage, AI extraction results, and associated records.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-destructive text-sm">
+                        This action cannot be undone. Any linked status will be updated, and
+                        unallocated warehouse arrivals will be removed.
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setDeleting(null)}
+                            disabled={deletingSubmit}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={destroyUpload}
+                            disabled={deletingSubmit}
+                        >
+                            <Trash2 /> {deletingSubmit ? 'Deleting…' : 'Delete permanently'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
@@ -687,9 +742,22 @@ function FilterSelect({
     );
 }
 
-function UploadActions({ upload, onReprocess }: { upload: Upload; onReprocess: () => void }) {
+function UploadActions({
+    upload,
+    purchaseOrderView,
+    onReprocess,
+    onDelete,
+}: {
+    upload: Upload;
+    purchaseOrderView: boolean;
+    onReprocess: () => void;
+    onDelete: () => void;
+}) {
     const hasAction =
-        upload.can_resend_receiving || upload.can_resend_review || upload.can_reprocess;
+        upload.can_resend_receiving ||
+        upload.can_resend_review ||
+        upload.can_reprocess ||
+        upload.can_delete;
 
     return (
         <DropdownMenu>
@@ -726,6 +794,20 @@ function UploadActions({ upload, onReprocess }: { upload: Upload; onReprocess: (
                     <DropdownMenuItem onSelect={onReprocess}>
                         <RefreshCw /> Extract files again with AI
                     </DropdownMenuItem>
+                )}
+                {upload.can_delete && (
+                    <>
+                        {(upload.can_resend_receiving ||
+                            upload.can_resend_review ||
+                            upload.can_reprocess) && <DropdownMenuSeparator />}
+                        <DropdownMenuItem
+                            onSelect={onDelete}
+                            className="text-destructive focus:text-destructive"
+                        >
+                            <Trash2 className="size-4" /> Delete{' '}
+                            {purchaseOrderView ? 'purchase order' : 'receive log'}
+                        </DropdownMenuItem>
+                    </>
                 )}
                 {!hasAction && <DropdownMenuItem disabled>No actions available</DropdownMenuItem>}
             </DropdownMenuContent>

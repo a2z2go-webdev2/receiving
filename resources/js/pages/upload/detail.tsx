@@ -7,6 +7,7 @@ import {
     Mail,
     MapPin,
     RotateCcw,
+    Trash2,
     Unlink,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -15,6 +16,14 @@ import { PageShell } from '@/components/receiving/page-shell';
 import { StatusBadge } from '@/components/receiving/status-badge';
 import { announceSessionExpired } from '@/components/session-expired-dialog';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import {
     Select,
     SelectContent,
@@ -105,6 +114,7 @@ export type Upload = {
     can_resend: boolean;
     can_retry_ai: boolean;
     can_manage_purchase_order_links: boolean;
+    can_delete?: boolean;
     receiving_email_failed: boolean;
     files: FileRow[];
 };
@@ -120,6 +130,18 @@ export default function UploadDetail({
 
     const [opening, setOpening] = useState<number | null>(null);
     const [expandedFileId, setExpandedFileId] = useState<number | null>(null);
+    const [confirmDelete, setConfirmDelete] = useState(false);
+    const [deletingSubmit, setDeletingSubmit] = useState(false);
+    const isPurchaseOrder =
+        upload.serial_prefix === 'POSN' ||
+        upload.upload_type.toLowerCase().includes('purchase order');
+
+    function destroyUpload() {
+        setDeletingSubmit(true);
+        router.delete(`/admin/uploads/${upload.id}`, {
+            onFinish: () => setDeletingSubmit(false),
+        });
+    }
 
     async function openFile(file: FileRow) {
         setOpening(file.id);
@@ -147,7 +169,17 @@ export default function UploadDetail({
     }
 
     const actions =
-        !adminView && (upload.can_resend || upload.can_retry_ai) ? (
+        adminView && upload.can_delete ? (
+            <div className="flex flex-wrap gap-2">
+                <Button
+                    variant="outline"
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => setConfirmDelete(true)}
+                >
+                    <Trash2 /> Delete
+                </Button>
+            </div>
+        ) : !adminView && (upload.can_resend || upload.can_retry_ai) ? (
             <div className="flex flex-wrap gap-2">
                 {upload.can_resend && (
                     <Button
@@ -248,6 +280,45 @@ export default function UploadDetail({
                         </p>
                     </div>
                 )}
+
+                <Dialog
+                    open={confirmDelete}
+                    onOpenChange={(open) => !open && !deletingSubmit && setConfirmDelete(false)}
+                >
+                    <DialogContent hideCloseButton>
+                        <DialogHeader>
+                            <DialogTitle>
+                                Delete {isPurchaseOrder ? 'purchase order' : 'receive log'}{' '}
+                                {upload.serial_prefix}-{upload.serial_number}?
+                            </DialogTitle>
+                            <DialogDescription>
+                                This will permanently delete {upload.serial_prefix}-
+                                {upload.serial_number} from the system, including its files from
+                                storage, AI extraction results, and associated records.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-destructive text-sm">
+                            This action cannot be undone. Any linked status will be updated, and
+                            unallocated warehouse arrivals will be removed.
+                        </div>
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                onClick={() => setConfirmDelete(false)}
+                                disabled={deletingSubmit}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                onClick={destroyUpload}
+                                disabled={deletingSubmit}
+                            >
+                                <Trash2 /> {deletingSubmit ? 'Deleting…' : 'Delete permanently'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </PageShell>
         </>
     );
