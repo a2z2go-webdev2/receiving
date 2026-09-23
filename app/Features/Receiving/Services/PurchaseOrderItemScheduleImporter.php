@@ -6,9 +6,11 @@ use App\Models\PurchaseOrderItemSchedule;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
-use SplFileInfo;
 use SplFileObject;
 
+/**
+ * @phpstan-type StatsArray array{rows: int, records: int, created: int, updated: int, deactivated: int, skipped: int}
+ */
 class PurchaseOrderItemScheduleImporter
 {
     public const SOURCE = 'po_item_records';
@@ -151,8 +153,13 @@ class PurchaseOrderItemScheduleImporter
     }
 
     /**
-     * @param array{rows: int, records: int, created: int, updated: int, deactivated: int, skipped: int} $stats
-     * @param array<int, string> $sourceKeys
+     * @param  StatsArray  $stats
+     *
+     * @param-out StatsArray $stats
+     *
+     * @param  array<int, string>  $sourceKeys
+     *
+     * @param-out array<int, string> $sourceKeys
      */
     private function importFile(string $filePath, ?User $creator, array &$stats, array &$sourceKeys): void
     {
@@ -168,8 +175,13 @@ class PurchaseOrderItemScheduleImporter
     }
 
     /**
-     * @param array{rows: int, records: int, created: int, updated: int, deactivated: int, skipped: int} $stats
-     * @param array<int, string> $sourceKeys
+     * @param  StatsArray  $stats
+     *
+     * @param-out StatsArray $stats
+     *
+     * @param  array<int, string>  $sourceKeys
+     *
+     * @param-out array<int, string> $sourceKeys
      */
     private function importCsvFile(string $filePath, ?User $creator, array &$stats, array &$sourceKeys): void
     {
@@ -202,8 +214,13 @@ class PurchaseOrderItemScheduleImporter
     }
 
     /**
-     * @param array{rows: int, records: int, created: int, updated: int, deactivated: int, skipped: int} $stats
-     * @param array<int, string> $sourceKeys
+     * @param  StatsArray  $stats
+     *
+     * @param-out StatsArray $stats
+     *
+     * @param  array<int, string>  $sourceKeys
+     *
+     * @param-out array<int, string> $sourceKeys
      */
     private function importMarkdownFile(string $filePath, ?User $creator, array &$stats, array &$sourceKeys): void
     {
@@ -226,6 +243,7 @@ class PurchaseOrderItemScheduleImporter
             if ($header === null) {
                 $header = $cols;
                 $format = $this->detectMarkdownHeaderFormat($header);
+
                 continue;
             }
 
@@ -248,7 +266,16 @@ class PurchaseOrderItemScheduleImporter
         }
     }
 
-    /** @param array<string, mixed> $row @param array<int, string> $sourceKeys */
+    /**
+     * @param  array<string, mixed>  $row
+     * @param  StatsArray  $stats
+     *
+     * @param-out StatsArray $stats
+     *
+     * @param  array<int, string>  $sourceKeys
+     *
+     * @param-out array<int, string> $sourceKeys
+     */
     private function importMdFoodRow(array $row, ?User $creator, array &$stats, array &$sourceKeys): void
     {
         $code = trim((string) ($row['Code'] ?? ''));
@@ -292,7 +319,7 @@ class PurchaseOrderItemScheduleImporter
             ],
             [
                 'serial_number' => $serialNumber,
-                'sku_number' => $code === '' ? null : $code,
+                'sku_number' => $code,
                 'sku_number_normalized' => $skuNormalized,
                 'ean_barcode' => $ean === '' ? null : $ean,
                 'ean_barcode_normalized' => $eanNormalized,
@@ -316,7 +343,16 @@ class PurchaseOrderItemScheduleImporter
         $stats['records']++;
     }
 
-    /** @param array<string, mixed> $row @param array<int, string> $sourceKeys */
+    /**
+     * @param  array<string, mixed>  $row
+     * @param  StatsArray  $stats
+     *
+     * @param-out StatsArray $stats
+     *
+     * @param  array<int, string>  $sourceKeys
+     *
+     * @param-out array<int, string> $sourceKeys
+     */
     private function importMdNonFoodRow(array $row, ?User $creator, array &$stats, array &$sourceKeys): void
     {
         $code = trim((string) ($row['Code'] ?? ''));
@@ -359,7 +395,7 @@ class PurchaseOrderItemScheduleImporter
             ],
             [
                 'serial_number' => $serialNumber,
-                'sku_number' => $code === '' ? null : $code,
+                'sku_number' => $code,
                 'sku_number_normalized' => $skuNormalized,
                 'ean_barcode' => $ean === '' ? null : $ean,
                 'ean_barcode_normalized' => $eanNormalized,
@@ -383,7 +419,16 @@ class PurchaseOrderItemScheduleImporter
         $stats['records']++;
     }
 
-    /** @param array<string, mixed> $row @param array<int, string> $sourceKeys */
+    /**
+     * @param  array<string, mixed>  $row
+     * @param  StatsArray  $stats
+     *
+     * @param-out StatsArray $stats
+     *
+     * @param  array<int, string>  $sourceKeys
+     *
+     * @param-out array<int, string> $sourceKeys
+     */
     private function importNewRow(array $row, ?User $creator, array &$stats, array &$sourceKeys): void
     {
         $description = trim((string) $row['Description']);
@@ -449,7 +494,16 @@ class PurchaseOrderItemScheduleImporter
         $stats['records']++;
     }
 
-    /** @param array<string, mixed> $row @param array<int, string> $sourceKeys */
+    /**
+     * @param  array<string, mixed>  $row
+     * @param  StatsArray  $stats
+     *
+     * @param-out StatsArray $stats
+     *
+     * @param  array<int, string>  $sourceKeys
+     *
+     * @param-out array<int, string> $sourceKeys
+     */
     private function importLegacyRow(array $row, ?User $creator, array &$stats, array &$sourceKeys): void
     {
         $description = trim((string) $row['Description']);

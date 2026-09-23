@@ -207,6 +207,7 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
             Route::post('uploads/{upload}/resend-receiving', [UploadLogController::class, 'resendReceiving'])->name('uploads.resend-receiving');
             Route::post('uploads/{upload}/resend-review', [UploadLogController::class, 'resendReview'])->name('uploads.resend-review');
             Route::post('uploads/{upload}/reprocess', [UploadLogController::class, 'reprocess'])->name('uploads.reprocess');
+            Route::delete('uploads/{upload}', [UploadLogController::class, 'destroy'])->name('uploads.destroy');
         });
         Route::get('activity', ActivityLogController::class)
             ->middleware('starter.permission:'.Permission::ViewActivityLogs->value)

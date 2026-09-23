@@ -247,7 +247,7 @@ class PurchaseOrderLinker
         }
     }
 
-    private function refreshPoArrivalStatus(PoExtraction $poExtraction): PurchaseOrderArrivalStatus
+    public function refreshPoArrivalStatus(PoExtraction $poExtraction): PurchaseOrderArrivalStatus
     {
         $status = $this->poHasActiveLink($poExtraction)
             ? PurchaseOrderArrivalStatus::Arrived

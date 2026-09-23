@@ -9,6 +9,7 @@ use App\Enums\PurchaseOrderLinkStatus;
 use App\Enums\ReviewStatus;
 use App\Enums\UploadWorkflow;
 use App\Features\Receiving\Services\ActivityLogger;
+use App\Features\Receiving\Services\DeleteReceivingUploadService;
 use App\Features\Receiving\Services\PurchaseOrderDataNormalizer;
 use App\Features\Receiving\Services\ReceivingUploadReprocessor;
 use App\Features\Receiving\Services\ReviewLinkService;
@@ -127,6 +128,7 @@ class UploadLogController extends Controller
                 && $upload->review_status !== ReviewStatus::Verified,
             'can_reprocess' => $canRetryOperations
                 && ! in_array($upload->ai_status, [AiStatus::Pending, AiStatus::Processing], true),
+            'can_delete' => $canRetryOperations,
         ]);
 
         return Inertia::render(
@@ -321,6 +323,31 @@ class UploadLogController extends Controller
         $reprocessor->queue($upload, $user, $request);
 
         return back()->with('status', 'All files under this serial number were queued for a new AI extraction.');
+    }
+
+    public function destroy(
+        Request $request,
+        ReceivingUpload $upload,
+        DeleteReceivingUploadService $deleter,
+        UploadSerialNumber $serials,
+    ): RedirectResponse {
+        $this->authorize('delete', $upload);
+
+        $isPo = $upload->uploadType->workflow === UploadWorkflow::PurchaseOrder;
+        $serial = $serials->prefix($upload->uploadType).'-'.$serials->number($upload);
+        $typeLabel = $isPo ? 'Purchase order' : 'Receive log';
+
+        $deleter->delete($upload, $request->user(), $request);
+
+        $referer = (string) $request->header('referer', '');
+        if ($referer !== '' && ! str_contains($referer, "/admin/uploads/{$upload->getKey()}")) {
+            return back()->with('status', "{$typeLabel} {$serial} was permanently deleted.");
+        }
+
+        $defaultRoute = $isPo ? 'admin.purchase-orders.index' : 'admin.uploads.index';
+
+        return redirect()->route($defaultRoute)
+            ->with('status', "{$typeLabel} {$serial} was permanently deleted.");
     }
 
     private function resolvePurchaseOrderSerialId(

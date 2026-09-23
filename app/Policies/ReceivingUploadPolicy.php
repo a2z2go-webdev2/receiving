@@ -54,4 +54,10 @@ class ReceivingUploadPolicy
         return $user->can(Permission::RetryOperations->value)
             && ! in_array($upload->ai_status, [AiStatus::Pending, AiStatus::Processing], true);
     }
+
+    public function delete(User $user, ReceivingUpload $upload): bool
+    {
+        return $user->can(Permission::AccessAdmin->value)
+            && $user->can(Permission::RetryOperations->value);
+    }
 }

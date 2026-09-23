@@ -312,7 +312,9 @@ export default function PurchaseOrderItemsIndex({
                                             <ClipboardList className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
                                             <div>
                                                 <div className="flex items-center gap-1.5">
-                                                    <p className="font-medium">{item.description}</p>
+                                                    <p className="font-medium">
+                                                        {item.description}
+                                                    </p>
                                                     {item.category === 'food' ? (
                                                         <span className="inline-flex items-center rounded bg-amber-500/10 px-1.5 py-0.5 font-medium text-[10px] text-amber-700 dark:text-amber-400">
                                                             Food
@@ -339,9 +341,11 @@ export default function PurchaseOrderItemsIndex({
                                     </td>
                                     <td className="px-3 py-2">{item.schedule_label}</td>
                                     <td className="px-3 py-2 text-right tabular-nums">
-                                        {item.target_quantity !== null && item.target_quantity !== undefined ? (
+                                        {item.target_quantity !== null &&
+                                        item.target_quantity !== undefined ? (
                                             <>
-                                                {formatQuantity(item.target_quantity)} {item.unit ?? ''}
+                                                {formatQuantity(item.target_quantity)}{' '}
+                                                {item.unit ?? ''}
                                             </>
                                         ) : (
                                             <span className="text-muted-foreground">-</span>
@@ -508,9 +512,7 @@ export default function PurchaseOrderItemsIndex({
                                         min="0"
                                         step="0.001"
                                         placeholder={
-                                            form.data.category === 'food'
-                                                ? 'N/A (No target)'
-                                                : '0'
+                                            form.data.category === 'food' ? 'N/A (No target)' : '0'
                                         }
                                         value={form.data.target_quantity}
                                         onChange={(event) =>
