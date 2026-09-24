@@ -2,6 +2,7 @@
 
 namespace App\Features\Receiving\Services;
 
+use App\Models\AiExtraction;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Str;
@@ -24,12 +25,55 @@ class PurchaseOrderDataNormalizer
         return $this->fieldValue($data, ['PO Date', 'Purchase Order Date', 'P.O. Date']);
     }
 
-    /** @param array<string, mixed> $data */
-    public function isInvoiceOrReceipt(array $data): bool
+    /** @param array<string, mixed>|AiExtraction|string|null $dataOrExtraction */
+    public function isInvoiceOrReceipt(array|AiExtraction|string|null $dataOrExtraction): bool
     {
-        $documentType = Str::lower(trim((string) ($data['document_type'] ?? $data['documentType'] ?? '')));
+        if ($dataOrExtraction instanceof AiExtraction) {
+            $type = $dataOrExtraction->document_type;
+            if ($type !== null && $this->isInvoiceOrReceipt($type)) {
+                return true;
+            }
 
-        return Str::contains($documentType, ['invoice', 'receipt', 'billing', 'delivery receipt', 'proof of receipt']);
+            $data = $dataOrExtraction->preferredData() ?? $dataOrExtraction->raw_extracted_json;
+
+            return is_array($data) && $this->isInvoiceOrReceipt($data);
+        }
+
+        if (is_string($dataOrExtraction)) {
+            $documentType = Str::lower(trim($dataOrExtraction));
+        } elseif (is_array($dataOrExtraction)) {
+            $documentType = Str::lower(trim((string) (
+                $dataOrExtraction['document_type']
+                ?? $dataOrExtraction['documentType']
+                ?? $dataOrExtraction['doc_type']
+                ?? ''
+            )));
+        } else {
+            return false;
+        }
+
+        if ($documentType === '') {
+            return false;
+        }
+
+        // Explicitly exclude Purchase Order documents (e.g. "purchase order", "purchase_order", "po")
+        if (
+            Str::contains($documentType, ['purchase order', 'purchase_order', 'purchase-order'])
+            || $documentType === 'po'
+            || str_starts_with($documentType, 'po ')
+            || str_ends_with($documentType, ' po')
+        ) {
+            return false;
+        }
+
+        // Only delivery receipt and invoice document types (including common variants and billing receipts)
+        return Str::contains($documentType, [
+            'invoice',
+            'receipt',
+            'delivery',
+            'billing',
+            'dr',
+        ]);
     }
 
     /** @param array<string, mixed> $data @return array<string, mixed> */
