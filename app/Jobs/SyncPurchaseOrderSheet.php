@@ -13,6 +13,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Throwable;
 
 class SyncPurchaseOrderSheet implements ShouldQueue
@@ -31,6 +32,55 @@ class SyncPurchaseOrderSheet implements ShouldQueue
 
     public function handle(PurchaseOrderSheetSyncService $syncService): void
     {
+        if ($this->configOrSlug === 'all' || $this->configOrSlug === 'all_po') {
+            $masterConfig = GoogleSheetConfig::query()
+                ->whereNotNull('spreadsheet_id')
+                ->where('spreadsheet_id', '!=', '')
+                ->first();
+
+            if ($masterConfig === null) {
+                throw new RuntimeException('No configured Google Sheet found to sync purchase order tabs.');
+            }
+
+            $batchId = (string) Str::uuid();
+            $syncJob = GoogleSheetSyncJob::query()->create([
+                'sheet_slug' => 'all',
+                'batch_id' => $batchId,
+                'status' => 'processing',
+                'started_at' => CarbonImmutable::now(),
+                'current_status_text' => "Starting {$this->mode} synchronization for all tabs...",
+            ]);
+
+            try {
+                $allResults = $syncService->syncAllTabs($masterConfig, $this->mode);
+                $totalTabs = $allResults['total_tabs'];
+                $syncJob->update([
+                    'status' => 'completed',
+                    'completed_at' => CarbonImmutable::now(),
+                    'total_items' => $totalTabs,
+                    'processed_items' => $totalTabs,
+                    'successful_items' => $totalTabs,
+                    'failed_items' => 0,
+                    'current_status_text' => "All {$totalTabs} purchase order tabs synchronized successfully.",
+                    'logs' => $allResults,
+                ]);
+            } catch (Throwable $e) {
+                Log::error("SyncPurchaseOrderSheet all tabs failed: {$e->getMessage()}", [
+                    'exception' => $e,
+                ]);
+
+                $syncJob->update([
+                    'status' => 'failed',
+                    'completed_at' => CarbonImmutable::now(),
+                    'current_status_text' => "Failed: {$e->getMessage()}",
+                ]);
+
+                throw $e;
+            }
+
+            return;
+        }
+
         $config = is_numeric($this->configOrSlug)
             ? GoogleSheetConfig::query()->find($this->configOrSlug)
             : GoogleSheetConfig::query()->where('slug', $this->configOrSlug)->first();

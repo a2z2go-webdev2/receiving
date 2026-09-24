@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $slug
  * @property string $name
  * @property string|null $spreadsheet_id
+ * @property string|null $tab_name
  * @property CarbonImmutable|null $last_synced_at
  * @property int $total_serials
  * @property int $synced_serials
@@ -25,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable $updated_at
  */
 #[Fillable([
-    'slug', 'name', 'sheet_type', 'spreadsheet_id', 'webhook_secret', 'auto_sync_on_webhook',
+    'slug', 'name', 'sheet_type', 'spreadsheet_id', 'tab_name', 'webhook_secret', 'auto_sync_on_webhook',
     'transition_mode', 'last_snapshot_hash', 'last_snapshot_at', 'last_synced_at',
     'total_serials', 'synced_serials', 'pending_serials', 'failed_serials',
 ])]

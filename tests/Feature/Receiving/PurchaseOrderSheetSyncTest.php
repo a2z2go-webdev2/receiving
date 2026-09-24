@@ -176,4 +176,61 @@ class PurchaseOrderSheetSyncTest extends TestCase
         $widgetItem = $po1->items()->firstWhere('item_code', 'SKU-001');
         $this->assertSame('Widget A Upgraded', $widgetItem->product_description);
     }
+
+    public function test_tab_name_resolution_for_each_upload_type(): void
+    {
+        /** @var PurchaseOrderSheetSyncService $syncService */
+        $syncService = app(PurchaseOrderSheetSyncService::class);
+
+        $a2z = new GoogleSheetConfig(['slug' => 'a2z2go']);
+        $bonita = new GoogleSheetConfig(['slug' => 'bonita']);
+        $keysys = new GoogleSheetConfig(['slug' => 'keysys']);
+        $pingcon = new GoogleSheetConfig(['slug' => 'pingcon']);
+
+        $this->assertSame('Purchase Orders A2Z', $syncService->resolveTabName($a2z));
+        $this->assertSame('Purchase Orders BONITA', $syncService->resolveTabName($bonita));
+        $this->assertSame('Purchase Orders KEYSYS', $syncService->resolveTabName($keysys));
+        $this->assertSame('Purchase Orders', $syncService->resolveTabName($pingcon));
+    }
+
+    public function test_custom_tab_name_overrides_default(): void
+    {
+        /** @var PurchaseOrderSheetSyncService $syncService */
+        $syncService = app(PurchaseOrderSheetSyncService::class);
+
+        $config = new GoogleSheetConfig([
+            'slug' => 'a2z2go',
+            'tab_name' => 'Custom A2Z PO Sheet',
+        ]);
+
+        $this->assertSame('Custom A2Z PO Sheet', $syncService->resolveTabName($config));
+    }
+
+    public function test_format_range_with_tab_quotes_tab_names(): void
+    {
+        /** @var PurchaseOrderSheetSyncService $syncService */
+        $syncService = app(PurchaseOrderSheetSyncService::class);
+
+        $range = $syncService->formatRangeWithTab('Purchase Orders KEYSYS');
+        $this->assertSame("'Purchase Orders KEYSYS'!A1:Z50000", $range);
+
+        $customRange = $syncService->formatRangeWithTab('Purchase Orders BONITA', 'A1:K100');
+        $this->assertSame("'Purchase Orders BONITA'!A1:K100", $customRange);
+
+        // Does not double-qualify if already qualified
+        $alreadyQualified = $syncService->formatRangeWithTab('Purchase Orders A2Z', "'Other Tab'!A1:Z500");
+        $this->assertSame("'Other Tab'!A1:Z500", $alreadyQualified);
+    }
+
+    public function test_slug_resolution_from_tab_names(): void
+    {
+        /** @var PurchaseOrderSheetSyncService $syncService */
+        $syncService = app(PurchaseOrderSheetSyncService::class);
+
+        $this->assertSame('a2z2go', $syncService->resolveSlugFromTabName('Purchase Orders A2Z'));
+        $this->assertSame('bonita', $syncService->resolveSlugFromTabName('Purchase Orders BONITA'));
+        $this->assertSame('keysys', $syncService->resolveSlugFromTabName('Purchase Orders KEYSYS'));
+        $this->assertSame('pingcon', $syncService->resolveSlugFromTabName('Purchase Orders'));
+        $this->assertSame('pingcon', $syncService->resolveSlugFromTabName('Purchase Orders PINGCON'));
+    }
 }

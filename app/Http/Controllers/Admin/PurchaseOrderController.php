@@ -314,7 +314,7 @@ class PurchaseOrderController extends Controller
                 ->get(['id', 'name']),
             'sheetSources' => fn () => GoogleSheetConfig::query()
                 ->orderBy('name')
-                ->get(['id', 'name', 'slug', 'transition_mode', 'last_synced_at']),
+                ->get(['id', 'name', 'slug', 'tab_name', 'spreadsheet_id', 'transition_mode', 'last_synced_at']),
             'pageMode' => 'purchase_orders',
             'basePath' => '/admin/purchase-orders',
         ]);

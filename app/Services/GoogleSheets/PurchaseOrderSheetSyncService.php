@@ -9,6 +9,8 @@ use App\Models\PoExtraction;
 use App\Models\PoExtractionItem;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class PurchaseOrderSheetSyncService
@@ -279,13 +281,170 @@ class PurchaseOrderSheetSyncService
             return $configOrSlug;
         }
 
-        return GoogleSheetConfig::query()->firstOrCreate(
+        $config = GoogleSheetConfig::query()->firstOrCreate(
             ['slug' => $configOrSlug],
             [
                 'name' => ucfirst(str_replace('_', ' ', $configOrSlug)),
                 'sheet_type' => 'purchase_order',
+                'spreadsheet_id' => config('services.google.purchase_orders_sheet_id'),
             ]
         );
+
+        if (empty($config->spreadsheet_id) && $envId = config('services.google.purchase_orders_sheet_id')) {
+            $config->update(['spreadsheet_id' => $envId]);
+        }
+
+        return $config;
+    }
+
+    /**
+     * Resolve the appropriate sheet tab name for a configuration.
+     *
+     * @param  array<int, string>|null  $availableTabs
+     */
+    public function resolveTabName(GoogleSheetConfig $config, ?array $availableTabs = null): string
+    {
+        // 1. Explicit configured tab name
+        if (! empty($config->tab_name)) {
+            return $config->tab_name;
+        }
+
+        // 2. If available tabs were supplied, match against them
+        if (! empty($availableTabs)) {
+            $matched = $this->matchTabFromList($config->slug, $availableTabs);
+            if ($matched !== null) {
+                return $matched;
+            }
+        }
+
+        // 3. Fallback to default tab naming conventions
+        return match ($config->slug) {
+            'a2z2go' => 'Purchase Orders A2Z',
+            'bonita' => 'Purchase Orders BONITA',
+            'keysys' => 'Purchase Orders KEYSYS',
+            'pingcon' => 'Purchase Orders',
+            default => 'Purchase Orders',
+        };
+    }
+
+    /**
+     * Map a tab name back to the corresponding upload type / sheet slug.
+     */
+    public function resolveSlugFromTabName(string $tabName): string
+    {
+        $lower = strtolower(trim($tabName));
+
+        if (str_contains($lower, 'a2z')) {
+            return 'a2z2go';
+        }
+
+        if (str_contains($lower, 'bonita')) {
+            return 'bonita';
+        }
+
+        if (str_contains($lower, 'keysys')) {
+            return 'keysys';
+        }
+
+        if (str_contains($lower, 'pingcon')) {
+            return 'pingcon';
+        }
+
+        // Default "Purchase Orders" tab belongs to Pingcon
+        if ($lower === 'purchase orders' || str_contains($lower, 'purchase order')) {
+            return 'pingcon';
+        }
+
+        return Str::slug($tabName);
+    }
+
+    /**
+     * Format a cell range qualified with a quoted Google Sheets tab name.
+     */
+    public function formatRangeWithTab(string $tabName, ?string $range = null): string
+    {
+        if ($range !== null && str_contains($range, '!')) {
+            return $range;
+        }
+
+        $cellRange = $range ?: 'A1:Z50000';
+        $escapedTab = str_replace("'", "''", trim($tabName));
+
+        return "'{$escapedTab}'!{$cellRange}";
+    }
+
+    /**
+     * Synchronize all purchase order tabs in a spreadsheet.
+     *
+     * @return array{
+     *     spreadsheet_id: string,
+     *     total_tabs: int,
+     *     tabs_synced: array<string, array<string, mixed>>
+     * }
+     */
+    public function syncAllTabs(
+        GoogleSheetConfig|string $configOrSlug,
+        string $mode = 'apply',
+    ): array {
+        $config = $this->resolveConfig($configOrSlug);
+
+        if (empty($config->spreadsheet_id)) {
+            throw new RuntimeException("Spreadsheet ID is not configured for sheet '{$config->slug}'.");
+        }
+
+        $tabs = [];
+        try {
+            $tabs = $this->apiService->fetchSpreadsheetTabs($config->spreadsheet_id);
+        } catch (\Throwable $e) {
+            Log::warning("Could not fetch tab list for spreadsheet {$config->spreadsheet_id}: {$e->getMessage()}. Using standard tabs.");
+        }
+
+        if (empty($tabs)) {
+            $tabs = [
+                'Purchase Orders',
+                'Purchase Orders BONITA',
+                'Purchase Orders A2Z',
+                'Purchase Orders KEYSYS',
+            ];
+        }
+
+        $results = [];
+
+        foreach ($tabs as $tabName) {
+            $slug = $this->resolveSlugFromTabName($tabName);
+
+            /** @var GoogleSheetConfig $targetConfig */
+            $targetConfig = GoogleSheetConfig::query()->firstOrCreate(
+                ['slug' => $slug],
+                [
+                    'name' => ucfirst($slug),
+                    'sheet_type' => 'purchase_order',
+                    'spreadsheet_id' => $config->spreadsheet_id,
+                    'tab_name' => $tabName,
+                ]
+            );
+
+            if ($targetConfig->spreadsheet_id !== $config->spreadsheet_id || $targetConfig->tab_name !== $tabName) {
+                $targetConfig->update([
+                    'spreadsheet_id' => $config->spreadsheet_id,
+                    'tab_name' => $tabName,
+                ]);
+            }
+
+            $tabRange = $this->formatRangeWithTab($tabName);
+
+            if ($mode === 'preview') {
+                $results[$tabName] = $this->preview($targetConfig, $tabRange);
+            } else {
+                $results[$tabName] = $this->applySnapshot($targetConfig, range: $tabRange);
+            }
+        }
+
+        return [
+            'spreadsheet_id' => $config->spreadsheet_id,
+            'total_tabs' => count($tabs),
+            'tabs_synced' => $results,
+        ];
     }
 
     /**
@@ -293,12 +452,58 @@ class PurchaseOrderSheetSyncService
      */
     private function fetchSheetRows(GoogleSheetConfig $config, ?string $range = null): array
     {
-        if (empty($config->spreadsheet_id)) {
-            throw new RuntimeException("Spreadsheet ID is not configured for sheet '{$config->slug}'.");
+        $sheetId = $config->spreadsheet_id ?: config('services.google.purchase_orders_sheet_id');
+        if (empty($sheetId)) {
+            throw new RuntimeException("Spreadsheet ID is not configured for sheet '{$config->slug}'. Set it in Admin Settings or SHEET_ID_PURCHASE_ORDERS in .env.");
         }
 
-        $targetRange = $range ?? 'A1:Z5000';
+        if ($range !== null && str_contains($range, '!')) {
+            $targetRange = $range;
+        } else {
+            $tabName = $this->resolveTabName($config);
+            $targetRange = $this->formatRangeWithTab($tabName, $range);
+        }
 
-        return $this->apiService->fetchRange($config->spreadsheet_id, $targetRange);
+        return $this->apiService->fetchRange($sheetId, $targetRange);
+    }
+
+    /**
+     * Match a sheet slug against a list of actual spreadsheet tab titles.
+     *
+     * @param  array<int, string>  $tabs
+     */
+    private function matchTabFromList(string $slug, array $tabs): ?string
+    {
+        $normalizedSlug = strtolower(trim($slug));
+
+        foreach ($tabs as $tab) {
+            if (strtolower(trim($tab)) === $normalizedSlug) {
+                return $tab;
+            }
+        }
+
+        $keyword = match ($normalizedSlug) {
+            'a2z2go' => 'a2z',
+            'bonita' => 'bonita',
+            'keysys' => 'keysys',
+            'pingcon' => 'pingcon',
+            default => $normalizedSlug,
+        };
+
+        foreach ($tabs as $tab) {
+            if (str_contains(strtolower($tab), $keyword)) {
+                return $tab;
+            }
+        }
+
+        if ($normalizedSlug === 'pingcon') {
+            foreach ($tabs as $tab) {
+                if (strtolower(trim($tab)) === 'purchase orders') {
+                    return $tab;
+                }
+            }
+        }
+
+        return null;
     }
 }
