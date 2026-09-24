@@ -3,6 +3,7 @@
 namespace App\Services\GoogleSheets;
 
 use App\Enums\PurchaseOrderArrivalStatus;
+use App\Features\Receiving\Services\PurchaseOrderLinker;
 use App\Models\GoogleSheetConfig;
 use App\Models\GoogleSheetSyncRecord;
 use App\Models\PoExtraction;
@@ -15,10 +16,15 @@ use RuntimeException;
 
 class PurchaseOrderSheetSyncService
 {
+    private readonly PurchaseOrderLinker $linker;
+
     public function __construct(
         private readonly GoogleSheetsApiService $apiService,
         private readonly PurchaseOrderSheetParser $parser,
-    ) {}
+        ?PurchaseOrderLinker $linker = null,
+    ) {
+        $this->linker = $linker ?? app(PurchaseOrderLinker::class);
+    }
 
     /**
      * Preview purchase orders parsed from sheet rows without mutating durable PO extractions.
@@ -255,6 +261,9 @@ class PurchaseOrderSheetSyncService
                         'synced_at' => now(),
                     ]
                 );
+
+                // Automatically cross-check and link any previously uploaded invoices/receipts waiting for this PO across lanes
+                $this->linker->syncPoExtraction($poExtraction);
 
                 $appliedCount++;
             }

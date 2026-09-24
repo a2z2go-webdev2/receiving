@@ -38,6 +38,10 @@ class PurchaseOrderResolver
      */
     public function resolve(AiExtraction $extraction): PurchaseOrderResolution
     {
+        if (! $this->normalizer->isInvoiceOrReceipt($extraction)) {
+            return new PurchaseOrderResolution(PurchaseOrderLinkStatus::NotApplicable);
+        }
+
         $data = $this->dataFor($extraction);
         if ($data === null) {
             return new PurchaseOrderResolution(PurchaseOrderLinkStatus::NotApplicable);
@@ -99,9 +103,20 @@ class PurchaseOrderResolver
             );
         }
 
-        // Multiple eligible POs with the same normalized number
-        $uniqueVendors = $eligiblePos->pluck('vendor_name')->filter()->unique();
-        if ($uniqueVendors->count() > 1) {
+        // Multiple eligible POs with the same normalized number:
+        // Check for genuine conflicting suppliers rather than simple string variation
+        $vendors = $eligiblePos->pluck('vendor_name')->filter()->unique()->values();
+        $hasRealConflict = false;
+        for ($i = 0; $i < $vendors->count(); $i++) {
+            for ($j = $i + 1; $j < $vendors->count(); $j++) {
+                if ($this->hasSupplierConflict((string) $vendors[$i], (string) $vendors[$j])) {
+                    $hasRealConflict = true;
+                    break 2;
+                }
+            }
+        }
+
+        if ($hasRealConflict) {
             return new PurchaseOrderResolution(
                 PurchaseOrderLinkStatus::Ambiguous,
                 null,
@@ -111,8 +126,11 @@ class PurchaseOrderResolver
             );
         }
 
+        // Cross-tab resolution: prefer candidate matching upload lane if available, otherwise latest date
+        $uploadSlug = $extraction->upload->uploadType->slug;
         /** @var PoExtraction $best */
-        $best = $eligiblePos->sortByDesc('po_date_value')->first();
+        $best = ($uploadSlug !== null ? $eligiblePos->firstWhere('sheet_slug', $uploadSlug) : null)
+            ?? $eligiblePos->sortByDesc('po_date_value')->first();
 
         return new PurchaseOrderResolution(
             PurchaseOrderLinkStatus::Linked,

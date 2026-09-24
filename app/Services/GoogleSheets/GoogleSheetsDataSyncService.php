@@ -5,7 +5,7 @@ namespace App\Services\GoogleSheets;
 use App\Enums\AiStatus;
 use App\Enums\EmailStatus;
 use App\Enums\PurchaseOrderArrivalStatus;
-use App\Enums\PurchaseOrderLinkSource;
+use App\Enums\PurchaseOrderLinkStatus;
 use App\Enums\ReviewStatus;
 use App\Enums\UploadProcessingStatus;
 use App\Enums\UserStatus;
@@ -13,7 +13,6 @@ use App\Features\Receiving\Services\ActivityLogger;
 use App\Features\Receiving\Services\PurchaseOrderDataNormalizer;
 use App\Features\Receiving\Services\PurchaseOrderItemMatcher;
 use App\Features\Receiving\Services\PurchaseOrderLinker;
-use App\Features\Receiving\Services\PurchaseOrderResolver;
 use App\Models\AiExtraction;
 use App\Models\GoogleSheetConfig;
 use App\Models\GoogleSheetExtraction;
@@ -605,19 +604,11 @@ class GoogleSheetsDataSyncService
                         // Link any previously uploaded invoices that were waiting for this PO
                         app(PurchaseOrderLinker::class)->syncPoExtraction($poExt);
                     } else {
-                        // For Invoice / Delivery Receipt / Receiving documents, link to real PO if present
-                        if ($poNo !== '') {
-                            $resolverResult = app(PurchaseOrderResolver::class)->resolve($aiExt);
-                            if ($resolverResult->isSuccess() && $resolverResult->selectedPo !== null) {
-                                app(PurchaseOrderLinker::class)->link(
-                                    $aiExt,
-                                    $resolverResult->selectedPo,
-                                    $activeUser,
-                                    PurchaseOrderLinkSource::Automatic
-                                );
-                            } else {
-                                $aiExt->update(['po_link_status' => $resolverResult->status]);
-                            }
+                        // For Invoice / Delivery Receipt only, cross-check and link across all PO tabs
+                        if ($this->normalizer->isInvoiceOrReceipt($aiExt)) {
+                            app(PurchaseOrderLinker::class)->syncExtraction($aiExt);
+                        } else {
+                            $aiExt->forceFill(['po_link_status' => PurchaseOrderLinkStatus::NotApplicable])->save();
                         }
                     }
                 }

@@ -547,9 +547,7 @@ class PurchaseOrderLinker
             return false;
         }
 
-        $data = $this->dataFor($extraction);
-
-        return $data !== null && $this->normalizer->isInvoiceOrReceipt($data);
+        return $this->normalizer->isInvoiceOrReceipt($extraction);
     }
 
     /** @return array<string, mixed>|null */

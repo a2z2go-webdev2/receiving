@@ -7,9 +7,11 @@ use App\Enums\PurchaseOrderLinkStatus;
 use App\Features\Receiving\Services\PoExtractionStore;
 use App\Features\Receiving\Services\PurchaseOrderDataNormalizer;
 use App\Features\Receiving\Services\PurchaseOrderLinker;
+use App\Features\Warehouse\Services\ReceiptPostingService;
 use App\Features\Warehouse\Services\WarehouseOperations;
 use App\Models\AiExtraction;
 use App\Models\PoExtraction;
+use App\Models\PoExtractionItem;
 use App\Models\PurchaseOrderDocumentLink;
 use App\Models\PurchaseOrderItemArrival;
 use App\Models\PurchaseOrderItemSchedule;
@@ -509,3 +511,292 @@ function poLinkAdmin(): User
 
     return $admin;
 }
+
+function poLinkSheetPurchaseOrder(string $poNumber, string $poDate, string $sheetSlug, array $items = []): PoExtraction
+{
+    $normalizer = app(PurchaseOrderDataNormalizer::class);
+    $po = PoExtraction::query()->create([
+        'source_type' => 'google_sheet',
+        'sheet_slug' => $sheetSlug,
+        'po_number' => $poNumber,
+        'po_number_normalized' => $normalizer->normalizeIdentifier($poNumber),
+        'po_date' => $poDate,
+        'po_date_value' => CarbonImmutable::parse($poDate),
+        'vendor_name' => 'Acme Supplier',
+        'arrival_status' => PurchaseOrderArrivalStatus::Pending,
+        'status_normalized' => 'confirmed',
+    ]);
+
+    foreach ($items as $idx => $item) {
+        PoExtractionItem::query()->create([
+            'po_extraction_id' => $po->getKey(),
+            'sort_order' => $idx + 1,
+            'item_code' => $item['itemCode'] ?? null,
+            'product_description' => $item['productDescription'] ?? null,
+            'quantity' => (string) ($item['quantity'] ?? '1'),
+            'unit' => $item['unit'] ?? 'case',
+        ]);
+    }
+
+    return $po;
+}
+
+/**
+ * @param  array<int, array{fileName?: string, data: array<string, mixed>}>  $filesData
+ */
+function poLinkUploadWithFiles(string $uploadTypeSlug, array $filesData): ReceivingUpload
+{
+    $user = User::factory()->create();
+    $type = UploadType::query()->where('slug', $uploadTypeSlug)->firstOrFail();
+    $upload = ReceivingUpload::query()->create([
+        'submission_id' => fake()->uuid(),
+        'upload_type_id' => $type->getKey(),
+        'uploader_user_id' => $user->getKey(),
+        'uploader_email' => $user->email,
+        'r2_bucket' => 'test',
+        'r2_prefix' => 'receiving/test',
+        'file_count' => count($filesData),
+    ]);
+
+    foreach ($filesData as $idx => $f) {
+        $fileName = $f['fileName'] ?? "file_{$idx}.pdf";
+        $data = $f['data'];
+        $docType = (string) ($data['document_type'] ?? 'Invoice');
+
+        $file = UploadedFile::query()->create([
+            'receiving_upload_id' => $upload->getKey(),
+            'original_file_name' => $fileName,
+            'sanitized_file_name' => $fileName,
+            'stored_file_name' => $fileName,
+            'file_extension' => 'pdf',
+            'r2_bucket' => 'test',
+            'r2_object_key' => "receiving/{$fileName}",
+            'r2_staging_object_key' => "staging/{$upload->getKey()}/{$fileName}",
+            'original_file_size' => 100,
+            'final_file_size' => 100,
+            'declared_content_type' => 'application/pdf',
+            'content_type' => 'application/pdf',
+        ]);
+
+        AiExtraction::query()->create([
+            'receiving_upload_id' => $upload->getKey(),
+            'uploaded_file_id' => $file->getKey(),
+            'document_type' => $docType,
+            'raw_extracted_json' => $data,
+            'corrected_json' => null,
+        ]);
+    }
+
+    return $upload->load('extractions.file');
+}
+
+it('cross-checks and links an invoice uploaded under keysys lane to a PO on pingcon sheet tab', function (): void {
+    $po = poLinkSheetPurchaseOrder('PO-PINGCON-99', '2026-08-10', 'pingcon', [
+        ['itemCode' => 'SKU-PC-1', 'productDescription' => 'Pingcon cups', 'quantity' => '50', 'unit' => 'box'],
+    ]);
+
+    // Invoice uploaded under keysys upload lane with matching PO number
+    $invoice = poLinkExtraction('keysys', 'keysys-invoice.pdf', poLinkInvoiceData('PO-PINGCON-99', '2026-08-10', [
+        ['itemCode' => 'SKU-PC-1', 'description' => 'Pingcon cups', 'quantity' => '50', 'unit' => 'box'],
+    ]));
+
+    app(PurchaseOrderLinker::class)->syncExtraction($invoice);
+
+    $invoice->refresh();
+    $link = PurchaseOrderDocumentLink::query()->where('ai_extraction_id', $invoice->getKey())->first();
+
+    expect($invoice->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and($link)->not->toBeNull()
+        ->and($link->po_extraction_id)->toBe($po->getKey())
+        ->and(PurchaseOrderItemArrival::query()->where('purchase_order_document_link_id', $link->getKey())->count())->toBe(1);
+});
+
+it('links delivery receipts and invoices but excludes purchase order pdfs and other documents from cross-checking', function (): void {
+    $po = poLinkSheetPurchaseOrder('PO-DOC-FILTER-1', '2026-08-12', 'pingcon', [
+        ['itemCode' => 'SKU-DF-1', 'productDescription' => 'Filter item', 'quantity' => '10', 'unit' => 'case'],
+    ]);
+
+    // 1. Delivery Receipt - should link
+    $dr = poLinkExtraction('keysys', 'dr-1.pdf', [
+        'document_type' => 'Delivery Receipt',
+        'fields' => [
+            ['label' => 'Company Name', 'value' => 'Acme Supplier'],
+            ['label' => 'PO Number', 'value' => 'PO-DOC-FILTER-1'],
+        ],
+        'items' => [
+            ['itemCode' => 'SKU-DF-1', 'description' => 'Filter item', 'quantity' => '10'],
+        ],
+    ]);
+    app(PurchaseOrderLinker::class)->syncExtraction($dr);
+    expect($dr->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked);
+
+    // 2. delivery_receipt (lowercase snake_case) - should link
+    $drSnake = poLinkExtraction('keysys', 'dr-2.pdf', [
+        'document_type' => 'delivery_receipt',
+        'fields' => [
+            ['label' => 'Company Name', 'value' => 'Acme Supplier'],
+            ['label' => 'PO Number', 'value' => 'PO-DOC-FILTER-1'],
+        ],
+        'items' => [
+            ['itemCode' => 'SKU-DF-1', 'description' => 'Filter item', 'quantity' => '10'],
+        ],
+    ]);
+    app(PurchaseOrderLinker::class)->syncExtraction($drSnake);
+    expect($drSnake->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked);
+
+    // 3. Purchase Order PDF uploaded under standard lane - MUST NOT link or cross-check
+    $poPdf = poLinkExtraction('keysys', 'uploaded-po.pdf', [
+        'document_type' => 'Purchase Order',
+        'fields' => [
+            ['label' => 'Company Name', 'value' => 'Acme Supplier'],
+            ['label' => 'PO Number', 'value' => 'PO-DOC-FILTER-1'],
+        ],
+        'items' => [
+            ['itemCode' => 'SKU-DF-1', 'description' => 'Filter item', 'quantity' => '10'],
+        ],
+    ]);
+    app(PurchaseOrderLinker::class)->syncExtraction($poPdf);
+    expect($poPdf->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::NotApplicable)
+        ->and(PurchaseOrderDocumentLink::query()->where('ai_extraction_id', $poPdf->getKey())->exists())->toBeFalse();
+
+    // 4. purchase_order (lowercase) - MUST NOT link
+    $poPdfLower = poLinkExtraction('keysys', 'uploaded-po-lower.pdf', [
+        'document_type' => 'purchase_order',
+        'fields' => [
+            ['label' => 'Company Name', 'value' => 'Acme Supplier'],
+            ['label' => 'PO Number', 'value' => 'PO-DOC-FILTER-1'],
+        ],
+        'items' => [
+            ['itemCode' => 'SKU-DF-1', 'description' => 'Filter item', 'quantity' => '10'],
+        ],
+    ]);
+    app(PurchaseOrderLinker::class)->syncExtraction($poPdfLower);
+    expect($poPdfLower->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::NotApplicable);
+
+    // 5. Other document - MUST NOT link
+    $other = poLinkExtraction('keysys', 'other.pdf', [
+        'document_type' => 'Other',
+        'fields' => [
+            ['label' => 'Company Name', 'value' => 'Acme Supplier'],
+            ['label' => 'PO Number', 'value' => 'PO-DOC-FILTER-1'],
+        ],
+        'items' => [],
+    ]);
+    app(PurchaseOrderLinker::class)->syncExtraction($other);
+    expect($other->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::NotApplicable);
+});
+
+it('handles multiple uploaded files in one submission matching to same and different sheet POs without collision', function (): void {
+    config()->set('receiving.auto_post_stock', true);
+
+    $poPingcon = poLinkSheetPurchaseOrder('PO-PING-BATCH', '2026-08-15', 'pingcon', [
+        ['itemCode' => 'ITEM-P1', 'productDescription' => 'Item Pingcon 1', 'quantity' => '20', 'unit' => 'pcs'],
+        ['itemCode' => 'ITEM-P2', 'productDescription' => 'Item Pingcon 2', 'quantity' => '30', 'unit' => 'pcs'],
+    ]);
+
+    $poBonita = poLinkSheetPurchaseOrder('PO-BON-BATCH', '2026-08-15', 'bonita', [
+        ['itemCode' => 'ITEM-B1', 'productDescription' => 'Item Bonita 1', 'quantity' => '100', 'unit' => 'pcs'],
+    ]);
+
+    // Single upload containing 4 files
+    $upload = poLinkUploadWithFiles('keysys', [
+        [
+            'fileName' => 'invoice-pingcon.pdf',
+            'data' => [
+                'document_type' => 'Invoice',
+                'fields' => [
+                    ['label' => 'Company Name', 'value' => 'Acme Supplier'],
+                    ['label' => 'PO Number', 'value' => 'PO-PING-BATCH'],
+                ],
+                'items' => [
+                    ['itemCode' => 'ITEM-P1', 'description' => 'Item Pingcon 1', 'quantity' => '10'],
+                ],
+            ],
+        ],
+        [
+            'fileName' => 'dr-pingcon.pdf',
+            'data' => [
+                'document_type' => 'Delivery Receipt',
+                'fields' => [
+                    ['label' => 'Company Name', 'value' => 'Acme Supplier'],
+                    ['label' => 'PO Number', 'value' => 'PO-PING-BATCH'],
+                ],
+                'items' => [
+                    ['itemCode' => 'ITEM-P2', 'description' => 'Item Pingcon 2', 'quantity' => '30'],
+                ],
+            ],
+        ],
+        [
+            'fileName' => 'dr-bonita.pdf',
+            'data' => [
+                'document_type' => 'Delivery Receipt',
+                'fields' => [
+                    ['label' => 'Company Name', 'value' => 'Acme Supplier'],
+                    ['label' => 'PO Number', 'value' => 'PO-BON-BATCH'],
+                ],
+                'items' => [
+                    ['itemCode' => 'ITEM-B1', 'description' => 'Item Bonita 1', 'quantity' => '50'],
+                ],
+            ],
+        ],
+        [
+            'fileName' => 'po-ref.pdf',
+            'data' => [
+                'document_type' => 'Purchase Order',
+                'fields' => [
+                    ['label' => 'Company Name', 'value' => 'Acme Supplier'],
+                    ['label' => 'PO Number', 'value' => 'PO-PING-BATCH'],
+                ],
+                'items' => [],
+            ],
+        ],
+    ]);
+
+    $linker = app(PurchaseOrderLinker::class);
+    foreach ($upload->extractions as $extraction) {
+        $linker->syncExtraction($extraction);
+    }
+
+    $extractions = $upload->extractions->fresh();
+    expect($extractions[0]->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and($extractions[1]->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and($extractions[2]->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and($extractions[3]->po_link_status)->toBe(PurchaseOrderLinkStatus::NotApplicable);
+
+    // Two links to PO-PING-BATCH and one to PO-BON-BATCH
+    expect(PurchaseOrderDocumentLink::query()->where('po_extraction_id', $poPingcon->getKey())->count())->toBe(2)
+        ->and(PurchaseOrderDocumentLink::query()->where('po_extraction_id', $poBonita->getKey())->count())->toBe(1);
+
+    // Arrivals have distinct source_key per file line without collision
+    $arrivals = PurchaseOrderItemArrival::query()->where('receiving_upload_id', $upload->getKey())->get();
+    expect($arrivals)->toHaveCount(3);
+    $sourceKeys = $arrivals->pluck('source_key')->unique();
+    expect($sourceKeys)->toHaveCount(3);
+
+    // Post stock lots for all arrivals of this upload
+    $postingService = app(ReceiptPostingService::class);
+    $lots = $postingService->postForUpload($upload);
+    expect($lots)->toHaveCount(3);
+    expect(WarehouseStockLot::query()->where('receiving_upload_id', $upload->getKey())->count())->toBe(3);
+});
+
+it('syncing a purchase order from pingcon tab automatically links previously waiting invoice from keysys lane', function (): void {
+    // 1. Invoice uploaded first under keysys, PO not yet present
+    $invoice = poLinkExtraction('keysys', 'waiting-invoice.pdf', poLinkInvoiceData('PO-SYNC-LATE-1', '2026-08-20', [
+        ['itemCode' => 'SKU-LATE-1', 'description' => 'Late item', 'quantity' => '15'],
+    ]));
+
+    app(PurchaseOrderLinker::class)->syncExtraction($invoice);
+    expect($invoice->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::AwaitingPurchaseOrder);
+
+    // 2. PO is later synced from pingcon tab
+    $po = poLinkSheetPurchaseOrder('PO-SYNC-LATE-1', '2026-08-20', 'pingcon', [
+        ['itemCode' => 'SKU-LATE-1', 'productDescription' => 'Late item', 'quantity' => '15', 'unit' => 'box'],
+    ]);
+
+    // Simulate what applySnapshot does: call syncPoExtraction
+    app(PurchaseOrderLinker::class)->syncPoExtraction($po);
+
+    expect($invoice->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and(PurchaseOrderDocumentLink::query()->where('ai_extraction_id', $invoice->getKey())->sole()->po_extraction_id)->toBe($po->getKey());
+});

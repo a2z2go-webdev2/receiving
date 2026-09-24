@@ -130,7 +130,7 @@ export function RawImportModal({
                         size="sm"
                         disabled={importing || !content.trim()}
                         onClick={handleImport}
-                        className="gap-1.5 bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                        className="gap-1.5 bg-primary font-semibold text-primary-foreground text-xs hover:bg-primary/90"
                     >
                         <UploadCloud className="size-3.5" />
                         <span>{importing ? 'Processing & Staging...' : 'Import Content'}</span>
