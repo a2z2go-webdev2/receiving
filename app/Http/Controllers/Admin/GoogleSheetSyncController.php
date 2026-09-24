@@ -383,6 +383,11 @@ class GoogleSheetSyncController extends Controller
      */
     public function updateConfig(Request $request): JsonResponse
     {
+        $slug = $request->route('slug') ?? $request->input('slug');
+        if ($slug) {
+            $request->merge(['slug' => $slug]);
+        }
+
         $validated = $request->validate([
             'slug' => ['required', 'string', 'exists:google_sheet_configs,slug'],
             'spreadsheet_id' => ['nullable', 'string'],
@@ -397,7 +402,7 @@ class GoogleSheetSyncController extends Controller
         $config = GoogleSheetConfig::query()->where('slug', $validated['slug'])->firstOrFail();
         $config->update([
             'spreadsheet_id' => $cleanId ?: $config->spreadsheet_id,
-            'name' => $validated['name'] ?: $config->name,
+            'name' => ! empty($validated['name']) ? $validated['name'] : $config->name,
             'webhook_secret' => $validated['webhook_secret'] ?? $config->webhook_secret,
             'auto_sync_on_webhook' => $validated['auto_sync_on_webhook'] ?? $config->auto_sync_on_webhook,
         ]);

@@ -37,12 +37,12 @@ class GoogleSheetWebhookController extends Controller
             ?? $request->bearerToken()
             ?? $request->input('secret');
 
-        if ($config->webhook_secret && (! $providedSecret || ! hash_equals($config->webhook_secret, (string) $providedSecret))) {
+        if (empty($config->webhook_secret) || ! $providedSecret || ! hash_equals($config->webhook_secret, (string) $providedSecret)) {
             Log::warning("Google Sheets Webhook unauthorized attempt for lane: {$slug}");
 
             return response()->json([
                 'success' => false,
-                'error' => 'Unauthorized: Invalid webhook secret token.',
+                'error' => 'Unauthorized: Invalid or unconfigured webhook secret token.',
             ], 401);
         }
 
@@ -52,6 +52,13 @@ class GoogleSheetWebhookController extends Controller
 
             // Case A: Full direct payload sent from Apps Script
             if (isset($payload['log']) || isset($payload['files']) || isset($payload['extraction'])) {
+                if ($serialNumber <= 0) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'Invalid serial number provided in webhook payload.',
+                    ], 422);
+                }
+
                 $logs = isset($payload['log']) ? [$payload['log']] : [];
                 $files = $payload['files'] ?? [];
                 $extractions = isset($payload['extraction']) ? [$payload['extraction']] : [];
@@ -61,7 +68,7 @@ class GoogleSheetWebhookController extends Controller
                 $uploadId = null;
                 $isSynced = false;
 
-                if ($serialNumber > 0 && $config->auto_sync_on_webhook) {
+                if ($config->auto_sync_on_webhook) {
                     $syncRes = $this->syncService->syncSerialNumber($slug, $serialNumber);
                     $uploadId = $syncRes['upload_id'] ?? null;
                     $isSynced = true;

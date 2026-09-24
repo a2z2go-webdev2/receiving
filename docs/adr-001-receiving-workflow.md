@@ -1,6 +1,6 @@
 # ADR-001: Staged, asynchronous receiving workflow
 
-- **Status**: Accepted
+- **Status**: Accepted (Amended by [ADR-006](adr-006-sheet-po-and-upload-confirmed-receiving.md))
 - **Requirements**: REQ-002 through REQ-006, REQ-009, REQ-011
 - **Reversibility**: Type 1 for persistence/status contracts; Type 2 for provider adapters.
 
@@ -36,3 +36,7 @@ Thirty days after release, the most plausible failure is a growing queue or a pr
 ## Reversal plan
 
 Provider adapters can be replaced without changing transaction/extraction contracts. Replacing the staged workflow requires a new ADR and a migration that preserves object keys, hashes, and status history.
+
+## Related decisions
+
+- [ADR-006: Google Sheet Purchase Orders and Upload-Confirmed Receiving Stock Posting](adr-006-sheet-po-and-upload-confirmed-receiving.md) extends this workflow to support Google Sheets as a direct source of Purchase Orders without requiring PDF uploads, and connects extraction completion directly to warehouse stock posting.

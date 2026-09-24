@@ -36,7 +36,7 @@ use Illuminate\Support\Collection;
     'warehouse_item_id', 'source_type', 'source_key', 'purchase_order_item_arrival_id',
     'ai_extraction_id', 'receiving_upload_id', 'po_number', 'lot_number',
     'quantity_received', 'received_at', 'received_date_quality', 'confirmed_by_user_id',
-    'confirmed_at', 'notes',
+    'confirmed_at', 'notes', 'posting_provenance',
 ])]
 class WarehouseStockLot extends Model
 {

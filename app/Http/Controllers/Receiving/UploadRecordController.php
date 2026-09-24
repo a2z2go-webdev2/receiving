@@ -18,6 +18,8 @@ use App\Models\PoExtraction;
 use App\Models\PurchaseOrderDocumentLink;
 use App\Models\ReceivingUpload;
 use App\Models\UploadedFile;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -176,11 +178,14 @@ class UploadRecordController extends Controller
         ];
     }
 
-    /** @return array<int, array{id: int, upload_id: int, po_number: string|null, po_date: string|null, vendor_name: string|null, uploaded_at: string}> */
+    /** @return array<int, array{id: int, upload_id: int|null, po_number: string|null, po_date: string|null, vendor_name: string|null, uploaded_at: string}> */
     private function purchaseOrderCandidates(): array
     {
         return PoExtraction::query()
-            ->whereHas('upload.uploadType', fn ($query) => $query->where('workflow', UploadWorkflow::PurchaseOrder))
+            ->where(function (Builder $query) {
+                $query->where('source_type', 'google_sheet')
+                    ->orWhereHas('upload.uploadType', fn (Builder $q) => $q->where('workflow', UploadWorkflow::PurchaseOrder));
+            })
             ->whereNotNull('po_number')
             ->where('po_number', '!=', '')
             ->whereNot('po_number', 'LIKE', 'PO-SN%')
@@ -195,7 +200,11 @@ class UploadRecordController extends Controller
                 'po_number' => $po->po_number,
                 'po_date' => $po->po_date,
                 'vendor_name' => $po->vendor_name,
-                'uploaded_at' => (string) $po->upload->created_at->toISOString(),
+                'uploaded_at' => (string) (
+                    $po->upload instanceof ReceivingUpload
+                        ? $po->upload->created_at->toISOString()
+                        : ($po->synced_at instanceof CarbonImmutable ? $po->synced_at->toISOString() : $po->created_at->toISOString())
+                ),
             ])
             ->all();
     }

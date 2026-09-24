@@ -75,6 +75,10 @@ type Upload = {
     ai_status: string;
     review_status: string;
     purchase_order_status: string;
+    source_type?: string;
+    source_status?: string;
+    po_id?: number;
+    detail_url?: string;
     linked_receipts?: LinkedReceipt[];
     po_link_details?: PoLinkDetails | null;
     waiting_time: { days: number | null; arrived: boolean } | null;
@@ -467,9 +471,16 @@ export default function UploadsIndex({
                             {uploads.data.map((upload) => (
                                 <tr key={upload.id}>
                                     <td className="px-3 py-2">
-                                        <p className="font-medium">
-                                            {upload.serial_prefix}-{upload.serial_number}
-                                        </p>
+                                        <div className="flex items-center gap-1.5">
+                                            <p className="font-medium">
+                                                {upload.serial_prefix}-{upload.serial_number}
+                                            </p>
+                                            {upload.source_type === 'google_sheet' && (
+                                                <span className="rounded bg-sky-50 px-1 py-0.5 text-[9px] font-medium text-sky-700 border border-sky-200 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800">
+                                                    Sheet
+                                                </span>
+                                            )}
+                                        </div>
                                         <p className="text-muted-foreground text-xs">
                                             {upload.upload_type}
                                         </p>
@@ -590,7 +601,10 @@ export default function UploadsIndex({
                                                 className="size-7"
                                             >
                                                 <Link
-                                                    href={`/admin/uploads/${upload.id}`}
+                                                    href={
+                                                        upload.detail_url ??
+                                                        `/admin/uploads/${upload.id}`
+                                                    }
                                                     aria-label={`View details for ${upload.serial_prefix}-${upload.serial_number}`}
                                                 >
                                                     <Eye className="size-4" />

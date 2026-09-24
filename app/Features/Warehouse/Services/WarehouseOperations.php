@@ -89,6 +89,12 @@ class WarehouseOperations
         $sourceKey = $locked->source_key ?? "arrival:{$locked->getKey()}";
         $existing = WarehouseStockLot::query()->where('source_key', $sourceKey)->first();
         if ($existing !== null) {
+            $locked->forceFill([
+                'posting_status' => 'posted',
+                'posted_at' => $locked->posted_at ?? now(),
+                'warehouse_stock_lot_id' => $existing->getKey(),
+            ])->save();
+
             return $existing;
         }
 
@@ -110,6 +116,12 @@ class WarehouseOperations
             'confirmed_at' => $placedAt,
             'notes' => $this->nullable($data['notes'] ?? null),
         ]);
+
+        $locked->forceFill([
+            'posting_status' => 'posted',
+            'posted_at' => now(),
+            'warehouse_stock_lot_id' => $lot->getKey(),
+        ])->save();
 
         $this->event('stock_lot', $lot->getKey(), 'pending_arrival', 'in_warehouse', $placedAt, $actor, [
             'source' => WarehouseStockSource::Arrival->value,

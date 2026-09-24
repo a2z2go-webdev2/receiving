@@ -20,11 +20,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $failed_serials
  * @property string|null $webhook_secret
  * @property bool $auto_sync_on_webhook
+ * @property string $transition_mode
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
  */
 #[Fillable([
-    'slug', 'name', 'spreadsheet_id', 'webhook_secret', 'auto_sync_on_webhook', 'last_synced_at',
+    'slug', 'name', 'sheet_type', 'spreadsheet_id', 'webhook_secret', 'auto_sync_on_webhook',
+    'transition_mode', 'last_snapshot_hash', 'last_snapshot_at', 'last_synced_at',
     'total_serials', 'synced_serials', 'pending_serials', 'failed_serials',
 ])]
 class GoogleSheetConfig extends Model
@@ -35,6 +37,7 @@ class GoogleSheetConfig extends Model
     {
         return [
             'last_synced_at' => 'immutable_datetime',
+            'last_snapshot_at' => 'immutable_datetime',
             'auto_sync_on_webhook' => 'boolean',
             'total_serials' => 'integer',
             'synced_serials' => 'integer',

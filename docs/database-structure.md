@@ -335,8 +335,13 @@ Extracted header record for Purchase Order documents, storing buyer, vendor, pay
 | Column | Data Type | Nullable | Default | Constraints & Indexes | Description |
 | :--- | :--- | :---: | :--- | :--- | :--- |
 | `id` | `bigint` | No | Auto-inc | Primary Key | PO extraction ID |
-| `ai_extraction_id` | `bigint` | No | | FK -> `ai_extractions.id` (cascade), Unique | Linked AI extraction |
-| `receiving_upload_id` | `bigint` | No | | FK -> `receiving_uploads.id` (cascade) | Parent upload submission |
+| `ai_extraction_id` | `bigint` | Yes | `NULL` | FK -> `ai_extractions.id` (cascade), Unique | Linked AI extraction (null for Google Sheet POs) |
+| `receiving_upload_id` | `bigint` | Yes | `NULL` | FK -> `receiving_uploads.id` (cascade) | Parent upload submission (null for Google Sheet POs) |
+| `source_type` | `varchar(32)` | No | `'upload'` | Index | PO source (`upload`, `google_sheet`) |
+| `source_status` | `varchar(32)` | No | `'ordered'` | Index | Source status (`draft`, `ordered`, `received`, `cancelled`) |
+| `source_external_id` | `varchar(255)` | Yes | `NULL` | Index | External identifier from source sheet (e.g. `sheet_row_123`) |
+| `source_payload` | `json` | Yes | `NULL` | | Complete source sheet row attributes snapshot |
+| `synced_at` | `timestamp` | Yes | `NULL` | | Timestamp of last synchronization from Google Sheet |
 | `po_number` | `varchar(255)` | Yes | `NULL` | Index | Extracted PO reference number |
 | `po_number_normalized` | `varchar(255)` | Yes | `NULL` | Index | Alphanumeric normalized PO number |
 | `po_reference` | `varchar(255)` | Yes | `NULL` | | Additional PO reference code |
@@ -361,12 +366,14 @@ Extracted header record for Purchase Order documents, storing buyer, vendor, pay
 ---
 
 ### `po_extraction_items`
-Individual item line extractions from a Purchase Order document.
+Individual item line extractions from a Purchase Order document or synchronized from a Google Sheet PO Item Record.
 
 | Column | Data Type | Nullable | Default | Constraints & Indexes | Description |
 | :--- | :--- | :---: | :--- | :--- | :--- |
 | `id` | `bigint` | No | Auto-inc | Primary Key | PO item extraction ID |
 | `po_extraction_id` | `bigint` | No | | FK -> `po_extractions.id` (cascade) | Parent PO extraction header |
+| `source_external_id` | `varchar(255)` | Yes | `NULL` | Index | External line identifier from source sheet |
+| `source_payload` | `json` | Yes | `NULL` | | Raw line attributes from source sheet |
 | `sort_order` | `smallint` | No | `0` | | Display order sequence |
 | `item_code` | `varchar(255)` | Yes | `NULL` | | Vendor item/part code |
 | `product_description` | `text` | Yes | `NULL` | | Product description string |
@@ -432,7 +439,7 @@ Expected catalog master schedule entries defining targeted item quantities, expe
 
 ### `purchase_order_item_fulfillments` & `purchase_order_item_arrivals`
 - **`purchase_order_item_fulfillments`**: Links master item schedule rows with extracted PO line items for expected vs. ordered reporting. Unique: (`purchase_order_item_schedule_id`, `po_extraction_item_id`).
-- **`purchase_order_item_arrivals`**: Materialized receiving arrivals representing actual physical goods delivered against linked PO documents, storing arrived quantity, target quantity, arrival date, and matching mechanism. Unique: `source_key`.
+- **`purchase_order_item_arrivals`**: Materialized receiving arrivals representing actual physical goods delivered against linked PO documents, storing arrived quantity, target quantity, arrival date, matching mechanism, `posting_status` (`pending`, `posted`, `skipped`, `failed`), `posted_at` timestamp, and `posting_error`. Unique: `source_key`.
 
 ---
 
@@ -456,13 +463,14 @@ Canonical physical inventory item master catalog binding document extractions to
 ---
 
 ### `warehouse_stock_lots`
-Auditable physical stock lot ledger entries recorded when operators place confirmed physical arrivals or opening stock into the warehouse.
+Auditable physical stock lot ledger entries recorded when operators place confirmed physical arrivals or opening stock into the warehouse, or posted automatically upon verified receiving upload.
 
 | Column | Data Type | Nullable | Default | Constraints & Indexes | Description |
 | :--- | :--- | :---: | :--- | :--- | :--- |
 | `id` | `bigint` | No | Auto-inc | Primary Key | Stock Lot ID |
 | `warehouse_item_id` | `bigint` | No | | FK -> `warehouse_items.id` (restrict), Index (`warehouse_item_id`, `received_at`, `id`) | Parent item catalog reference |
 | `source_type` | `varchar(32)` | No | `'arrival'` | Index | Stock origin (`arrival`, `opening_balance`) |
+| `posting_provenance` | `varchar(32)` | No | `'manual_placement'` | Index | Creation origin (`manual_placement`, `automatic_upload`, `legacy_import`) |
 | `source_key` | `varchar(160)`| No | | Unique | Immutable source key preventing double-confirmation |
 | `purchase_order_item_arrival_id` | `bigint` | Yes | `NULL` | FK -> `purchase_order_item_arrivals.id` (nullOnDelete) | Source PO arrival line |
 | `ai_extraction_id` | `bigint` | Yes | `NULL` | FK -> `ai_extractions.id` (nullOnDelete) | Source AI extraction |
@@ -473,8 +481,8 @@ Auditable physical stock lot ledger entries recorded when operators place confir
 | `received_at` | `timestamp` | Yes | `NULL` | Index | Physical warehouse placement timestamp |
 | `received_date_quality` | `varchar(24)` | No | `'confirmed'` | Index | Date quality (`confirmed`, `estimated`, `unknown`) |
 | `confirmed_by_user_id` | `bigint` | Yes | `NULL` | FK -> `users.id` (nullOnDelete) | Operator user ID who confirmed stock |
-| `confirmed_at` | `timestamp` | No | | | Timestamp of operator confirmation |
-| `notes` | `text` | Yes | `NULL` | | Operator inventory notes |
+| `confirmed_at` | `timestamp` | No | | | Timestamp of operator confirmation or automatic posting |
+| `notes` | `text` | Yes | `NULL` | | Inventory notes |
 | `created_at` | `timestamp` | Yes | `NULL` | | Record creation timestamp |
 | `updated_at` | `timestamp` | Yes | `NULL` | | Record update timestamp |
 

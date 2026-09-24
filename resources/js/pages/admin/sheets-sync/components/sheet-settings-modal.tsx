@@ -1,4 +1,5 @@
 import {
+    AlertCircle,
     Check,
     CheckCircle2,
     Code2,
@@ -61,6 +62,7 @@ export function SheetSettingsModal({
     const [savingSlug, setSavingSlug] = useState<string | null>(null);
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     // Initialize configs from sheets props
     useEffect(() => {
@@ -87,9 +89,10 @@ export function SheetSettingsModal({
     const handleSave = async (slug: string) => {
         setSavingSlug(slug);
         setSuccessMessage(null);
+        setErrorMessage(null);
         try {
             const cfg = configs[slug] || { id: '', secret: '', autoSync: true };
-            const res = await fetch(`/admin/sheets-sync/config/${slug}`, {
+            const res = await fetch('/admin/sheets-sync/config', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -98,6 +101,7 @@ export function SheetSettingsModal({
                             ?.content || '',
                 },
                 body: JSON.stringify({
+                    slug,
                     spreadsheet_id: cfg.id,
                     webhook_secret: cfg.secret,
                     auto_sync_on_webhook: cfg.autoSync,
@@ -107,12 +111,19 @@ export function SheetSettingsModal({
             const data = await res.json();
             if (res.ok && data.success) {
                 setSuccessMessage(
-                    `Saved configuration for ${configs[slug]?.id ? slug : 'Spreadsheet'}`,
+                    `Saved configuration for ${data.sheet?.name || slug.toUpperCase()}`,
                 );
                 onSaved(data.sheet);
                 setTimeout(() => setSuccessMessage(null), 3000);
+            } else {
+                setErrorMessage(data.error || data.message || 'Failed to save configuration.');
+                setTimeout(() => setErrorMessage(null), 5000);
             }
-        } catch {
+        } catch (err: unknown) {
+            const msg =
+                err instanceof Error ? err.message : 'Network error while saving configuration.';
+            setErrorMessage(msg);
+            setTimeout(() => setErrorMessage(null), 5000);
         } finally {
             setSavingSlug(null);
         }
@@ -159,16 +170,26 @@ export function SheetSettingsModal({
 
     const generateAppsScriptCode = (slug: string, secretToken: string) => {
         return `/**
- * Google Apps Script Webhook Trigger for Receiving System
- * Add this script to Extensions > Apps Script in your Google Sheet
+ * Google Apps Script Webhook Trigger for Receiving System (${slug.toUpperCase()})
+ * Add this script to Extensions > Apps Script in your Google Sheet.
  */
-function sendNewUploadWebhook(serialNumber) {
+
+// 1. Direct invocation from your form/upload completion handler:
+// Call this function passing the exact newly created serial number:
+// sendNewUploadWebhook(newSerialNumber);
+
+function sendNewUploadWebhook(serialNumber, eventType) {
+  if (!serialNumber || isNaN(Number(serialNumber)) || Number(serialNumber) <= 0) {
+    Logger.log("sendNewUploadWebhook skipped: Invalid serial number: " + serialNumber);
+    return;
+  }
+
   const WEBHOOK_URL = "${baseUrl}/api/webhooks/sheets/${slug}";
   const WEBHOOK_SECRET = "${secretToken || 'YOUR_WEBHOOK_SECRET'}";
 
   const payload = {
-    serial_number: serialNumber || 1,
-    event: "upload_created"
+    serial_number: Number(serialNumber),
+    event: eventType || "upload_created"
   };
 
   const options = {
@@ -183,15 +204,27 @@ function sendNewUploadWebhook(serialNumber) {
 
   try {
     const response = UrlFetchApp.fetch(WEBHOOK_URL, options);
-    Logger.log("Webhook response: " + response.getContentText());
+    Logger.log("Webhook response [" + response.getResponseCode() + "]: " + response.getContentText());
   } catch (err) {
     Logger.log("Webhook error: " + err.toString());
   }
 }
 
-// Automatically trigger on new row addition or edit
-function onNewUploadRow(e) {
-  sendNewUploadWebhook();
+// 2. Installable On-Edit Trigger (Optional, for manual edits to Receiving_Log)
+// To install: Apps Script > Triggers > Add Trigger > onManualEdit > From spreadsheet > On edit
+function onManualEdit(e) {
+  if (!e || !e.range) return;
+  const sheet = e.range.getSheet();
+  if (sheet.getName() !== "Receiving_Log") return;
+
+  const row = e.range.getRow();
+  if (row <= 1) return; // Skip header row
+
+  // Read serial number from column 1
+  const serialNumber = sheet.getRange(row, 1).getValue();
+  if (serialNumber && !isNaN(Number(serialNumber)) && Number(serialNumber) > 0) {
+    sendNewUploadWebhook(serialNumber, "manual_edit");
+  }
 }`;
     };
 
@@ -255,6 +288,13 @@ function onNewUploadRow(e) {
                         <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 font-semibold text-emerald-600 text-xs dark:text-emerald-300">
                             <CheckCircle2 className="size-4 shrink-0 text-emerald-500" />
                             <span>{successMessage}</span>
+                        </div>
+                    )}
+
+                    {errorMessage && (
+                        <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 font-semibold text-destructive text-xs">
+                            <AlertCircle className="size-4 shrink-0 text-destructive" />
+                            <span>{errorMessage}</span>
                         </div>
                     )}
 

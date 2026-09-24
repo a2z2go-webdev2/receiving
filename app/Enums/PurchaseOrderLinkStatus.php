@@ -9,5 +9,7 @@ enum PurchaseOrderLinkStatus: string
     case AwaitingPurchaseOrder = 'awaiting_purchase_order';
     case ReadyToLink = 'ready_to_link';
     case PurchaseOrderAlreadyLinked = 'purchase_order_already_linked';
+    case Ambiguous = 'ambiguous';
+    case Conflict = 'conflict';
     case Linked = 'linked';
 }

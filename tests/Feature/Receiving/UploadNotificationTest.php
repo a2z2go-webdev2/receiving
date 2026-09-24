@@ -2,16 +2,21 @@
 
 use App\Enums\AiStatus;
 use App\Enums\EmailStatus;
+use App\Enums\PurchaseOrderArrivalStatus;
+use App\Enums\PurchaseOrderLinkSource;
 use App\Features\Receiving\Services\ReviewLinkService;
 use App\Features\Receiving\Services\UploadNotificationSender;
 use App\Mail\ReceivingReviewReady;
 use App\Mail\ReceivingUploadReceived;
 use App\Models\AiExtraction;
 use App\Models\EmailRecipient;
+use App\Models\PoExtraction;
+use App\Models\PurchaseOrderDocumentLink;
 use App\Models\ReceivingUpload;
 use App\Models\UploadedFile;
 use App\Models\UploadType;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Database\Seeders\UploadTypeSeeder;
 use Illuminate\Support\Facades\Mail;
 
@@ -297,6 +302,78 @@ it('computes waiting time from the po date and upload completion instead of rend
 
     expect($rendered)->toContain('6 days')->not->toContain('[See image]')
         ->and($text)->toContain('Waiting Time: 6 days')->not->toContain('[See image]');
+});
+
+it('calculates waiting time from linked sheet PO date and arrival date', function (): void {
+    $type = UploadType::query()->firstOrFail();
+    $upload = notificationUpload($type);
+    $upload->forceFill([
+        'upload_completed_at' => CarbonImmutable::parse('2026-08-20 10:00:00'),
+    ])->save();
+
+    $file = UploadedFile::query()->create([
+        'receiving_upload_id' => $upload->getKey(),
+        'original_file_name' => 'invoice.pdf',
+        'sanitized_file_name' => 'invoice.pdf',
+        'stored_file_name' => 'invoice.pdf',
+        'file_extension' => 'pdf',
+        'r2_bucket' => 'test',
+        'r2_object_key' => 'receiving/invoice.pdf',
+        'r2_staging_object_key' => 'staging/invoice.pdf',
+        'original_file_size' => 100,
+        'final_file_size' => 100,
+        'declared_content_type' => 'application/pdf',
+        'content_type' => 'application/pdf',
+        'ai_status' => AiStatus::Extracted,
+    ]);
+
+    $po = PoExtraction::query()->create([
+        'source_type' => 'google_sheet',
+        'sheet_slug' => 'po_master',
+        'po_number' => 'PO-SHEET-WAITING',
+        'po_number_normalized' => 'posheetwaiting',
+        'vendor_name' => 'Acme Supplier',
+        'source_status' => 'Confirmed',
+        'status_normalized' => 'confirmed',
+        'arrival_status' => PurchaseOrderArrivalStatus::Pending,
+        'po_date' => '2026-08-10',
+        'po_date_value' => '2026-08-10',
+    ]);
+
+    $extraction = AiExtraction::query()->create([
+        'receiving_upload_id' => $upload->getKey(),
+        'uploaded_file_id' => $file->getKey(),
+        'document_type' => 'Invoice',
+        'raw_extracted_json' => [
+            'document_type' => 'Invoice',
+            'fields' => [
+                ['label' => 'Company Name', 'value' => 'Acme Supplier'],
+                ['label' => 'PO Number', 'value' => 'PO-SHEET-WAITING'],
+                ['label' => 'PO Date', 'value' => '[See image]'],
+            ],
+            'items' => [],
+        ],
+        'corrected_json' => null,
+        'ai_status' => AiStatus::Extracted,
+    ]);
+
+    PurchaseOrderDocumentLink::query()->create([
+        'po_extraction_id' => $po->getKey(),
+        'ai_extraction_id' => $extraction->getKey(),
+        'source' => PurchaseOrderLinkSource::Automatic,
+    ]);
+
+    $upload->load(['uploadType', 'files', 'extractions.activePurchaseOrderLink.poExtraction']);
+    $mail = new ReceivingUploadReceived($upload, 'https://example.test/transaction');
+
+    $emailRows = $mail->emailRows();
+    expect($emailRows)->toHaveCount(1)
+        ->and($emailRows[0]['po date'])->toBe('2026-08-10')
+        ->and($emailRows[0]['waiting time'])->toBe('10 days');
+
+    $rendered = $mail->render();
+    expect($rendered)->toContain('2026-08-10')
+        ->and($rendered)->toContain('10 days');
 });
 
 function notificationUpload(UploadType $type): ReceivingUpload

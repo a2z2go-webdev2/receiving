@@ -266,6 +266,131 @@ it('requires operations permission to manually link or unlink purchase orders', 
     expect($link->refresh()->unlinked_at)->toBeNull();
 });
 
+it('auto-links an invoice to a confirmed Google Sheet PO without a PO PDF upload', function (): void {
+    $normalizer = app(PurchaseOrderDataNormalizer::class);
+    $po = PoExtraction::query()->create([
+        'source_type' => 'google_sheet',
+        'sheet_slug' => 'po_master',
+        'po_number' => 'PO-SHEET-900',
+        'po_number_normalized' => $normalizer->normalizeIdentifier('PO-SHEET-900'),
+        'vendor_name' => 'Acme Supplier',
+        'source_status' => 'Confirmed',
+        'status_normalized' => 'confirmed',
+        'arrival_status' => PurchaseOrderArrivalStatus::Pending,
+        'po_date' => '2026-08-01',
+        'po_date_value' => '2026-08-01',
+        'receiving_upload_id' => null,
+        'ai_extraction_id' => null,
+    ]);
+
+    $po->items()->create([
+        'sort_order' => 1,
+        'source_line_id' => 'po:posheet900:line:1',
+        'item_code' => 'SKU-SHEET-1',
+        'product_description' => 'Industrial Widget',
+        'quantity' => '50',
+        'unit' => 'pcs',
+        'unit_price' => '20.00',
+        'line_total' => '1000.00',
+    ]);
+
+    $invoice = poLinkExtraction('a2z2go', 'sheet-linked-invoice.pdf', poLinkInvoiceData('PO-SHEET-900', '2026-08-05', [
+        ['itemCode' => 'SKU-SHEET-1', 'description' => 'Industrial Widget', 'quantity' => '50', 'unit' => 'pcs'],
+    ]));
+
+    app(PurchaseOrderLinker::class)->syncExtraction($invoice);
+
+    $invoice->refresh();
+    $po->refresh();
+
+    expect($invoice->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and(PurchaseOrderDocumentLink::query()->where('po_extraction_id', $po->id)->count())->toBe(1)
+        ->and($po->arrival_status)->toBe(PurchaseOrderArrivalStatus::Arrived);
+
+    $arrival = PurchaseOrderItemArrival::query()->where('po_number', 'PO-SHEET-900')->first();
+    expect($arrival)->not->toBeNull()
+        ->and((float) $arrival->arrived_quantity)->toBe(50.0)
+        ->and($arrival->status)->toBe('matched');
+});
+
+it('does not auto-link an invoice to an in_preparation Google Sheet PO', function (): void {
+    $normalizer = app(PurchaseOrderDataNormalizer::class);
+    $po = PoExtraction::query()->create([
+        'source_type' => 'google_sheet',
+        'sheet_slug' => 'po_master',
+        'po_number' => 'PO-DRAFT-101',
+        'po_number_normalized' => $normalizer->normalizeIdentifier('PO-DRAFT-101'),
+        'vendor_name' => 'Acme Supplier',
+        'source_status' => 'In preparation',
+        'status_normalized' => 'in_preparation',
+        'arrival_status' => PurchaseOrderArrivalStatus::Pending,
+        'po_date' => '2026-08-01',
+        'po_date_value' => '2026-08-01',
+    ]);
+
+    $invoice = poLinkExtraction('a2z2go', 'draft-po-invoice.pdf', poLinkInvoiceData('PO-DRAFT-101', '2026-08-05', [
+        ['description' => 'Draft Widget', 'quantity' => '10'],
+    ]));
+
+    app(PurchaseOrderLinker::class)->syncExtraction($invoice);
+
+    $invoice->refresh();
+
+    expect($invoice->po_link_status)->toBe(PurchaseOrderLinkStatus::AwaitingPurchaseOrder)
+        ->and(PurchaseOrderDocumentLink::query()->count())->toBe(0);
+});
+
+it('detects supplier conflict and marks invoice po_link_status as conflict', function (): void {
+    $normalizer = app(PurchaseOrderDataNormalizer::class);
+    PoExtraction::query()->create([
+        'source_type' => 'google_sheet',
+        'sheet_slug' => 'po_master',
+        'po_number' => 'PO-CONFLICT-555',
+        'po_number_normalized' => $normalizer->normalizeIdentifier('PO-CONFLICT-555'),
+        'vendor_name' => 'Zenith Global Corp',
+        'source_status' => 'Confirmed',
+        'status_normalized' => 'confirmed',
+        'arrival_status' => PurchaseOrderArrivalStatus::Pending,
+    ]);
+
+    $data = poLinkInvoiceData('PO-CONFLICT-555', '2026-08-05', [
+        ['description' => 'Widget', 'quantity' => '10'],
+    ]);
+    // Set document supplier to completely different company
+    $data['fields'][0] = ['label' => 'Vendor Name', 'value' => 'Alpha Beta Logistics'];
+
+    $invoice = poLinkExtraction('a2z2go', 'conflicting-vendor.pdf', $data);
+
+    app(PurchaseOrderLinker::class)->syncExtraction($invoice);
+
+    $invoice->refresh();
+
+    expect($invoice->po_link_status)->toBe(PurchaseOrderLinkStatus::Conflict)
+        ->and(PurchaseOrderDocumentLink::query()->count())->toBe(0);
+});
+
+it('blocks unlinking an arrival link that already has posted stock lots', function (): void {
+    $po = poLinkStoredPurchaseOrder('PO-POSTED-GUARD', '2026-07-03', [
+        ['itemCode' => 'SKU-GUARD-1', 'productDescription' => 'Guard item', 'quantity' => '10', 'unit' => 'case'],
+    ]);
+    $invoice = poLinkExtraction('a2z2go', 'guard-invoice.pdf', poLinkInvoiceData('PO-POSTED-GUARD', '2026-07-03', [
+        ['itemCode' => 'SKU-GUARD-1', 'description' => 'Guard item', 'quantity' => '10', 'unit' => 'case'],
+    ]));
+
+    app(PurchaseOrderLinker::class)->syncExtraction($invoice);
+    $link = PurchaseOrderDocumentLink::query()->firstOrFail();
+    $arrival = PurchaseOrderItemArrival::query()->firstOrFail();
+
+    // Simulate stock already posted for this arrival
+    $arrival->forceFill([
+        'posting_status' => 'posted',
+        'posted_at' => now(),
+    ])->save();
+
+    expect(fn () => app(PurchaseOrderLinker::class)->unlink($link))
+        ->toThrow(ValidationException::class);
+});
+
 function poLinkStoredPurchaseOrder(string $poNumber, string $poDate, array $items): PoExtraction
 {
     $extraction = poLinkExtraction('purchase-order', 'po.pdf', [

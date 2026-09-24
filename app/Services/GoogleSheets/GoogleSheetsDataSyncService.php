@@ -9,12 +9,11 @@ use App\Enums\PurchaseOrderLinkSource;
 use App\Enums\ReviewStatus;
 use App\Enums\UploadProcessingStatus;
 use App\Enums\UserStatus;
-use App\Enums\WarehouseDateQuality;
-use App\Enums\WarehouseStockSource;
 use App\Features\Receiving\Services\ActivityLogger;
 use App\Features\Receiving\Services\PurchaseOrderDataNormalizer;
 use App\Features\Receiving\Services\PurchaseOrderItemMatcher;
 use App\Features\Receiving\Services\PurchaseOrderLinker;
+use App\Features\Receiving\Services\PurchaseOrderResolver;
 use App\Models\AiExtraction;
 use App\Models\GoogleSheetConfig;
 use App\Models\GoogleSheetExtraction;
@@ -23,16 +22,14 @@ use App\Models\GoogleSheetLog;
 use App\Models\GoogleSheetSyncJob;
 use App\Models\PoExtraction;
 use App\Models\PoExtractionItem;
-use App\Models\PurchaseOrderItemSchedule;
 use App\Models\ReceivingUpload;
 use App\Models\ReviewLink;
 use App\Models\UploadedFile;
 use App\Models\UploadType;
 use App\Models\User;
-use App\Models\WarehouseItem;
-use App\Models\WarehouseStockLot;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -259,6 +256,25 @@ class GoogleSheetsDataSyncService
             );
         }
 
+        $config = GoogleSheetConfig::query()->where('slug', $slug)->first();
+        $transitionMode = $config instanceof GoogleSheetConfig ? ($config->transition_mode ?: 'parallel') : 'parallel';
+
+        if ($transitionMode === 'app_only' && ! $log->synced_receiving_upload_id) {
+            $existingUpload = ReceivingUpload::query()
+                ->where('upload_type_id', $uploadType->getKey())
+                ->where('serial_number', $serialNumber)
+                ->first();
+
+            if (! $existingUpload) {
+                return [
+                    'success' => false,
+                    'upload_id' => null,
+                    'message' => "Source {$slug} is in app-only transition mode. New receiving serials from sheets are staged as exceptions and rejected.",
+                    'serial_number' => $serialNumber,
+                ];
+            }
+        }
+
         // 2. Resolve User
         $reviewerEmail = trim((string) $log->reviewed_by);
         if ($reviewerEmail === '' || strtolower($reviewerEmail) === 'unassigned') {
@@ -272,7 +288,7 @@ class GoogleSheetsDataSyncService
                 $activeUser = User::query()->create([
                     'email' => strtolower($reviewerEmail),
                     'name' => str_starts_with(strtolower($reviewerEmail), 'jaezelle') ? 'Jaezelle Benito' : 'Sheet Reviewer',
-                    'password' => 'Password12345678!',
+                    'password' => Hash::make(Str::random(40)),
                     'status' => UserStatus::Active,
                 ]);
                 $activeUser->syncRoles(['uploader']);
@@ -284,7 +300,7 @@ class GoogleSheetsDataSyncService
                 ['email' => 'jaezelle.benito@pingconmarketing.com'],
                 [
                     'name' => 'Jaezelle Benito',
-                    'password' => 'Password12345678!',
+                    'password' => Hash::make(Str::random(40)),
                     'status' => UserStatus::Active,
                 ]
             );
@@ -508,28 +524,40 @@ class GoogleSheetsDataSyncService
 
                     $poNoNormalized = $this->normalizer->normalizeIdentifier($poNo);
 
+                    $existingAiExt = AiExtraction::query()
+                        ->where('receiving_upload_id', $upload->getKey())
+                        ->where('uploaded_file_id', $uploadedFile->getKey())
+                        ->first();
+
+                    $isAppVerified = $existingAiExt !== null && $existingAiExt->review_status === ReviewStatus::Verified->value;
+
+                    $extractionAttributes = [
+                        'document_type' => strtolower($docTypeStr),
+                        'invoice_number' => $invNo !== '' ? $invNo : null,
+                        'po_number' => $poNo !== '' ? $poNo : null,
+                        'po_number_normalized' => $poNoNormalized,
+                        'po_date' => $poDateStr !== '' ? $poDateStr : null,
+                        'raw_extracted_json' => $matchingDoc,
+                        'ai_status' => $aiStatus->value,
+                        'extracted_at' => $this->parseDate($extraction?->extracted_at) ?? $createdAt,
+                        'created_at' => $createdAt,
+                    ];
+
+                    if (! $isAppVerified) {
+                        $extractionAttributes['corrected_json'] = $matchingDoc;
+                        $extractionAttributes['review_status'] = $reviewStatus->value;
+                        $extractionAttributes['reviewed_at'] = $reviewedAt ?? $createdAt;
+                        $extractionAttributes['reviewed_by_email'] = $activeUser->email;
+                        $extractionAttributes['updated_at'] = $reviewedAt ?? $createdAt;
+                    }
+
                     /** @var AiExtraction $aiExt */
                     $aiExt = AiExtraction::query()->updateOrCreate(
                         [
                             'receiving_upload_id' => $upload->getKey(),
                             'uploaded_file_id' => $uploadedFile->getKey(),
                         ],
-                        [
-                            'document_type' => strtolower($docTypeStr),
-                            'invoice_number' => $invNo !== '' ? $invNo : null,
-                            'po_number' => $poNo !== '' ? $poNo : null,
-                            'po_number_normalized' => $poNoNormalized,
-                            'po_date' => $poDateStr !== '' ? $poDateStr : null,
-                            'raw_extracted_json' => $matchingDoc,
-                            'corrected_json' => $matchingDoc,
-                            'ai_status' => $aiStatus->value,
-                            'review_status' => $reviewStatus->value,
-                            'extracted_at' => $this->parseDate($extraction?->extracted_at) ?? $createdAt,
-                            'reviewed_at' => $reviewedAt ?? $createdAt,
-                            'reviewed_by_email' => $activeUser->email,
-                            'created_at' => $createdAt,
-                            'updated_at' => $reviewedAt ?? $createdAt,
-                        ]
+                        $extractionAttributes
                     );
 
                     // If PO Document, create PoExtraction and PoExtractionItems
@@ -577,119 +605,19 @@ class GoogleSheetsDataSyncService
                         // Link any previously uploaded invoices that were waiting for this PO
                         app(PurchaseOrderLinker::class)->syncPoExtraction($poExt);
                     } else {
-                        // For Invoice / Delivery Receipt / Receiving documents, link to real PO if already present
-                        if ($poNoNormalized !== null) {
-                            /** @var PoExtraction|null $existingRealPo */
-                            $existingRealPo = PoExtraction::query()
-                                ->where('po_number_normalized', $poNoNormalized)
-                                ->first();
-
-                            if ($existingRealPo) {
+                        // For Invoice / Delivery Receipt / Receiving documents, link to real PO if present
+                        if ($poNo !== '') {
+                            $resolverResult = app(PurchaseOrderResolver::class)->resolve($aiExt);
+                            if ($resolverResult->isSuccess() && $resolverResult->selectedPo !== null) {
                                 app(PurchaseOrderLinker::class)->link(
                                     $aiExt,
-                                    $existingRealPo,
+                                    $resolverResult->selectedPo,
                                     $activeUser,
                                     PurchaseOrderLinkSource::Automatic
                                 );
+                            } else {
+                                $aiExt->update(['po_link_status' => $resolverResult->status]);
                             }
-                        }
-                    }
-
-                    // For Verified Invoices/Receipts with Supplier, create Stock Lots
-                    if ($reviewStatus === ReviewStatus::Verified && $supplierName !== '') {
-                        $rawItems = $matchingDoc['items'] ?? [];
-                        $itemsToProcess = [];
-
-                        if (! empty($rawItems) && is_array($rawItems)) {
-                            foreach ($rawItems as $idx => $it) {
-                                $itemsToProcess[] = [
-                                    'key_suffix' => (string) ($idx + 1),
-                                    'desc' => $it['description'] ?? $it['itemDescription'] ?? "Received Item - {$supplierName}",
-                                    'code' => $it['itemCode'] ?? $it['code'] ?? '',
-                                    'barcode' => $it['barcode'] ?? $it['ean'] ?? '',
-                                    'qty' => isset($it['quantity']) ? (string) $it['quantity'] : '1',
-                                    'unit' => $it['unit'] ?? $it['uom'] ?? 'unit',
-                                ];
-                            }
-                        } else {
-                            $itemDesc = $this->extractField($fields, ['product / description', 'description', 'description 1', 'product', 'item description']);
-                            if ($itemDesc === '') {
-                                $itemDesc = "Received Item - {$supplierName}";
-                            }
-                            $itemCode = $this->extractField($fields, ['item code', 'sku', 'sku number', 'product code']);
-                            $itemBarcode = $this->extractField($fields, ['item barcode', 'ean', 'barcode']);
-                            $itemQtyStr = $this->extractField($fields, ['quantity', 'qty', 'total quantity', 'quantity 1'], '1');
-                            $itemUnit = $this->extractField($fields, ['unit', 'uom', 'package', 'unit 1'], 'unit');
-
-                            $itemsToProcess[] = [
-                                'key_suffix' => '1',
-                                'desc' => $itemDesc,
-                                'code' => $itemCode,
-                                'barcode' => $itemBarcode,
-                                'qty' => $itemQtyStr,
-                                'unit' => $itemUnit,
-                            ];
-                        }
-
-                        foreach ($itemsToProcess as $pItem) {
-                            $itemDesc = $pItem['desc'];
-                            $itemCode = $pItem['code'];
-                            $itemBarcode = $pItem['barcode'];
-                            $itemQtyStr = $pItem['qty'];
-                            $itemUnit = $pItem['unit'];
-                            $suffix = $pItem['key_suffix'];
-
-                            $normDesc = $this->normalizer->normalizeDescription($itemDesc);
-                            $normSku = $this->normalizer->normalizeIdentifier($itemCode);
-                            $normBarcode = $this->normalizer->normalizeIdentifier($itemBarcode);
-
-                            /** @var PurchaseOrderItemSchedule|null $poScheduleItem */
-                            $poScheduleItem = null;
-                            if ($normSku) {
-                                $poScheduleItem = PurchaseOrderItemSchedule::query()->where('sku_number_normalized', $normSku)->first();
-                            }
-                            if (! $poScheduleItem && $normBarcode) {
-                                $poScheduleItem = PurchaseOrderItemSchedule::query()->where('ean_barcode_normalized', $normBarcode)->first();
-                            }
-                            if (! $poScheduleItem && $normDesc) {
-                                $poScheduleItem = PurchaseOrderItemSchedule::query()->where('description_normalized', $normDesc)->first();
-                            }
-
-                            $canonicalDesc = $poScheduleItem ? $poScheduleItem->description : $itemDesc;
-                            $canonicalSku = $poScheduleItem ? $poScheduleItem->sku_number : ($itemCode !== '' ? $itemCode : null);
-
-                            $identityKey = hash('sha256', strtolower(($normDesc ?? $itemDesc).'_'.($supplierName)));
-                            $whItem = WarehouseItem::query()->firstOrCreate(
-                                ['identity_key' => $identityKey],
-                                [
-                                    'sku_number' => $canonicalSku,
-                                    'sku_number_normalized' => $normSku,
-                                    'description' => $canonicalDesc,
-                                    'description_normalized' => $normDesc ?? strtolower($canonicalDesc),
-                                    'base_unit' => $itemUnit,
-                                ]
-                            );
-
-                            $parsedQty = (float) preg_replace('/[^\d.]/', '', $itemQtyStr);
-                            $finalQty = $parsedQty > 0 ? $parsedQty : 1.000;
-
-                            WarehouseStockLot::query()->updateOrCreate(
-                                ['source_key' => "GSHEET-STOCK-{$slug}-{$serialNumber}-{$uploadedFile->getKey()}-{$suffix}"],
-                                [
-                                    'warehouse_item_id' => $whItem->getKey(),
-                                    'source_type' => WarehouseStockSource::Arrival->value,
-                                    'ai_extraction_id' => $aiExt->getKey(),
-                                    'receiving_upload_id' => $upload->getKey(),
-                                    'po_number' => $poNo !== '' ? $poNo : null,
-                                    'quantity_received' => $finalQty,
-                                    'received_at' => $createdAt,
-                                    'received_date_quality' => WarehouseDateQuality::Confirmed->value,
-                                    'confirmed_by_user_id' => $activeUser->getKey(),
-                                    'confirmed_at' => $reviewedAt ?? $createdAt,
-                                    'created_at' => $createdAt,
-                                    'updated_at' => $createdAt,
-                                ]
-                            );
                         }
                     }
                 }
