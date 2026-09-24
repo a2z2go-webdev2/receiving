@@ -1,6 +1,6 @@
 # ADR-005: Warehouse lot ledger and FIFO dwell attribution
 
-- **Status**: Accepted
+- **Status**: Accepted (Partially superseded for verified live receiving uploads by [ADR-006](adr-006-sheet-po-and-upload-confirmed-receiving.md))
 - **Requirements**: REQ-023
 - **Reversibility**: Type 1 for historical allocation meaning; changing the allocation policy requires an explicit migration/version and must not rewrite completed reports.
 
@@ -13,7 +13,7 @@ The client defines "warehouse dwell" as time from placement in the warehouse thr
 ## Decision
 
 - Require a dedicated `warehouse_operator` permission group for all physical progress mutations. Administrators receive report-only access.
-- Treat linked PO/invoice rows as supplier-delivery facts used for PO waiting time. Create dispatchable stock only when an operator confirms physical placement.
+- Treat linked PO/invoice rows as supplier-delivery facts used for PO waiting time. Create dispatchable stock only when an operator confirms physical placement. *(Superseded for verified live receiving uploads by ADR-006, which automatically posts dispatchable stock lots upon document completion and PO linking using the upload timestamp; manual placement remains active for walk-ins and legacy receipts).*
 - For PO/invoice-linked placements, accept physical quantity plus optional lot/notes and derive the placement timestamp and confirmed date quality on the server. Do not accept a browser-selected placement date. Persist opening inventory with confirmed, estimated, or unknown historical dates because it predates the system workflow.
 - Persist inventory as stock lots with positive quantities, warehouse placement or opening-stock dates, date-quality metadata, source provenance, and an idempotent source key.
 - Represent pre-existing inventory as opening-balance lots. Preserve unknown dates as null instead of manufacturing dates.
@@ -79,3 +79,7 @@ For absolute clarity, the report exposes the following 9 data points for every d
 ## Reversal plan
 
 A future FEFO, explicit-batch, or customer-reservation policy can be added as a versioned allocation method for new dispatches. Existing `warehouse_allocations` retain `fifo` and continue to drive historical reports. Do not recalculate completed allocations unless the business approves a separately audited correction migration.
+
+## Related decisions
+
+- [ADR-006: Google Sheet Purchase Orders and Upload-Confirmed Receiving Stock Posting](adr-006-sheet-po-and-upload-confirmed-receiving.md) supersedes the requirement for a separate manual warehouse operator placement step for verified receiving uploads, deriving placement timestamps directly from verified upload completion (`upload_completed_at ?? created_at`) while preserving FIFO allocations, stock lot ledger schemas, and dwell metrics.

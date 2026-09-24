@@ -35,13 +35,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read AiExtraction $aiExtraction
  * @property-read ReceivingUpload $upload
  * @property-read PurchaseOrderItemSchedule|null $schedule
+ * @property-read WarehouseStockLot|null $stockLot
  */
 #[Fillable([
     'source_key', 'purchase_order_document_link_id', 'po_extraction_id', 'ai_extraction_id',
     'receiving_upload_id', 'po_extraction_item_id', 'purchase_order_item_schedule_id',
     'po_number', 'po_date', 'arrival_date', 'po_week', 'item_code', 'item_description',
     'arrived_quantity', 'ordered_quantity', 'target_quantity', 'unit', 'matched_by',
-    'status',
+    'status', 'posting_status', 'posted_at', 'warehouse_stock_lot_id',
 ])]
 class PurchaseOrderItemArrival extends Model
 {
@@ -51,6 +52,7 @@ class PurchaseOrderItemArrival extends Model
             'po_date' => 'immutable_date',
             'arrival_date' => 'immutable_date',
             'po_week' => 'integer',
+            'posted_at' => 'immutable_datetime',
         ];
     }
 

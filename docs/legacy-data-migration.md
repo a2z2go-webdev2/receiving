@@ -1,6 +1,10 @@
 # Comprehensive Legacy Data Migration & Multi-Format Ingestion System
 
-This document provides a complete technical reference for the **Legacy Data Migration and Multi-Format Ingestion System**. It covers the end-to-end architecture, database entity mappings, multi-sheet joining mechanisms, PO Item catalog normalization, Cloudflare R2 object storage alignment, Admin UI integration, System Reset protections, CLI commands, and exact code implementations.
+> [!CAUTION]
+> **RETIRED & DECOMMISSIONED (September 2026)**
+> The one-time legacy import tool (`import:legacy-data`, `LegacyDataImportController`, `LegacyImportManager`, `SyncLegacyFilesToR2Job`, and `legacy-import-dialog.tsx`) has been retired and removed from the active codebase. Ingestion is now handled through the unified Google Sheets webhook sync (`/api/webhooks/google-sheets/{source}`) and direct app receiving uploads under ADR-006. This document is retained solely for historical auditability and database provenance reference.
+
+This document provides a complete technical reference for the historical **Legacy Data Migration and Multi-Format Ingestion System**. It covers the end-to-end architecture, database entity mappings, multi-sheet joining mechanisms, PO Item catalog normalization, Cloudflare R2 object storage alignment, Admin UI integration, System Reset protections, CLI commands, and exact code implementations.
 
 ---
 

@@ -6,6 +6,7 @@ use App\Features\Receiving\Services\PurchaseOrderDataNormalizer;
 use App\Http\Controllers\Controller;
 use App\Models\PurchaseOrderItemArrival;
 use App\Models\PurchaseOrderItemSchedule;
+use App\Models\WarehouseStockLot;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -49,13 +50,15 @@ class WarehouseArrivalsController extends Controller
                 'supplier_delivery_date' => $arrival->arrival_date?->toDateString(),
                 'po_waiting_days' => $normalizer->waitingDays($arrival->po_date, $arrival->arrival_date),
                 'is_received' => $isReceived,
+                'posting_status' => $arrival->posting_status,
+                'posting_provenance' => $stockLot instanceof WarehouseStockLot ? $stockLot->posting_provenance : 'manual',
                 'received_at' => $stockLot?->received_at?->toDateString(),
                 'lot_number' => $stockLot?->lot_number,
             ];
         };
 
         $pendingArrivals = (clone $pendingQuery)
-            ->with('schedule')
+            ->with(['schedule', 'stockLot'])
             ->orderBy('arrival_date')
             ->orderBy('id')
             ->paginate(10)

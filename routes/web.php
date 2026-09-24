@@ -5,7 +5,7 @@ use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\AdminAccessOtpController;
 use App\Http\Controllers\Admin\EmailRecipientController;
 use App\Http\Controllers\Admin\GoogleSheetSyncController;
-use App\Http\Controllers\Admin\LegacyDataImportController;
+use App\Http\Controllers\Admin\PurchaseOrderController;
 use App\Http\Controllers\Admin\PurchaseOrderDocumentLinkController;
 use App\Http\Controllers\Admin\PurchaseOrderItemScheduleController;
 use App\Http\Controllers\Admin\PurchaseOrderReportController;
@@ -198,7 +198,8 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
                 ->middleware('starter.permission:'.Permission::ViewWarehouseReports->value)
                 ->name('purchase-orders.reports.warehouse-dwell');
             Route::get('purchase-orders/items', [PurchaseOrderItemScheduleController::class, 'index'])->name('purchase-orders.items.index');
-            Route::get('purchase-orders', [UploadLogController::class, 'index'])->name('purchase-orders.index');
+            Route::get('purchase-orders', [PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
+            Route::get('purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
             Route::get('uploads/{upload}', [UploadRecordController::class, 'showAdmin'])->name('uploads.show');
         });
         Route::middleware('starter.permission:'.Permission::RetryOperations->value)->group(function (): void {
@@ -215,10 +216,10 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
         Route::middleware('starter.permission:'.Permission::ManageSettings->value)->group(function (): void {
             Route::get('receiving-settings', [ReceivingSettingsController::class, 'edit'])->name('receiving-settings.edit');
             Route::post('upload-types/{uploadType}/toggle', [ReceivingSettingsController::class, 'toggleUploadType'])->name('upload-types.toggle');
-            Route::post('upload-types/{uploadType}/legacy-import', [LegacyDataImportController::class, 'store'])->name('upload-types.legacy-import');
             Route::post('purchase-orders/items', [PurchaseOrderItemScheduleController::class, 'store'])->name('purchase-orders.items.store');
             Route::put('purchase-orders/items/{item}', [PurchaseOrderItemScheduleController::class, 'update'])->name('purchase-orders.items.update');
             Route::delete('purchase-orders/items/{item}', [PurchaseOrderItemScheduleController::class, 'destroy'])->name('purchase-orders.items.destroy');
+            Route::post('purchase-orders/sync', [PurchaseOrderController::class, 'sync'])->name('purchase-orders.sync');
             Route::delete('system-reset', SystemResetController::class)
                 ->name('system-reset');
         });
@@ -233,7 +234,7 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
             Route::post('batch-sync', [GoogleSheetSyncController::class, 'batchSync'])->name('batch-sync');
             Route::get('progress', [GoogleSheetSyncController::class, 'progress'])->name('progress');
             Route::post('cancel', [GoogleSheetSyncController::class, 'cancelSync'])->name('cancel');
-            Route::post('config', [GoogleSheetSyncController::class, 'updateConfig'])->name('config');
+            Route::post('config/{slug?}', [GoogleSheetSyncController::class, 'updateConfig'])->name('config');
             Route::post('generate-secret', [GoogleSheetSyncController::class, 'generateWebhookSecret'])->name('generate-secret');
         });
     });

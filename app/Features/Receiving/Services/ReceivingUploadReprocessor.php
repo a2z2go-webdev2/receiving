@@ -10,6 +10,7 @@ use App\Features\Receiving\Jobs\StartAiExtraction;
 use App\Models\AiExtraction;
 use App\Models\PoExtraction;
 use App\Models\PurchaseOrderDocumentLink;
+use App\Models\PurchaseOrderItemArrival;
 use App\Models\ReceivingUpload;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -38,6 +39,20 @@ class ReceivingUploadReprocessor
             if ($fileIds->isEmpty()) {
                 throw ValidationException::withMessages([
                     'reprocess' => 'There are no accepted uploaded files to reprocess.',
+                ]);
+            }
+
+            $hasPostedArrivals = PurchaseOrderItemArrival::query()
+                ->where('receiving_upload_id', $locked->getKey())
+                ->where(function ($q): void {
+                    $q->whereNotNull('warehouse_stock_lot_id')
+                        ->orWhere('posting_status', 'posted');
+                })
+                ->exists();
+
+            if ($hasPostedArrivals) {
+                throw ValidationException::withMessages([
+                    'reprocess' => 'Cannot reprocess this upload because stock has already been posted to the warehouse.',
                 ]);
             }
 

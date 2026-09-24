@@ -61,4 +61,5 @@ return [
         'workload_timeout_seconds' => (int) env('RECEIVING_WORKER_TIMEOUT_SECONDS', 300),
         'timeout_safety_seconds' => (int) env('RECEIVING_WORKER_TIMEOUT_SAFETY_SECONDS', 30),
     ],
+    'auto_post_stock' => env('RECEIVING_AUTO_POST_STOCK', false),
 ];

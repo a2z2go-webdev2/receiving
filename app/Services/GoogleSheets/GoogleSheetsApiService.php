@@ -66,6 +66,52 @@ class GoogleSheetsApiService
     }
 
     /**
+     * Fetch list of sheet/tab titles from a spreadsheet.
+     *
+     * @return array<int, string>
+     */
+    public function fetchSpreadsheetTabs(string $spreadsheetId): array
+    {
+        $cleanId = $this->extractSpreadsheetId($spreadsheetId);
+        if ($cleanId === '') {
+            throw new RuntimeException('Spreadsheet ID is missing or empty.');
+        }
+
+        $apiKey = config('services.google.sheets_api_key');
+        $url = "https://sheets.googleapis.com/v4/spreadsheets/{$cleanId}";
+
+        $params = [
+            'fields' => 'sheets(properties(sheetId,title))',
+        ];
+        if ($apiKey) {
+            $params['key'] = $apiKey;
+        }
+
+        $headers = [];
+        $token = $this->resolveAccessToken();
+        if ($token) {
+            $headers['Authorization'] = "Bearer {$token}";
+        }
+
+        $response = Http::withHeaders($headers)
+            ->timeout(30)
+            ->get($url, $params);
+
+        if (! $response->successful()) {
+            $errorMsg = $response->json('error.message') ?? $response->body();
+            Log::error("Google Sheets API error on spreadsheet {$cleanId}: {$errorMsg}");
+            throw new RuntimeException("Google Sheets API error on spreadsheet '{$cleanId}': {$errorMsg}");
+        }
+
+        $sheets = $response->json('sheets') ?? [];
+
+        return array_values(array_filter(array_map(
+            fn ($s) => isset($s['properties']['title']) ? (string) $s['properties']['title'] : null,
+            $sheets
+        )));
+    }
+
+    /**
      * Fetch all 3 tabs (Receiving_Log, receive_files, ai_extraction) for a given spreadsheet.
      *
      * @return array{logs: array<int, array<string, mixed>>, files: array<int, array<string, mixed>>, extractions: array<int, array<string, mixed>>}

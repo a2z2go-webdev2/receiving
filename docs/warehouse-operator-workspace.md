@@ -53,8 +53,9 @@ The workspace is organized around a strict 3-step sequential workflow:
 ```mermaid
 flowchart TD
     subgraph Step 1: Physical Receiving
-        A["Vendor Invoice / PO Document Linked"] --> B["Confirm Arrivals Page (/warehouse/arrivals)"]
-        B -->|"Operator Confirms Physical Placement"| C["Warehouse Stock Lot Created"]
+        A["Vendor Invoice / PO Document Linked"] -->|"Automatic Stock Posting (ADR-006)"| C["Warehouse Stock Lot Created"]
+        A -->|"Manual Confirmation (Walk-ins / Legacy)"| B["Confirm Arrivals Page (/warehouse/arrivals)"]
+        B -->|"Operator Confirms Physical Placement"| C
         O["Opening Stock (Pre-existing Inventory)"] -->|"Operator Logs Confirmed/Estimated/Unknown Date"| C
     end
 

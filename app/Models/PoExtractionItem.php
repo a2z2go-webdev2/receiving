@@ -26,11 +26,19 @@ use Illuminate\Support\Collection;
  * @property-read Collection<int, PurchaseOrderItemFulfillment> $fulfillments
  */
 #[Fillable([
-    'po_extraction_id', 'sort_order', 'item_code', 'product_description',
-    'package', 'quantity', 'unit', 'unit_price', 'line_total',
+    'po_extraction_id', 'sort_order', 'source_line_id', 'is_financial_adjustment',
+    'item_code', 'product_description', 'package', 'quantity', 'unit',
+    'source_quantity', 'source_unit', 'unit_price', 'line_total',
 ])]
 class PoExtractionItem extends Model
 {
+    protected function casts(): array
+    {
+        return [
+            'is_financial_adjustment' => 'boolean',
+        ];
+    }
+
     public function extraction(): BelongsTo
     {
         return $this->belongsTo(PoExtraction::class, 'po_extraction_id');

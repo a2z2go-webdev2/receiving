@@ -32,7 +32,9 @@ flowchart LR
     H --> I["Warehouse dwell time report"]
 ```
 
-The linked PO/invoice row already records ordered quantity, supplier-delivered quantity, supplier delivery/upload date, and PO waiting time. It does not create dispatchable stock by itself. Stock becomes available only when a warehouse operator confirms that the physical quantity has been placed in the warehouse; the server records that placement time and operator automatically.
+The linked PO/invoice row already records ordered quantity, supplier-delivered quantity, supplier delivery/upload date, and PO waiting time. Under ADR-006, live receiving uploads linked to a confirmed Purchase Order automatically create dispatchable warehouse stock lots with `posting_provenance = 'automatic_upload'`, deriving the placement timestamp from the verified upload completion time (`upload_completed_at ?? created_at`).
+
+For walk-ins, unlinked documents, or legacy entries, stock becomes available when a warehouse operator manually confirms physical placement via the Warehouse Operator Workspace.
 
 Every physical receipt becomes a stock lot. Every dispatch creates durable allocations between a customer-delivery line and one or more lots. Those allocations, not a later guess, are the basis of the report.
 

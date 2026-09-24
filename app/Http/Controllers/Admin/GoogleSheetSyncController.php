@@ -383,9 +383,15 @@ class GoogleSheetSyncController extends Controller
      */
     public function updateConfig(Request $request): JsonResponse
     {
+        $slug = $request->route('slug') ?? $request->input('slug');
+        if ($slug) {
+            $request->merge(['slug' => $slug]);
+        }
+
         $validated = $request->validate([
             'slug' => ['required', 'string', 'exists:google_sheet_configs,slug'],
             'spreadsheet_id' => ['nullable', 'string'],
+            'tab_name' => ['nullable', 'string', 'max:100'],
             'name' => ['nullable', 'string', 'max:100'],
             'webhook_secret' => ['nullable', 'string', 'max:64'],
             'auto_sync_on_webhook' => ['nullable', 'boolean'],
@@ -397,7 +403,8 @@ class GoogleSheetSyncController extends Controller
         $config = GoogleSheetConfig::query()->where('slug', $validated['slug'])->firstOrFail();
         $config->update([
             'spreadsheet_id' => $cleanId ?: $config->spreadsheet_id,
-            'name' => $validated['name'] ?: $config->name,
+            'tab_name' => array_key_exists('tab_name', $validated) ? $validated['tab_name'] : $config->tab_name,
+            'name' => ! empty($validated['name']) ? $validated['name'] : $config->name,
             'webhook_secret' => $validated['webhook_secret'] ?? $config->webhook_secret,
             'auto_sync_on_webhook' => $validated['auto_sync_on_webhook'] ?? $config->auto_sync_on_webhook,
         ]);

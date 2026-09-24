@@ -6,6 +6,7 @@ use App\Features\Receiving\Services\PurchaseOrderDataNormalizer;
 use App\Features\Receiving\Services\UploadSerialNumber;
 use App\Http\Controllers\Controller;
 use App\Models\AiExtraction;
+use App\Models\PoExtraction;
 use App\Models\PurchaseOrderItemArrival;
 use App\Models\PurchaseOrderItemFulfillment;
 use App\Models\PurchaseOrderItemSchedule;
@@ -70,6 +71,7 @@ class PurchaseOrderReportController extends Controller
                 $orderSources = $fulfillments
                     ->map(fn (PurchaseOrderItemFulfillment $fulfillment): string => $this->dataProvenance(
                         $fulfillment->poExtraction->aiExtraction,
+                        $fulfillment->poExtraction,
                     ));
                 $arrivalSources = $arrivals
                     ->map(fn (PurchaseOrderItemArrival $arrival): string => $this->dataProvenance(
@@ -230,17 +232,18 @@ class PurchaseOrderReportController extends Controller
                         ->map(fn (PurchaseOrderItemFulfillment $fulfillment): array => [
                             'id' => $fulfillment->getKey(),
                             'upload_id' => $fulfillment->receiving_upload_id,
-                            'serial_number' => $serialNumbers[$fulfillment->receiving_upload_id] ?? $fulfillment->receiving_upload_id,
+                            'serial_number' => $fulfillment->receiving_upload_id !== null ? ($serialNumbers[$fulfillment->receiving_upload_id] ?? $fulfillment->receiving_upload_id) : $fulfillment->po_number,
                             'po_number' => $fulfillment->po_number,
                             'po_date' => $fulfillment->po_date?->toDateString(),
                             'quantity' => (float) $fulfillment->ordered_quantity,
                             'unit' => $fulfillment->unit,
-                            'data_source' => $this->dataProvenance($fulfillment->poExtraction->aiExtraction),
+                            'data_source' => $this->dataProvenance($fulfillment->poExtraction->aiExtraction, $fulfillment->poExtraction),
                         ])
                         ->all(),
                     'has_unverified_data' => $schedule->fulfillments
                         ->contains(fn (PurchaseOrderItemFulfillment $fulfillment): bool => $this->dataProvenance(
                             $fulfillment->poExtraction->aiExtraction,
+                            $fulfillment->poExtraction,
                         ) === 'unverified'),
                 ];
             })
@@ -357,8 +360,12 @@ class PurchaseOrderReportController extends Controller
         return $this->normalizer->waitingDays($arrival->po_date, $arrival->arrival_date);
     }
 
-    private function dataProvenance(mixed $extraction): string
+    private function dataProvenance(mixed $extraction, ?PoExtraction $po = null): string
     {
+        if ($po && $po->source_type === 'google_sheet') {
+            return 'sheet_sync';
+        }
+
         return $extraction instanceof AiExtraction
             ? $extraction->dataProvenance()
             : 'unverified';

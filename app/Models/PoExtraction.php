@@ -13,8 +13,12 @@ use Illuminate\Support\Collection;
 
 /**
  * @property int $id
- * @property int $ai_extraction_id
- * @property int $receiving_upload_id
+ * @property int|null $ai_extraction_id
+ * @property int|null $receiving_upload_id
+ * @property string $source_type
+ * @property string|null $sheet_slug
+ * @property string|null $source_status
+ * @property string|null $status_normalized
  * @property string|null $po_number
  * @property string|null $po_number_normalized
  * @property string|null $po_reference
@@ -33,10 +37,12 @@ use Illuminate\Support\Collection;
  * @property string|null $subtotal
  * @property string|null $vat
  * @property string|null $total_amount
+ * @property string|null $notes
+ * @property CarbonImmutable|null $synced_at
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
- * @property-read AiExtraction $aiExtraction
- * @property-read ReceivingUpload $upload
+ * @property-read AiExtraction|null $aiExtraction
+ * @property-read ReceivingUpload|null $upload
  * @property-read Collection<int, PoExtractionItem> $items
  * @property-read Collection<int, PurchaseOrderItemFulfillment> $fulfillments
  * @property-read Collection<int, PurchaseOrderDocumentLink> $documentLinks
@@ -44,10 +50,12 @@ use Illuminate\Support\Collection;
  * @property-read PurchaseOrderDocumentLink|null $activeDocumentLink
  */
 #[Fillable([
-    'ai_extraction_id', 'receiving_upload_id', 'po_number', 'po_number_normalized',
+    'ai_extraction_id', 'receiving_upload_id', 'source_type', 'sheet_slug', 'source_row_hash',
+    'source_status', 'status_normalized', 'po_number', 'po_number_normalized',
     'po_reference', 'po_date', 'po_date_value', 'arrival_status', 'buyer_company', 'buyer_address',
     'buyer_contact_numbers', 'vendor_name', 'contact_person', 'vendor_email',
     'vendor_mobile', 'vendor_address', 'payment_terms', 'subtotal', 'vat', 'total_amount',
+    'notes', 'synced_at',
 ])]
 class PoExtraction extends Model
 {
@@ -56,6 +64,7 @@ class PoExtraction extends Model
         return [
             'po_date_value' => 'immutable_date',
             'arrival_status' => PurchaseOrderArrivalStatus::class,
+            'synced_at' => 'immutable_datetime',
         ];
     }
 
@@ -92,5 +101,15 @@ class PoExtraction extends Model
     public function activeDocumentLinks(): HasMany
     {
         return $this->hasMany(PurchaseOrderDocumentLink::class)->whereNull('unlinked_at');
+    }
+
+    public function sheetSource(): BelongsTo
+    {
+        return $this->belongsTo(GoogleSheetConfig::class, 'sheet_slug', 'slug');
+    }
+
+    public function purchaseOrderItemArrivals(): HasMany
+    {
+        return $this->hasMany(PurchaseOrderItemArrival::class, 'po_extraction_id');
     }
 }

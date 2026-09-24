@@ -98,6 +98,11 @@ class ReceivingUploadReceived extends Mailable
                 $poDate = $linkedPo instanceof PoExtraction ? $linkedPo->po_date_value : null;
                 $poDate ??= $normalizer->parseDate($extraction->po_date ?? ($fields['po date'] ?? null));
                 $waitingDays = $normalizer->waitingDays($poDate, $arrivalDate);
+
+                if ($linkedPo instanceof PoExtraction && $linkedPo->po_date_value !== null) {
+                    $fields['po date'] = $linkedPo->po_date_value->toDateString();
+                }
+
                 $fields['waiting time'] = match (true) {
                     $poDate === null => '',
                     $waitingDays === null => 'Date conflict',

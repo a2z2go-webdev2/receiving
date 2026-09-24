@@ -1,6 +1,5 @@
 import { Head, router } from '@inertiajs/react';
 import { Power } from 'lucide-react';
-import { LegacyImportDialog } from '@/components/admin/legacy-import-dialog';
 import { FlashMessage } from '@/components/receiving/flash-message';
 import { PageShell } from '@/components/receiving/page-shell';
 import { StatusBadge } from '@/components/receiving/status-badge';
@@ -14,7 +13,7 @@ export default function SettingsIndex({ uploadTypes }: { uploadTypes: UploadType
             <Head title="Upload Lanes" />
             <PageShell
                 title="Upload lanes"
-                description="Choose which receiving lanes uploaders can open and manage legacy data imports."
+                description="Choose which receiving lanes uploaders can open."
             >
                 <FlashMessage />
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -45,9 +44,6 @@ export default function SettingsIndex({ uploadTypes }: { uploadTypes: UploadType
                                 >
                                     <Power className="h-4 w-4" />
                                 </Button>
-                            </div>
-                            <div className="flex justify-end border-t pt-3">
-                                <LegacyImportDialog uploadType={type} />
                             </div>
                         </div>
                     ))}

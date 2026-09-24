@@ -7,7 +7,7 @@ The application uses:
 - `otp`: login and upload verification codes; latency-sensitive and isolated from long-running work
 - `receiving`: validation, malware scanning, compression, promotion, and upload notification
 - `ai`: Gemini extraction batches, aggregate status, and review notification
-- `default`: framework notifications and unrelated work
+- `default`: framework notifications, `SyncPurchaseOrderSheet` Google Sheet synchronization jobs, and unrelated work
 
 Run a dedicated OTP worker so a long file or AI job cannot delay a login code:
 

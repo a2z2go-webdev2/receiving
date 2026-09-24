@@ -6,6 +6,7 @@ use App\Enums\AiStatus;
 use App\Features\Receiving\Services\ActivityLogger;
 use App\Features\Receiving\Services\ReviewLinkService;
 use App\Features\Receiving\Services\UploadNotificationSender;
+use App\Features\Warehouse\Services\ReceiptPostingService;
 use App\Models\ReceivingUpload;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -28,8 +29,12 @@ class FinalizeAiExtraction implements ShouldQueue
         return [(new WithoutOverlapping("ai-finalize-{$this->uploadId}"))->expireAfter(300)];
     }
 
-    public function handle(ReviewLinkService $links, UploadNotificationSender $notifications, ActivityLogger $activity): void
-    {
+    public function handle(
+        ReviewLinkService $links,
+        UploadNotificationSender $notifications,
+        ActivityLogger $activity,
+        ReceiptPostingService $receiptPosting,
+    ): void {
         $upload = ReceivingUpload::query()->with(['files', 'uploadType.recipients'])->findOrFail($this->uploadId);
         $eligible = $upload->files->whereNotNull('r2_object_key');
         $extracted = $eligible->where('ai_status', AiStatus::Extracted);
@@ -49,6 +54,14 @@ class FinalizeAiExtraction implements ShouldQueue
                 null,
                 $upload,
             );
+        }
+
+        $hasSheetPo = $upload->extractions()
+            ->whereHas('activePurchaseOrderLink.poExtraction', fn ($q) => $q->where('source_type', 'google_sheet'))
+            ->exists();
+
+        if ((config('receiving.auto_post_stock', false) || $hasSheetPo) && ! $upload->is_historical) {
+            $receiptPosting->postForUpload($upload);
         }
 
         if ($upload->uploadType->workflow->sendsNotifications() && $upload->email_status->value !== 'sent') {

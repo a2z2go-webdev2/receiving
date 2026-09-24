@@ -6,6 +6,7 @@ use App\Enums\PurchaseOrderArrivalStatus;
 use App\Enums\PurchaseOrderLinkSource;
 use App\Enums\PurchaseOrderLinkStatus;
 use App\Enums\UploadWorkflow;
+use App\Features\Warehouse\Services\ReceiptPostingService;
 use App\Models\AiExtraction;
 use App\Models\PoExtraction;
 use App\Models\PoExtractionItem;
@@ -19,7 +20,11 @@ use Illuminate\Validation\ValidationException;
 
 class PurchaseOrderLinker
 {
-    public function __construct(private readonly PurchaseOrderDataNormalizer $normalizer) {}
+    public function __construct(
+        private readonly PurchaseOrderDataNormalizer $normalizer,
+        private readonly PurchaseOrderResolver $resolver,
+        private readonly ReceiptPostingService $receiptPostingService,
+    ) {}
 
     public function syncExtraction(AiExtraction $extraction): PurchaseOrderLinkStatus
     {
@@ -129,6 +134,17 @@ class PurchaseOrderLinker
                 return;
             }
 
+            $hasPostedStock = $locked->arrivals()->where(function ($q): void {
+                $q->whereNotNull('warehouse_stock_lot_id')
+                    ->orWhere('posting_status', 'posted');
+            })->exists();
+
+            if ($hasPostedStock) {
+                throw ValidationException::withMessages([
+                    'purchase_order_document_link' => 'Cannot unlink document: stock has already been posted to the warehouse for this arrival. An explicit correction or return workflow is required.',
+                ]);
+            }
+
             $locked->forceFill([
                 'unlinked_at' => now(),
                 'unlinked_by_user_id' => $actor?->getKey(),
@@ -158,6 +174,14 @@ class PurchaseOrderLinker
                 $this->refreshPoArrivalStatus($po);
                 $this->syncArrivals($activeLink);
 
+                $upload = $extraction->upload;
+                $shouldAutoPost = (config('receiving.auto_post_stock', false) || $po->source_type === 'google_sheet')
+                    && $upload && ! $upload->is_historical;
+
+                if ($shouldAutoPost) {
+                    $this->receiptPostingService->postForLink($activeLink);
+                }
+
                 return $this->setExtractionStatus($extraction, PurchaseOrderLinkStatus::Linked);
             }
 
@@ -165,32 +189,19 @@ class PurchaseOrderLinker
             $extraction->load('upload.uploadType');
         }
 
-        $poNumber = $this->normalizer->poNumber($this->dataFor($extraction) ?? []);
-        $normalizedPoNumber = $this->normalizer->normalizeIdentifier($poNumber);
-        if ($normalizedPoNumber === null) {
-            return $this->setExtractionStatus($extraction, PurchaseOrderLinkStatus::MissingPoNumber);
+        $resolution = $this->resolver->resolve($extraction);
+
+        if ($resolution->status === PurchaseOrderLinkStatus::Linked && $resolution->selectedPo !== null) {
+            if (! $autoLink) {
+                return $this->setExtractionStatus($extraction, PurchaseOrderLinkStatus::ReadyToLink);
+            }
+
+            $this->createLink($extraction, $resolution->selectedPo, PurchaseOrderLinkSource::Automatic, null);
+
+            return PurchaseOrderLinkStatus::Linked;
         }
 
-        $matchingPo = PoExtraction::query()
-            ->where('po_number_normalized', $normalizedPoNumber)
-            ->orderByDesc('po_date_value')
-            ->orderByDesc('id')
-            ->get();
-
-        if ($matchingPo->isEmpty()) {
-            return $this->setExtractionStatus($extraction, PurchaseOrderLinkStatus::AwaitingPurchaseOrder);
-        }
-
-        /** @var PoExtraction $matchingPurchaseOrder */
-        $matchingPurchaseOrder = $matchingPo->first();
-
-        if (! $autoLink) {
-            return $this->setExtractionStatus($extraction, PurchaseOrderLinkStatus::ReadyToLink);
-        }
-
-        $this->createLink($extraction, $matchingPurchaseOrder, PurchaseOrderLinkSource::Automatic, null);
-
-        return PurchaseOrderLinkStatus::Linked;
+        return $this->setExtractionStatus($extraction, $resolution->status);
     }
 
     private function createLink(
@@ -231,6 +242,14 @@ class PurchaseOrderLinker
         $this->setExtractionStatus($extraction, PurchaseOrderLinkStatus::Linked);
         $poExtraction->forceFill(['arrival_status' => PurchaseOrderArrivalStatus::Arrived])->save();
         $this->syncArrivals($link);
+
+        $upload = $extraction->upload;
+        $shouldAutoPost = (config('receiving.auto_post_stock', false) || $poExtraction->source_type === 'google_sheet')
+            && $upload && ! $upload->is_historical;
+
+        if ($shouldAutoPost) {
+            $this->receiptPostingService->postForLink($link, $actor);
+        }
 
         return $link;
     }
@@ -307,8 +326,6 @@ class PurchaseOrderLinker
             'poExtraction.items.fulfillments.schedule',
             'aiExtraction.upload.uploadType',
         ]);
-        $link->arrivals()->delete();
-
         $data = $this->dataFor($link->aiExtraction);
         $items = $data['items'] ?? null;
         if (! is_array($items)) {
@@ -323,11 +340,15 @@ class PurchaseOrderLinker
 
         $invoiceItemCount = collect($items)->filter(fn (mixed $item): bool => is_array($item))->count();
 
+        $existingArrivalKeys = [];
         $sourceLine = 0;
         foreach ($items as $item) {
             if (! is_array($item)) {
                 continue;
             }
+
+            $sourceKey = "ai:{$link->ai_extraction_id}:line:{$sourceLine}";
+            $existingArrivalKeys[] = $sourceKey;
 
             $match = $this->matchingPoItem($item, $link->poExtraction->items, $invoiceItemCount);
             $matchedItem = $match['item'] ?? null;
@@ -339,29 +360,44 @@ class PurchaseOrderLinker
                 ?? ($matchedItem instanceof PoExtractionItem ? $matchedItem->unit : null)
                 ?? ($schedule instanceof PurchaseOrderItemSchedule ? $schedule->unit : null);
 
-            PurchaseOrderItemArrival::query()->create([
-                'source_key' => "ai:{$link->ai_extraction_id}:line:{$sourceLine}",
-                'purchase_order_document_link_id' => $link->getKey(),
-                'po_extraction_id' => $link->po_extraction_id,
-                'ai_extraction_id' => $link->ai_extraction_id,
-                'receiving_upload_id' => $link->aiExtraction->receiving_upload_id,
-                'po_extraction_item_id' => $matchedItem?->getKey(),
-                'purchase_order_item_schedule_id' => $schedule?->getKey(),
-                'po_number' => $link->poExtraction->po_number,
-                'po_date' => $poDate?->toDateString(),
-                'arrival_date' => $arrivalDate->toDateString(),
-                'po_week' => $poWeek,
-                'item_code' => $this->itemValue($item, ['itemCode', 'item_code', 'sku', 'skuNumber', 'code']),
-                'item_description' => $this->itemValue($item, ['description', 'productDescription', 'item', 'product', 'particulars']),
-                'arrived_quantity' => $this->normalizer->decimalString($arrivedQuantity),
-                'ordered_quantity' => $orderedQuantity === null ? null : $this->normalizer->decimalString($orderedQuantity),
-                'target_quantity' => $targetQuantity === null ? null : $this->normalizer->decimalString($targetQuantity),
-                'unit' => $unit,
-                'matched_by' => $match['matched_by'] ?? 'unmatched',
-                'status' => $this->arrivalStatus($arrivedQuantity, $orderedQuantity),
-            ]);
+            PurchaseOrderItemArrival::query()->updateOrCreate(
+                [
+                    'source_key' => $sourceKey,
+                ],
+                [
+                    'purchase_order_document_link_id' => $link->getKey(),
+                    'po_extraction_id' => $link->po_extraction_id,
+                    'ai_extraction_id' => $link->ai_extraction_id,
+                    'receiving_upload_id' => $link->aiExtraction->receiving_upload_id,
+                    'po_extraction_item_id' => $matchedItem?->getKey(),
+                    'purchase_order_item_schedule_id' => $schedule?->getKey(),
+                    'po_number' => $link->poExtraction->po_number,
+                    'po_date' => $poDate?->toDateString(),
+                    'arrival_date' => $arrivalDate->toDateString(),
+                    'po_week' => $poWeek,
+                    'item_code' => $this->itemValue($item, ['itemCode', 'item_code', 'sku', 'skuNumber', 'code']),
+                    'item_description' => $this->itemValue($item, ['description', 'productDescription', 'item', 'product', 'particulars']),
+                    'arrived_quantity' => $this->normalizer->decimalString($arrivedQuantity),
+                    'ordered_quantity' => $orderedQuantity === null ? null : $this->normalizer->decimalString($orderedQuantity),
+                    'target_quantity' => $targetQuantity === null ? null : $this->normalizer->decimalString($targetQuantity),
+                    'unit' => $unit,
+                    'matched_by' => $match['matched_by'] ?? 'unmatched',
+                    'status' => $this->arrivalStatus($arrivedQuantity, $orderedQuantity),
+                ]
+            );
             $sourceLine++;
         }
+
+        // Clean up any extraneous arrivals that are no longer in the extraction AND have not been posted to stock
+        $link->arrivals()
+            ->whereNotIn('source_key', $existingArrivalKeys)
+            ->where(function ($q): void {
+                $q->whereNull('warehouse_stock_lot_id')
+                    ->where(function ($sq): void {
+                        $sq->whereNull('posting_status')->orWhere('posting_status', '!=', 'posted');
+                    });
+            })
+            ->delete();
     }
 
     /**

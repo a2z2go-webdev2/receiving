@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('receiving:cleanup-staging')->hourly()->withoutOverlapping();
+Schedule::command('sheets:sync-po all')->everyFifteenMinutes()->withoutOverlapping();

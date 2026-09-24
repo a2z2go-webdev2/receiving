@@ -49,7 +49,8 @@ use Illuminate\Support\Collection;
  * @property-read Collection<int, PurchaseOrderItemArrival> $purchaseOrderItemArrivals
  */
 #[Fillable([
-    'submission_id', 'upload_type_id', 'serial_number', 'uploader_user_id', 'uploader_email', 'r2_bucket', 'r2_prefix',
+    'submission_id', 'upload_type_id', 'serial_number', 'source_slug', 'source_serial', 'is_historical',
+    'uploader_user_id', 'uploader_email', 'r2_bucket', 'r2_prefix',
     'latitude', 'longitude', 'location_accuracy_meters', 'location_captured_at',
     'file_count', 'processing_status', 'email_status', 'review_email_status', 'ai_status', 'review_status',
     'failure_reason', 'review_email_failure_reason', 'upload_completed_at', 'notification_sent_at',
@@ -76,6 +77,8 @@ class ReceivingUpload extends Model
     {
         return [
             'serial_number' => 'integer',
+            'source_serial' => 'integer',
+            'is_historical' => 'boolean',
             'processing_status' => UploadProcessingStatus::class,
             'email_status' => EmailStatus::class,
             'review_email_status' => EmailStatus::class,
