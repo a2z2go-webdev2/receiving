@@ -53,6 +53,7 @@ return [
         'sheets_api_key' => env('GOOGLE_SHEETS_API_KEY'),
         'service_account_json' => env('GOOGLE_SERVICE_ACCOUNT_JSON'),
         'purchase_orders_sheet_id' => env('SHEET_ID_PURCHASE_ORDERS'),
+        'webhook_secret' => env('GOOGLE_SHEETS_WEBHOOK_SECRET'),
     ],
 
 ];

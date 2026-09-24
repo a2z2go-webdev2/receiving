@@ -1,7 +1,9 @@
 <?php
 
+use App\Jobs\SyncPurchaseOrderSheet;
 use App\Models\GoogleSheetConfig;
 use App\Models\User;
+use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
     $this->artisan('db:seed', ['--force' => true]);
@@ -75,4 +77,30 @@ test('admin can save sheet configuration with slug in request body', function ()
     expect($config->spreadsheet_id)->toBe('1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms')
         ->and($config->webhook_secret)->toBe('whsec_new_secret_abc123')
         ->and($config->auto_sync_on_webhook)->toBeTrue();
+});
+
+test('purchase order webhook triggers sync job with valid secret', function () {
+    Queue::fake();
+
+    $config = GoogleSheetConfig::query()->create([
+        'slug' => 'purchase-orders',
+        'name' => 'Purchase Orders Master',
+        'sheet_type' => 'purchase_order',
+        'webhook_secret' => 'whsec_po_secret_xyz',
+    ]);
+
+    $response = $this->withHeaders(['X-Webhook-Secret' => 'whsec_po_secret_xyz'])
+        ->postJson('/api/webhooks/sheets/purchase-orders', [
+            'tab' => 'Purchase Orders KEYSYS',
+        ]);
+
+    $response->assertStatus(200)
+        ->assertJson([
+            'success' => true,
+            'target_slug' => 'keysys',
+        ]);
+
+    Queue::assertPushed(SyncPurchaseOrderSheet::class, function ($job) {
+        return $job->configOrSlug === 'keysys';
+    });
 });
