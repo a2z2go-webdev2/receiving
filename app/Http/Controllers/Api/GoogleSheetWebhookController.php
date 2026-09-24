@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SyncPurchaseOrderSheet;
 use App\Models\GoogleSheetConfig;
 use App\Services\GoogleSheets\GoogleSheetsDataSyncService;
 use Illuminate\Http\JsonResponse;
@@ -47,6 +48,16 @@ class GoogleSheetWebhookController extends Controller
         }
 
         try {
+            if ($config->sheet_type === 'purchase_order') {
+                SyncPurchaseOrderSheet::dispatch($config->slug);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => "Queued purchase order synchronization for {$config->name} via webhook.",
+                    'sheet' => $slug,
+                ]);
+            }
+
             $payload = $request->all();
             $serialNumber = (int) ($payload['serial_number'] ?? $payload['serialNumber'] ?? $payload['log']['Serial Number'] ?? 0);
 
