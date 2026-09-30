@@ -18,6 +18,7 @@ use App\Features\Receiving\Services\UploadNotificationSender;
 use App\Features\Receiving\Services\UploadSerialNumber;
 use App\Http\Controllers\Controller;
 use App\Jobs\SyncPurchaseOrderSheet;
+use App\Models\AiExtraction;
 use App\Models\GoogleSheetConfig;
 use App\Models\ReceivingUpload;
 use App\Models\UploadType;
@@ -26,8 +27,10 @@ use App\Services\GoogleSheets\PurchaseOrderSheetSyncService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -213,19 +216,26 @@ class UploadLogController extends Controller
         return PurchaseOrderArrivalStatus::Pending->value;
     }
 
-    private function purchaseOrderLinkSummary(ReceivingUpload $upload): string
+    /**
+     * @param  Collection<int, AiExtraction>|null  $targetExtractions
+     */
+    private function purchaseOrderLinkSummary(ReceivingUpload $upload, ?Collection $targetExtractions = null): string
     {
-        if ($upload->extractions->isEmpty()) {
+        $extractions = $targetExtractions ?? $this->resolvePrimaryPoLinkExtractions($upload);
+
+        if ($extractions->isEmpty()) {
             return PurchaseOrderLinkStatus::NotApplicable->value;
         }
 
-        $statuses = $upload->extractions->pluck('po_link_status');
+        $statuses = $extractions->pluck('po_link_status');
         foreach ([
             PurchaseOrderLinkStatus::Linked,
             PurchaseOrderLinkStatus::PurchaseOrderAlreadyLinked,
             PurchaseOrderLinkStatus::ReadyToLink,
             PurchaseOrderLinkStatus::AwaitingPurchaseOrder,
             PurchaseOrderLinkStatus::MissingPoNumber,
+            PurchaseOrderLinkStatus::Conflict,
+            PurchaseOrderLinkStatus::Ambiguous,
         ] as $status) {
             if ($statuses->contains($status)) {
                 return $status->value;
@@ -233,6 +243,99 @@ class UploadLogController extends Controller
         }
 
         return PurchaseOrderLinkStatus::NotApplicable->value;
+    }
+
+    private function isInvoiceDocumentType(?string $documentType): bool
+    {
+        if ($documentType === null) {
+            return false;
+        }
+
+        $lower = Str::lower(trim($documentType));
+        if ($lower === '') {
+            return false;
+        }
+
+        if (
+            Str::contains($lower, ['purchase order', 'purchase_order', 'purchase-order'])
+            || $lower === 'po'
+            || str_starts_with($lower, 'po ')
+            || str_ends_with($lower, ' po')
+        ) {
+            return false;
+        }
+
+        return Str::contains($lower, ['invoice', 'billing'])
+            || in_array($lower, ['si', 'ci', 'bill'], true)
+            || str_starts_with($lower, 'si ')
+            || str_ends_with($lower, ' si');
+    }
+
+    private function isDeliveryReceiptDocumentType(?string $documentType): bool
+    {
+        if ($documentType === null) {
+            return false;
+        }
+
+        $lower = Str::lower(trim($documentType));
+        if ($lower === '') {
+            return false;
+        }
+
+        if (
+            Str::contains($lower, ['purchase order', 'purchase_order', 'purchase-order'])
+            || $lower === 'po'
+            || str_starts_with($lower, 'po ')
+            || str_ends_with($lower, ' po')
+        ) {
+            return false;
+        }
+
+        return Str::contains($lower, ['delivery', 'receipt', 'waybill', 'slip'])
+            || in_array($lower, ['dr'], true)
+            || str_starts_with($lower, 'dr ')
+            || str_ends_with($lower, ' dr');
+    }
+
+    /**
+     * @return Collection<int, AiExtraction>
+     */
+    private function resolvePrimaryPoLinkExtractions(ReceivingUpload $upload): Collection
+    {
+        /** @var Collection<int, AiExtraction> $linkable */
+        $linkable = $upload->extractions->filter(
+            fn (AiExtraction $e): bool => in_array($e->po_link_status, [
+                PurchaseOrderLinkStatus::Linked,
+                PurchaseOrderLinkStatus::AwaitingPurchaseOrder,
+                PurchaseOrderLinkStatus::MissingPoNumber,
+                PurchaseOrderLinkStatus::ReadyToLink,
+                PurchaseOrderLinkStatus::PurchaseOrderAlreadyLinked,
+                PurchaseOrderLinkStatus::Ambiguous,
+                PurchaseOrderLinkStatus::Conflict,
+            ], true)
+        );
+
+        if ($linkable->isEmpty()) {
+            return collect();
+        }
+
+        $invoices = $linkable->filter(
+            fn (AiExtraction $e): bool => $this->isInvoiceDocumentType($e->document_type)
+        );
+
+        if ($invoices->isNotEmpty()) {
+            return $invoices;
+        }
+
+        $deliveryReceipts = $linkable->filter(
+            fn (AiExtraction $e): bool => $this->isDeliveryReceiptDocumentType($e->document_type)
+        );
+
+        if ($deliveryReceipts->isNotEmpty()) {
+            return $deliveryReceipts;
+        }
+
+        return $linkable;
     }
 
     /**
@@ -271,31 +374,32 @@ class UploadLogController extends Controller
      */
     private function uploadPoLinkDetails(ReceivingUpload $upload): array
     {
-        $invoices = $upload->extractions->filter(
-            fn ($e) => in_array($e->po_link_status, [
-                PurchaseOrderLinkStatus::Linked,
-                PurchaseOrderLinkStatus::AwaitingPurchaseOrder,
-                PurchaseOrderLinkStatus::MissingPoNumber,
-                PurchaseOrderLinkStatus::ReadyToLink,
-                PurchaseOrderLinkStatus::PurchaseOrderAlreadyLinked,
-            ], true)
-        );
+        $primaryExtractions = $this->resolvePrimaryPoLinkExtractions($upload);
 
-        $linkedCount = $invoices->filter(
-            fn ($e) => $e->po_link_status === PurchaseOrderLinkStatus::Linked
+        $linkedCount = $primaryExtractions->filter(
+            fn (AiExtraction $e): bool => $e->po_link_status === PurchaseOrderLinkStatus::Linked
         )->count();
 
         /** @var string[] $poNumbers */
-        $poNumbers = $upload->extractions
-            ->map(fn ($e) => $e->activePurchaseOrderLink?->poExtraction?->po_number)
-            ->filter(fn ($po): bool => is_string($po) && $po !== '')
+        $poNumbers = $primaryExtractions
+            ->map(fn (AiExtraction $e): ?string => $e->activePurchaseOrderLink?->poExtraction?->po_number)
+            ->filter(fn (?string $po): bool => is_string($po) && $po !== '')
             ->unique()
             ->values()
             ->all();
 
+        if (empty($poNumbers)) {
+            $poNumbers = $upload->extractions
+                ->map(fn (AiExtraction $e): ?string => $e->activePurchaseOrderLink?->poExtraction?->po_number)
+                ->filter(fn (?string $po): bool => is_string($po) && $po !== '')
+                ->unique()
+                ->values()
+                ->all();
+        }
+
         return [
-            'status' => $this->purchaseOrderLinkSummary($upload),
-            'total_invoices' => $invoices->count(),
+            'status' => $this->purchaseOrderLinkSummary($upload, $primaryExtractions),
+            'total_invoices' => $primaryExtractions->count(),
             'linked_invoices' => $linkedCount,
             'po_numbers' => $poNumbers,
         ];
