@@ -409,8 +409,9 @@ class PurchaseOrderSheetSyncService
             return $range;
         }
 
-        $cellRange = $range ?: 'A1:Z50000';
-        $escapedTab = str_replace("'", "''", trim($tabName));
+        $cellRange = $range ?: 'A:Z';
+        $cleanTab = trim($tabName, " '\"");
+        $escapedTab = str_replace("'", "''", $cleanTab);
 
         return "'{$escapedTab}'!{$cellRange}";
     }
@@ -421,7 +422,9 @@ class PurchaseOrderSheetSyncService
      * @return array{
      *     spreadsheet_id: string,
      *     total_tabs: int,
-     *     tabs_synced: array<string, array<string, mixed>>
+     *     synced_tabs: int,
+     *     tabs_synced: array<string, array<string, mixed>>,
+     *     tab_errors: array<string, string>
      * }
      */
     public function syncAllTabs(
@@ -445,49 +448,70 @@ class PurchaseOrderSheetSyncService
 
         if (empty($poTabs)) {
             $poTabs = [
-                'Purchase Orders',
                 'Purchase Orders BONITA',
                 'Purchase Orders A2Z',
                 'Purchase Orders KEYSYS',
+                'Purchase Orders',
             ];
         }
 
         $results = [];
+        $tabErrors = [];
+        $syncedCount = 0;
 
         foreach ($poTabs as $tabName) {
-            $slug = $this->resolveSlugFromTabName($tabName);
+            try {
+                $slug = $this->resolveSlugFromTabName($tabName);
 
-            /** @var GoogleSheetConfig $targetConfig */
-            $targetConfig = GoogleSheetConfig::query()->firstOrCreate(
-                ['slug' => $slug],
-                [
-                    'name' => ucfirst($slug),
-                    'sheet_type' => 'purchase_order',
-                    'spreadsheet_id' => $config->spreadsheet_id,
-                    'tab_name' => $tabName,
-                ]
-            );
+                /** @var GoogleSheetConfig $targetConfig */
+                $targetConfig = GoogleSheetConfig::query()->firstOrCreate(
+                    ['slug' => $slug],
+                    [
+                        'name' => ucfirst($slug),
+                        'sheet_type' => 'purchase_order',
+                        'spreadsheet_id' => $config->spreadsheet_id,
+                        'tab_name' => $tabName,
+                    ]
+                );
 
-            if ($targetConfig->spreadsheet_id !== $config->spreadsheet_id || $targetConfig->tab_name !== $tabName) {
-                $targetConfig->update([
-                    'spreadsheet_id' => $config->spreadsheet_id,
-                    'tab_name' => $tabName,
-                ]);
+                if ($targetConfig->spreadsheet_id !== $config->spreadsheet_id || $targetConfig->tab_name !== $tabName) {
+                    $targetConfig->update([
+                        'spreadsheet_id' => $config->spreadsheet_id,
+                        'tab_name' => $tabName,
+                    ]);
+                }
+
+                $tabRange = $this->formatRangeWithTab($tabName);
+
+                if ($mode === 'preview') {
+                    $results[$tabName] = $this->preview($targetConfig, $tabRange);
+                } else {
+                    $results[$tabName] = $this->applySnapshot($targetConfig, range: $tabRange);
+                }
+                $syncedCount++;
+            } catch (\Throwable $e) {
+                Log::warning("Could not sync PO sheet tab '{$tabName}': {$e->getMessage()}");
+                $tabErrors[$tabName] = $e->getMessage();
+                $results[$tabName] = [
+                    'status' => 'error',
+                    'error' => $e->getMessage(),
+                    'total_orders' => 0,
+                    'applied_count' => 0,
+                ];
             }
+        }
 
-            $tabRange = $this->formatRangeWithTab($tabName);
-
-            if ($mode === 'preview') {
-                $results[$tabName] = $this->preview($targetConfig, $tabRange);
-            } else {
-                $results[$tabName] = $this->applySnapshot($targetConfig, range: $tabRange);
-            }
+        if ($syncedCount === 0 && ! empty($tabErrors)) {
+            $firstError = reset($tabErrors);
+            throw new RuntimeException($firstError);
         }
 
         return [
             'spreadsheet_id' => $config->spreadsheet_id,
             'total_tabs' => count($poTabs),
+            'synced_tabs' => $syncedCount,
             'tabs_synced' => $results,
+            'tab_errors' => $tabErrors,
         ];
     }
 
@@ -508,7 +532,20 @@ class PurchaseOrderSheetSyncService
             $targetRange = $this->formatRangeWithTab($tabName, $range);
         }
 
-        return $this->apiService->fetchRange($sheetId, $targetRange);
+        try {
+            return $this->apiService->fetchRange($sheetId, $targetRange);
+        } catch (\Throwable $e) {
+            if (str_contains($e->getMessage(), 'Unable to parse range') && str_contains($targetRange, '!A:Z')) {
+                $fallbackRange = str_replace('!A:Z', '!A1:Z50000', $targetRange);
+                try {
+                    return $this->apiService->fetchRange($sheetId, $fallbackRange);
+                } catch (\Throwable) {
+                    // rethrow original
+                }
+            }
+
+            throw $e;
+        }
     }
 
     /**

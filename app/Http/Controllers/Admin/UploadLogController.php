@@ -369,8 +369,12 @@ class UploadLogController extends Controller
         $syncWarning = null;
         if ($masterConfig !== null) {
             try {
-                $syncService->syncAllTabs($masterConfig, 'apply');
-                $sheetSynced = true;
+                $syncResult = $syncService->syncAllTabs($masterConfig, 'apply');
+                $sheetSynced = ($syncResult['synced_tabs'] ?? 0) > 0;
+                if (! empty($syncResult['tab_errors'])) {
+                    $failedTabs = implode(', ', array_keys($syncResult['tab_errors']));
+                    $syncWarning = "Tabs ({$failedTabs}) could not be parsed";
+                }
             } catch (\Throwable $e) {
                 $syncWarning = $e->getMessage();
                 Log::warning("Could not sync PO sheet during rematch-all: {$syncWarning}");
@@ -406,7 +410,11 @@ class UploadLogController extends Controller
         $syncWarning = null;
         if ($masterConfig !== null) {
             try {
-                $syncService->syncAllTabs($masterConfig, 'apply');
+                $syncResult = $syncService->syncAllTabs($masterConfig, 'apply');
+                if (! empty($syncResult['tab_errors'])) {
+                    $failedTabs = implode(', ', array_keys($syncResult['tab_errors']));
+                    $syncWarning = "Tabs ({$failedTabs}) could not be parsed";
+                }
             } catch (\Throwable $e) {
                 $syncWarning = $e->getMessage();
                 Log::warning("Could not sync PO sheet during single rematch: {$syncWarning}");

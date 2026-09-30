@@ -212,7 +212,7 @@ class PurchaseOrderSheetSyncTest extends TestCase
         $syncService = app(PurchaseOrderSheetSyncService::class);
 
         $range = $syncService->formatRangeWithTab('Purchase Orders KEYSYS');
-        $this->assertSame("'Purchase Orders KEYSYS'!A1:Z50000", $range);
+        $this->assertSame("'Purchase Orders KEYSYS'!A:Z", $range);
 
         $customRange = $syncService->formatRangeWithTab('Purchase Orders BONITA', 'A1:K100');
         $this->assertSame("'Purchase Orders BONITA'!A1:K100", $customRange);
