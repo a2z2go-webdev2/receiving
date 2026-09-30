@@ -62,6 +62,23 @@ class PurchaseOrderSheetSyncService
 
         $ordersSummary = [];
 
+        $allPoNumbers = array_values(array_unique(array_filter(
+            array_column($parsed['orders'], 'po_number_normalized')
+        )));
+
+        $existingSheetPos = empty($allPoNumbers) ? collect() : PoExtraction::query()
+            ->where('source_type', 'google_sheet')
+            ->where('sheet_slug', $config->slug)
+            ->whereIn('po_number_normalized', $allPoNumbers)
+            ->get()
+            ->keyBy('po_number_normalized');
+
+        $existingPdfPos = empty($allPoNumbers) ? collect() : PoExtraction::query()
+            ->where('source_type', '!=', 'google_sheet')
+            ->whereIn('po_number_normalized', $allPoNumbers)
+            ->get()
+            ->keyBy('po_number_normalized');
+
         foreach ($parsed['orders'] as $orderKey => $order) {
             $hasErrors = ! empty($order['validation_errors']);
 
@@ -69,17 +86,11 @@ class PurchaseOrderSheetSyncService
                 $status = 'invalid';
                 $invalidCount++;
             } else {
-                $existingSheetPo = PoExtraction::query()
-                    ->where('source_type', 'google_sheet')
-                    ->where('sheet_slug', $config->slug)
-                    ->where('po_number_normalized', $order['po_number_normalized'])
-                    ->first();
+                $existingSheetPo = $existingSheetPos->get($order['po_number_normalized']);
 
                 if ($existingSheetPo === null) {
                     // Check if another PO extraction (e.g. from PDF) already exists
-                    $existingPdfPo = PoExtraction::query()
-                        ->where('po_number_normalized', $order['po_number_normalized'])
-                        ->first();
+                    $existingPdfPo = $existingPdfPos->get($order['po_number_normalized']);
 
                     if ($existingPdfPo !== null && $existingPdfPo->vendor_name !== null
                         && ! str_contains(strtolower($existingPdfPo->vendor_name), strtolower(substr($order['supplier'], 0, 4)))) {
@@ -151,25 +162,45 @@ class PurchaseOrderSheetSyncService
             $skippedCount = 0;
             $failedCount = 0;
 
+            $targetPoNumbers = array_values(array_unique(array_filter(
+                array_column($preview['orders'], 'po_number_normalized')
+            )));
+
+            $existingPos = empty($targetPoNumbers) ? collect() : PoExtraction::query()
+                ->with('items')
+                ->where('source_type', 'google_sheet')
+                ->where('sheet_slug', $config->slug)
+                ->whereIn('po_number_normalized', $targetPoNumbers)
+                ->get()
+                ->keyBy('po_number_normalized');
+
+            $existingRecords = empty($targetPoNumbers) ? collect() : GoogleSheetSyncRecord::query()
+                ->where('sheet_slug', $config->slug)
+                ->where('record_type', 'purchase_order')
+                ->whereIn('source_key', $targetPoNumbers)
+                ->get()
+                ->keyBy('source_key');
+
             foreach ($preview['orders'] as $orderKey => $order) {
                 if ($orderKeys !== null && ! in_array($order['po_number_normalized'], $orderKeys, true)) {
                     continue;
                 }
 
+                $record = $existingRecords->get($order['po_number_normalized']);
+
                 if ($order['preview_status'] === 'invalid') {
-                    GoogleSheetSyncRecord::query()->updateOrCreate(
-                        [
-                            'sheet_slug' => $config->slug,
-                            'record_type' => 'purchase_order',
-                            'source_key' => $order['po_number_normalized'],
-                        ],
-                        [
-                            'source_hash' => $order['row_hash'],
-                            'raw_data' => $order,
-                            'status' => 'invalid',
-                            'validation_errors' => $order['validation_errors'] ?: ['Invalid PO structure'],
-                        ]
-                    );
+                    if ($record === null) {
+                        $record = new GoogleSheetSyncRecord;
+                        $record->sheet_slug = $config->slug;
+                        $record->record_type = 'purchase_order';
+                        $record->source_key = $order['po_number_normalized'];
+                    }
+                    $record->forceFill([
+                        'source_hash' => $order['row_hash'],
+                        'raw_data' => $order,
+                        'status' => 'invalid',
+                        'validation_errors' => $order['validation_errors'] ?: ['Invalid PO structure'],
+                    ])->save();
                     $failedCount++;
 
                     continue;
@@ -182,11 +213,7 @@ class PurchaseOrderSheetSyncService
                 }
 
                 /** @var PoExtraction|null $poExtraction */
-                $poExtraction = PoExtraction::query()
-                    ->where('source_type', 'google_sheet')
-                    ->where('sheet_slug', $config->slug)
-                    ->where('po_number_normalized', $order['po_number_normalized'])
-                    ->first();
+                $poExtraction = $existingPos->get($order['po_number_normalized']);
 
                 if ($poExtraction === null) {
                     $poExtraction = new PoExtraction;
@@ -218,12 +245,14 @@ class PurchaseOrderSheetSyncService
                     'synced_at' => now(),
                 ])->save();
 
-                // Upsert items preserving existing line identities
+                // Upsert items preserving existing line identities without N+1 queries
+                $existingItems = $poExtraction->relationLoaded('items')
+                    ? $poExtraction->items->keyBy('source_line_id')
+                    : $poExtraction->items()->get()->keyBy('source_line_id');
+
                 foreach ($order['items'] as $itemData) {
                     /** @var PoExtractionItem|null $item */
-                    $item = $poExtraction->items()
-                        ->where('source_line_id', $itemData['source_line_id'])
-                        ->first();
+                    $item = $existingItems->get($itemData['source_line_id']);
 
                     if ($item === null) {
                         $item = new PoExtractionItem;
@@ -245,22 +274,22 @@ class PurchaseOrderSheetSyncService
                     ])->save();
                 }
 
-                GoogleSheetSyncRecord::query()->updateOrCreate(
-                    [
-                        'sheet_slug' => $config->slug,
-                        'record_type' => 'purchase_order',
-                        'source_key' => $order['po_number_normalized'],
-                    ],
-                    [
-                        'source_hash' => $order['row_hash'],
-                        'raw_data' => $order,
-                        'status' => 'synced',
-                        'validation_errors' => null,
-                        'target_type' => PoExtraction::class,
-                        'target_id' => $poExtraction->getKey(),
-                        'synced_at' => now(),
-                    ]
-                );
+                if ($record === null) {
+                    $record = new GoogleSheetSyncRecord;
+                    $record->sheet_slug = $config->slug;
+                    $record->record_type = 'purchase_order';
+                    $record->source_key = $order['po_number_normalized'];
+                }
+
+                $record->forceFill([
+                    'source_hash' => $order['row_hash'],
+                    'raw_data' => $order,
+                    'status' => 'synced',
+                    'validation_errors' => null,
+                    'target_type' => PoExtraction::class,
+                    'target_id' => $poExtraction->getKey(),
+                    'synced_at' => now(),
+                ])->save();
 
                 // Automatically cross-check and link any previously uploaded invoices/receipts waiting for this PO across lanes
                 $this->linker->syncPoExtraction($poExtraction);

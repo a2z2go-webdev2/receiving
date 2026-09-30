@@ -60,8 +60,10 @@ class PurchaseOrderLinker
             return;
         }
 
+        $candidates = $this->normalizer->poIdentifierCandidates($normalizedPoNumber);
+
         AiExtraction::query()
-            ->where('po_number_normalized', $normalizedPoNumber)
+            ->whereIn('po_number_normalized', $candidates)
             ->whereDoesntHave('activePurchaseOrderLink')
             ->orderBy('id')
             ->chunkById(100, function (Collection $extractions): void {
@@ -225,7 +227,7 @@ class PurchaseOrderLinker
         $extractionPoNumber = $this->normalizer->poNumber($this->dataFor($extraction) ?? []);
         $extractionPoNumberNormalized = $this->normalizer->normalizeIdentifier($extractionPoNumber);
         if ($extractionPoNumberNormalized !== null
-            && $extractionPoNumberNormalized !== $poExtraction->po_number_normalized) {
+            && ! $this->normalizer->identifiersMatch($extractionPoNumberNormalized, $poExtraction->po_number_normalized)) {
             throw ValidationException::withMessages([
                 'po_extraction_id' => 'The selected purchase order number does not match this invoice or receipt.',
             ]);
@@ -537,7 +539,7 @@ class PurchaseOrderLinker
         $poNumber = $this->normalizer->poNumber($this->dataFor($extraction) ?? []);
         $normalized = $this->normalizer->normalizeIdentifier($poNumber);
 
-        return $normalized === null || $normalized === $poExtraction->po_number_normalized;
+        return $normalized === null || $this->normalizer->identifiersMatch($normalized, $poExtraction->po_number_normalized);
     }
 
     private function isStandardInvoiceOrReceipt(AiExtraction $extraction): bool

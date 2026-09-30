@@ -245,6 +245,74 @@ it('re-matches a single receive log against purchase orders', function (): void 
         ->and($extraction->activePurchaseOrderLink->poExtraction->po_number)->toBe('716');
 });
 
+it('re-matches invoice with PO prefix like PO# 716 against numeric sheet PO 716', function (): void {
+    [$admin, $upload, $file, $extraction] = adminUploadActionFixture();
+    $data = [
+        'document_type' => 'Invoice',
+        'fields' => [
+            ['label' => 'Company Name', 'value' => 'Symmetryplast Enterprises'],
+            ['label' => 'PO Number', 'value' => 'PO# 716'],
+        ],
+        'items' => [],
+    ];
+    $extraction->forceFill([
+        'raw_extracted_json' => $data,
+        'corrected_json' => $data,
+        'po_number' => 'PO# 716',
+        'po_number_normalized' => 'po716',
+        'po_link_status' => PurchaseOrderLinkStatus::AwaitingPurchaseOrder,
+    ])->save();
+
+    PoExtraction::query()->create([
+        'source_type' => 'google_sheet',
+        'sheet_slug' => 'a2z2go',
+        'po_number' => '716',
+        'po_number_normalized' => '716',
+        'vendor_name' => 'Symmetryplast Enterprises',
+        'status_normalized' => 'confirmed',
+    ]);
+
+    $this->actingAs($admin)
+        ->withSession(['admin.otp_verified_at' => now()->getTimestamp()])
+        ->post(route('admin.uploads.rematch-po', $upload))
+        ->assertRedirect()
+        ->assertSessionHas('status');
+
+    expect($extraction->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and($extraction->activePurchaseOrderLink)->not->toBeNull()
+        ->and($extraction->activePurchaseOrderLink->poExtraction->po_number)->toBe('716');
+});
+
+it('queues background sync when document is awaiting PO and google sheet is configured', function (): void {
+    Queue::fake();
+    [$admin, $upload, $file, $extraction] = adminUploadActionFixture();
+    config(['services.google.purchase_orders_sheet_id' => 'test-sheet-id']);
+
+    $data = [
+        'document_type' => 'Invoice',
+        'fields' => [
+            ['label' => 'Company Name', 'value' => 'Unknown Supplier'],
+            ['label' => 'PO Number', 'value' => '99999'],
+        ],
+        'items' => [],
+    ];
+    $extraction->forceFill([
+        'raw_extracted_json' => $data,
+        'corrected_json' => $data,
+        'po_number' => '99999',
+        'po_number_normalized' => '99999',
+        'po_link_status' => PurchaseOrderLinkStatus::AwaitingPurchaseOrder,
+    ])->save();
+
+    $this->actingAs($admin)
+        ->withSession(['admin.otp_verified_at' => now()->getTimestamp()])
+        ->post(route('admin.uploads.rematch-po', $upload))
+        ->assertRedirect()
+        ->assertSessionHas('status', fn ($msg) => str_contains((string) $msg, 'Google Sheet background sync has been queued'));
+
+    Queue::assertPushed(\App\Jobs\SyncPurchaseOrderSheet::class);
+});
+
 it('includes note in rematch status when google sheet id is not configured', function (): void {
     [$admin, $upload] = adminUploadActionFixture();
     config(['services.google.purchase_orders_sheet_id' => '']);

@@ -60,7 +60,7 @@ class GoogleSheetsApiService
             $url = "https://sheets.googleapis.com/v4/spreadsheets/{$cleanId}/values/{$candidatePath}";
 
             $response = Http::withHeaders($headers)
-                ->timeout(15)
+                ->timeout(6)
                 ->get($url, $params);
 
             if ($response->successful()) {
@@ -108,29 +108,17 @@ class GoogleSheetsApiService
             $candidates[] = "'{$encodedTab}'";
             // 3. Unquoted sheet with coordinates
             $candidates[] = "{$encodedTab}!{$cellPart}";
-            // 4. Unquoted sheet alone
-            $candidates[] = $encodedTab;
-            // 5. Explicit open row range A1:Z
-            $candidates[] = "'{$encodedTab}'!A1:Z";
-            // 6. Full rawurlencode
-            $candidates[] = rawurlencode("'{$escapedTab}'!{$cellPart}");
-            // 7. Raw range rawurlencode
-            $candidates[] = rawurlencode($range);
         } else {
             $clean = trim($range, "'\"");
             $escaped = str_replace("'", "''", $clean);
             $encoded = rawurlencode($escaped);
 
-            // 1. Quoted sheet name
-            $candidates[] = "'{$encoded}'";
-            // 2. Quoted sheet with A:Z coordinates
+            // 1. Quoted sheet with A:Z coordinates
             $candidates[] = "'{$encoded}'!A:Z";
+            // 2. Quoted sheet name
+            $candidates[] = "'{$encoded}'";
             // 3. Unquoted sheet name
             $candidates[] = $encoded;
-            // 4. Full rawurlencode
-            $candidates[] = rawurlencode("'{$escaped}'");
-            // 5. Raw range rawurlencode
-            $candidates[] = rawurlencode($range);
         }
 
         return array_values(array_unique($candidates));

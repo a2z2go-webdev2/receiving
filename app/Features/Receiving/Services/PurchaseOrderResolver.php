@@ -54,9 +54,11 @@ class PurchaseOrderResolver
             return $this->resolveWithoutPoNumber($data);
         }
 
+        $candidates = $this->normalizer->poIdentifierCandidates($normalizedPoNumber);
+
         /** @var Collection<int, PoExtraction> $matchingPos */
         $matchingPos = PoExtraction::query()
-            ->where('po_number_normalized', $normalizedPoNumber)
+            ->whereIn('po_number_normalized', $candidates)
             ->orderByDesc('po_date_value')
             ->orderByDesc('id')
             ->get();

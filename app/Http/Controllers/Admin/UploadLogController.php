@@ -361,7 +361,6 @@ class UploadLogController extends Controller
     public function rematchAllPurchaseOrders(
         Request $request,
         PurchaseOrderLinker $linker,
-        PurchaseOrderSheetSyncService $syncService,
     ): RedirectResponse {
         abort_unless($request->user()?->can('operations.retry'), 403);
 
@@ -369,17 +368,12 @@ class UploadLogController extends Controller
         $syncNote = '';
 
         if ($masterConfig !== null) {
-            try {
-                $tab = ! empty($masterConfig->tab_name) ? $masterConfig->tab_name : 'Purchase Orders';
-                $result = $syncService->applySnapshot($masterConfig, range: $tab);
-                $syncNote = " (Synced {$result['applied_count']} POs from Google Sheet).";
-            } catch (\Throwable $e) {
-                Log::warning("Immediate PO master sync warning: {$e->getMessage()}. Dispatching background sync.");
-                $lock = Cache::lock('sync_po_sheet_queue_lock', 60);
-                if ($lock->get()) {
-                    SyncPurchaseOrderSheet::dispatch('all', null, 'apply');
-                }
-                $syncNote = " Note: Google Sheet sync warning: {$e->getMessage()}";
+            $lock = Cache::lock('sync_po_sheet_queue_lock', 60);
+            if ($lock->get()) {
+                SyncPurchaseOrderSheet::dispatch('all', null, 'apply');
+                $syncNote = ' (Google Sheet background sync queued to refresh POs).';
+            } else {
+                $syncNote = ' (Google Sheet sync is running in background).';
             }
         } else {
             $syncNote = ' Note: Google Sheet ID is not configured in settings or SHEET_ID_PURCHASE_ORDERS.';
@@ -397,19 +391,8 @@ class UploadLogController extends Controller
         ReceivingUpload $upload,
         PurchaseOrderLinker $linker,
         UploadSerialNumber $serials,
-        PurchaseOrderSheetSyncService $syncService,
     ): RedirectResponse {
         abort_unless($request->user()?->can('operations.retry'), 403);
-
-        $masterConfig = $this->resolveMasterSheetConfig();
-        if ($masterConfig !== null) {
-            try {
-                $tab = ! empty($masterConfig->tab_name) ? $masterConfig->tab_name : 'Purchase Orders';
-                $syncService->applySnapshot($masterConfig, range: $tab);
-            } catch (\Throwable $e) {
-                Log::warning("Single upload rematch PO master sync warning: {$e->getMessage()}");
-            }
-        }
 
         $upload->load(['uploadType', 'extractions.upload.uploadType', 'extractions.activePurchaseOrderLink.poExtraction']);
 
@@ -423,9 +406,17 @@ class UploadLogController extends Controller
 
         $serial = $serials->prefix($upload->uploadType).'-'.$serials->number($upload);
 
+        $masterConfig = $this->resolveMasterSheetConfig();
         $message = "Re-matched purchase order for {$serial} ({$linkedCount} document(s) linked).";
+
         if ($masterConfig === null) {
             $message .= ' Note: Google Sheet ID is not configured in settings or SHEET_ID_PURCHASE_ORDERS.';
+        } elseif ($linkedCount < $upload->extractions->count()) {
+            $lock = Cache::lock('sync_po_sheet_queue_lock', 60);
+            if ($lock->get()) {
+                SyncPurchaseOrderSheet::dispatch('all', null, 'apply');
+                $message .= ' Google Sheet background sync has been queued to search for matching POs.';
+            }
         }
 
         return back()->with('status', $message);

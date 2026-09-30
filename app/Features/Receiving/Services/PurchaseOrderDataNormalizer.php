@@ -2,6 +2,7 @@
 
 namespace App\Features\Receiving\Services;
 
+use App\Enums\UploadWorkflow;
 use App\Models\AiExtraction;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -30,6 +31,7 @@ class PurchaseOrderDataNormalizer
             'P.O. #',
             'Purchase Order',
             'Purchase Order #',
+            'Purchase Order Ref',
             'PO',
             'P.O.',
             'PO Ref',
@@ -38,6 +40,11 @@ class PurchaseOrderDataNormalizer
             'Customer PO Number',
             'Buyer PO',
             'Ref PO',
+            'Ref PO No',
+            'PO Num',
+            'P.O. Num',
+            'Order Number',
+            'Order No',
         ]);
     }
 
@@ -95,6 +102,12 @@ class PurchaseOrderDataNormalizer
             'delivery',
             'billing',
             'dr',
+            'si',
+            'ci',
+            'or',
+            'bill',
+            'slip',
+            'waybill',
         ]);
     }
 
@@ -138,6 +151,59 @@ class PurchaseOrderDataNormalizer
         $normalized = preg_replace('/[^a-z0-9]+/i', '', Str::lower($value)) ?? '';
 
         return $normalized === '' ? null : $normalized;
+    }
+
+    /**
+     * Return all candidate normalized identifiers for a PO number.
+     * E.g. "po716" yields ["po716", "716"]
+     * E.g. "716" yields ["716", "po716"]
+     * E.g. "00716" yields ["00716", "716", "po716", "po00716"]
+     *
+     * @return array<int, string>
+     */
+    public function poIdentifierCandidates(?string $value): array
+    {
+        $normalized = $this->normalizeIdentifier($value);
+        if ($normalized === null) {
+            return [];
+        }
+
+        $candidates = [$normalized];
+
+        if (str_starts_with($normalized, 'po') && strlen($normalized) > 2) {
+            $withoutPo = substr($normalized, 2);
+            $candidates[] = $withoutPo;
+            $trimmed = ltrim($withoutPo, '0');
+            if ($trimmed !== '') {
+                $candidates[] = $trimmed;
+                $candidates[] = 'po'.$trimmed;
+            }
+        } else {
+            $candidates[] = 'po'.$normalized;
+            $trimmed = ltrim($normalized, '0');
+            if ($trimmed !== '') {
+                $candidates[] = $trimmed;
+                $candidates[] = 'po'.$trimmed;
+            }
+        }
+
+        return array_values(array_filter(array_unique($candidates), fn (string $c) => $c !== ''));
+    }
+
+    public function identifiersMatch(?string $left, ?string $right): bool
+    {
+        if ($left === null || $right === null) {
+            return false;
+        }
+
+        $leftCandidates = $this->poIdentifierCandidates($left);
+        $rightNorm = $this->normalizeIdentifier($right);
+
+        if ($rightNorm === null) {
+            return false;
+        }
+
+        return in_array($rightNorm, $leftCandidates, true);
     }
 
     public function normalizeDescription(?string $value): ?string

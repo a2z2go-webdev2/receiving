@@ -21,6 +21,15 @@ class CorrectedDataMetadata
         'p.o. number',
         'p.o. no',
         'po #',
+        'p.o. #',
+        'purchase order',
+        'order number',
+        'order no',
+        'po',
+        'p.o.',
+        'customer po',
+        'ref po',
+        'ref po no',
     ];
 
     private const PO_DATE_LABELS = [
