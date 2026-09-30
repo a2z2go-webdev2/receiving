@@ -168,6 +168,18 @@ class PurchaseOrderLinker
             return $this->setExtractionStatus($extraction, PurchaseOrderLinkStatus::NotApplicable);
         }
 
+        $metadata = $this->dataFor($extraction);
+        if ($metadata !== null) {
+            $extractedPoNumber = CorrectedDataMetadata::poNumber($metadata);
+            $normalizedPo = CorrectedDataMetadata::normalizedIdentifier($extractedPoNumber);
+            if ($extraction->po_number !== $extractedPoNumber || $extraction->po_number_normalized !== $normalizedPo) {
+                $extraction->forceFill([
+                    'po_number' => $extractedPoNumber,
+                    'po_number_normalized' => $normalizedPo,
+                ])->save();
+            }
+        }
+
         $activeLink = $extraction->activePurchaseOrderLink;
         if ($activeLink !== null) {
             $po = $activeLink->poExtraction;

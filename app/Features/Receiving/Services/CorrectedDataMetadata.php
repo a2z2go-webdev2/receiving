@@ -23,13 +23,21 @@ class CorrectedDataMetadata
         'po #',
         'p.o. #',
         'purchase order',
+        'purchase order #',
+        'purchase order ref',
         'order number',
         'order no',
         'po',
         'p.o.',
+        'po ref',
+        'po reference',
         'customer po',
+        'customer po number',
+        'buyer po',
         'ref po',
         'ref po no',
+        'po num',
+        'p.o. num',
     ];
 
     private const PO_DATE_LABELS = [
@@ -47,6 +55,20 @@ class CorrectedDataMetadata
     /** @param array<string, mixed>|null $correctedData */
     public static function poNumber(?array $correctedData): ?string
     {
+        if ($correctedData === null) {
+            return null;
+        }
+
+        // Check top-level keys first (mirrors PurchaseOrderDataNormalizer::poNumber)
+        foreach (['po_number', 'poNumber', 'po'] as $key) {
+            $topLevel = $correctedData[$key] ?? null;
+            if (is_scalar($topLevel) && self::hasMeaningfulValue((string) $topLevel)) {
+                $value = trim((string) $topLevel);
+
+                return mb_strlen($value) <= 150 ? $value : null;
+            }
+        }
+
         return self::fieldValue($correctedData, self::PO_NUMBER_LABELS, 150);
     }
 
@@ -106,6 +128,8 @@ class CorrectedDataMetadata
 
     private static function hasMeaningfulValue(string $value): bool
     {
-        return trim($value) !== '' && Str::lower(trim($value)) !== '[see image]';
+        $trimmed = trim($value);
+
+        return $trimmed !== '' && Str::lower($trimmed) !== '[see image]' && $trimmed !== '###';
     }
 }

@@ -5,6 +5,7 @@ use App\Enums\EmailStatus;
 use App\Enums\PurchaseOrderLinkStatus;
 use App\Enums\ReviewStatus;
 use App\Features\Receiving\Jobs\StartAiExtraction;
+use App\Jobs\SyncPurchaseOrderSheet;
 use App\Mail\ReceivingReviewReady;
 use App\Mail\ReceivingUploadReceived;
 use App\Models\AiExtraction;
@@ -310,7 +311,7 @@ it('queues background sync when document is awaiting PO and google sheet is conf
         ->assertRedirect()
         ->assertSessionHas('status', fn ($msg) => str_contains((string) $msg, 'Google Sheet background sync has been queued'));
 
-    Queue::assertPushed(\App\Jobs\SyncPurchaseOrderSheet::class);
+    Queue::assertPushed(SyncPurchaseOrderSheet::class);
 });
 
 it('includes note in rematch status when google sheet id is not configured', function (): void {

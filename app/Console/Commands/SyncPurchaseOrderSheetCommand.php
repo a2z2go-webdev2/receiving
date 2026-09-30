@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Features\Receiving\Services\PurchaseOrderLinker;
 use App\Models\GoogleSheetConfig;
 use App\Services\GoogleSheets\PurchaseOrderSheetSyncService;
 use Illuminate\Console\Command;
@@ -66,6 +67,9 @@ class SyncPurchaseOrderSheetCommand extends Command
                 }
 
                 $result = $syncService->syncAllTabs($masterConfig, $mode);
+                if ($mode === 'apply') {
+                    app(PurchaseOrderLinker::class)->resyncAll();
+                }
                 $this->info("Completed sync for all {$result['total_tabs']} tabs in spreadsheet: {$result['spreadsheet_id']}");
                 foreach ($result['tabs_synced'] as $tab => $data) {
                     $total = $data['total_orders'] ?? 0;
@@ -101,6 +105,7 @@ class SyncPurchaseOrderSheetCommand extends Command
                 $this->info("Preview: {$result['total_orders']} orders ({$result['new_count']} new, {$result['changed_count']} changed, {$result['invalid_count']} invalid).");
             } else {
                 $result = $syncService->applySnapshot($config, range: $range);
+                app(PurchaseOrderLinker::class)->resyncAll();
                 $this->info("Apply: {$result['applied_count']} applied, {$result['skipped_count']} skipped, {$result['failed_count']} failed (Total: {$result['total_orders']}).");
             }
 
