@@ -17,6 +17,7 @@ use App\Features\Receiving\Services\ReviewLinkService;
 use App\Features\Receiving\Services\UploadNotificationSender;
 use App\Features\Receiving\Services\UploadSerialNumber;
 use App\Http\Controllers\Controller;
+use App\Jobs\SyncPurchaseOrderSheet;
 use App\Models\GoogleSheetConfig;
 use App\Models\ReceivingUpload;
 use App\Models\UploadType;
@@ -359,38 +360,23 @@ class UploadLogController extends Controller
     public function rematchAllPurchaseOrders(
         Request $request,
         PurchaseOrderLinker $linker,
-        PurchaseOrderSheetSyncService $syncService,
     ): RedirectResponse {
         abort_unless($request->user()?->can('operations.retry'), 403);
 
         $masterConfig = $this->resolveMasterSheetConfig();
 
-        $sheetSynced = false;
-        $syncWarning = null;
         if ($masterConfig !== null) {
-            try {
-                $syncResult = $syncService->syncAllTabs($masterConfig, 'apply');
-                $sheetSynced = ($syncResult['synced_tabs'] ?? 0) > 0;
-                if (! empty($syncResult['tab_errors'])) {
-                    $failedTabs = implode(', ', array_keys($syncResult['tab_errors']));
-                    $syncWarning = "Tabs ({$failedTabs}) could not be parsed";
-                }
-            } catch (\Throwable $e) {
-                $syncWarning = $e->getMessage();
-                Log::warning("Could not sync PO sheet during rematch-all: {$syncWarning}");
-            }
+            SyncPurchaseOrderSheet::dispatch('all', null, 'apply');
         }
 
         $stats = $linker->resyncAll();
 
-        $message = $sheetSynced
-            ? "Synced PO Google Sheets and re-matched receive logs ({$stats['processed']} documents checked, {$stats['linked']} linked)."
-            : "Re-matched receive logs against purchase orders ({$stats['processed']} documents checked, {$stats['linked']} linked).";
+        $message = "Re-matched receive logs against purchase orders ({$stats['processed']} documents checked, {$stats['linked']} linked).";
 
-        if ($syncWarning !== null) {
-            $message .= " Note: Google Sheet sync warning: {$syncWarning}";
-        } elseif ($masterConfig === null) {
-            $message .= " Note: Google Sheet ID is not configured in settings or SHEET_ID_PURCHASE_ORDERS.";
+        if ($masterConfig !== null) {
+            $message .= ' Google Sheet PO sync has been queued in the background.';
+        } else {
+            $message .= ' Note: Google Sheet ID is not configured in settings or SHEET_ID_PURCHASE_ORDERS.';
         }
 
         return back()->with('status', $message);
@@ -400,25 +386,13 @@ class UploadLogController extends Controller
         Request $request,
         ReceivingUpload $upload,
         PurchaseOrderLinker $linker,
-        PurchaseOrderSheetSyncService $syncService,
         UploadSerialNumber $serials,
     ): RedirectResponse {
         abort_unless($request->user()?->can('operations.retry'), 403);
 
         $masterConfig = $this->resolveMasterSheetConfig();
-
-        $syncWarning = null;
         if ($masterConfig !== null) {
-            try {
-                $syncResult = $syncService->syncAllTabs($masterConfig, 'apply');
-                if (! empty($syncResult['tab_errors'])) {
-                    $failedTabs = implode(', ', array_keys($syncResult['tab_errors']));
-                    $syncWarning = "Tabs ({$failedTabs}) could not be parsed";
-                }
-            } catch (\Throwable $e) {
-                $syncWarning = $e->getMessage();
-                Log::warning("Could not sync PO sheet during single rematch: {$syncWarning}");
-            }
+            SyncPurchaseOrderSheet::dispatch('all', null, 'apply');
         }
 
         $upload->load(['uploadType', 'extractions.upload.uploadType', 'extractions.activePurchaseOrderLink.poExtraction']);
@@ -434,10 +408,10 @@ class UploadLogController extends Controller
         $serial = $serials->prefix($upload->uploadType).'-'.$serials->number($upload);
 
         $message = "Re-matched purchase order for {$serial} ({$linkedCount} document(s) linked).";
-        if ($syncWarning !== null) {
-            $message .= " Note: Google Sheet sync warning: {$syncWarning}";
-        } elseif ($masterConfig === null) {
-            $message .= " Note: Google Sheet ID is not configured in settings or SHEET_ID_PURCHASE_ORDERS.";
+        if ($masterConfig !== null) {
+            $message .= ' Google Sheet PO sync has been queued in the background.';
+        } else {
+            $message .= ' Note: Google Sheet ID is not configured in settings or SHEET_ID_PURCHASE_ORDERS.';
         }
 
         return back()->with('status', $message);

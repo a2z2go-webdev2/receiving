@@ -62,19 +62,13 @@ class GoogleSheetsApiService
 
             // 1. Quoted tab alone (Google Sheets API returns all data on tab)
             $candidates[] = $quotedTab;
-            // 2. Unquoted tab alone
-            $candidates[] = $cleanTab;
-            // 3. Quoted tab with explicit A1 start
-            $candidates[] = "{$quotedTab}!A1:Z";
-            $candidates[] = "{$quotedTab}!A1:Z50000";
-            // 4. Unquoted tab with coordinates
+            // 2. Unquoted tab with coordinates
             $candidates[] = "{$cleanTab}!{$cellPart}";
-            $candidates[] = "{$cleanTab}!A1:Z50000";
+            // 3. Tab with explicit row boundary
+            $candidates[] = "{$quotedTab}!A1:Z50000";
         } else {
             $clean = trim($range, "'\"");
             $candidates[] = "'".str_replace("'", "''", $clean)."'";
-            $candidates[] = "{$clean}!A:Z";
-            $candidates[] = "{$clean}!A1:Z";
         }
 
         $candidates = array_values(array_unique($candidates));
@@ -84,7 +78,7 @@ class GoogleSheetsApiService
             $url = "https://sheets.googleapis.com/v4/spreadsheets/{$cleanId}/values/".rawurlencode($candidateRange);
 
             $response = Http::withHeaders($headers)
-                ->timeout(30)
+                ->timeout(15)
                 ->get($url, $params);
 
             if ($response->successful()) {

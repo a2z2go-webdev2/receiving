@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Features\Receiving\Services\PurchaseOrderLinker;
 use App\Models\GoogleSheetConfig;
 use App\Models\GoogleSheetSyncJob;
 use App\Services\GoogleSheets\PurchaseOrderSheetSyncService;
@@ -81,6 +82,9 @@ class SyncPurchaseOrderSheet implements ShouldQueue
 
             try {
                 $allResults = $syncService->syncAllTabs($masterConfig, $this->mode);
+                if ($this->mode === 'apply') {
+                    app(PurchaseOrderLinker::class)->resyncAll();
+                }
                 $totalTabs = $allResults['total_tabs'];
                 $syncJob->update([
                     'status' => 'completed',
@@ -139,6 +143,7 @@ class SyncPurchaseOrderSheet implements ShouldQueue
                 ]);
             } else {
                 $result = $syncService->applySnapshot($config ?? $slug, range: $this->range);
+                app(PurchaseOrderLinker::class)->resyncAll();
                 $syncJob->update([
                     'status' => 'completed',
                     'completed_at' => CarbonImmutable::now(),
