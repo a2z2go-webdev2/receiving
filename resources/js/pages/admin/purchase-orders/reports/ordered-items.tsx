@@ -189,7 +189,7 @@ export default function OrderedItemsReport({
                 <ReportSection title="Ordered Items">
                     {rows.length === 0 ? (
                         <div className="border border-black p-6 text-center font-serif text-black/60 text-sm italic">
-                            No scheduled items were matched to uploaded POs for this period.
+                            No scheduled items were matched to purchase orders for this period.
                         </div>
                     ) : (
                         <div className="border border-black">

@@ -438,7 +438,7 @@ export default function UploadsIndex({
                             <p className="text-muted-foreground text-xs">
                                 Showing{' '}
                                 {purchaseOrderView
-                                    ? 'purchase order uploads'
+                                    ? 'purchase orders'
                                     : filterValues.upload_type_id === ''
                                       ? 'all receive logs'
                                       : `${uploadTypes.find((t) => String(t.id) === filterValues.upload_type_id)?.name.toLowerCase()} receive logs`}

@@ -53,7 +53,7 @@ type PurchaseOrderCandidate = {
 type PurchaseOrderLink = {
     id: number;
     po_extraction_id: number;
-    po_upload_id: number;
+    po_upload_id: number | null;
     po_number: string | null;
     po_date: string | null;
     vendor_name: string | null;
@@ -664,8 +664,11 @@ function PurchaseOrderPanel({
                 <div className="mt-3 flex flex-col gap-2 rounded-md border p-2 text-xs sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <p className="font-medium">
-                            {extraction.po_link.po_number ||
-                                `PO upload ${extraction.po_link.po_upload_id}`}
+                            {extraction.po_link.po_number
+                                ? `PO ${extraction.po_link.po_number}`
+                                : extraction.po_link.po_upload_id
+                                  ? `PO upload ${extraction.po_link.po_upload_id}`
+                                  : `PO #${extraction.po_link.po_extraction_id}`}
                         </p>
                         <p className="text-muted-foreground">
                             {[
@@ -679,7 +682,13 @@ function PurchaseOrderPanel({
                     </div>
                     <div className="flex items-center gap-2">
                         <Button asChild variant="outline" size="sm">
-                            <a href={`/admin/uploads/${extraction.po_link.po_upload_id}`}>
+                            <a
+                                href={
+                                    extraction.po_link.po_upload_id
+                                        ? `/admin/uploads/${extraction.po_link.po_upload_id}`
+                                        : `/admin/purchase-orders/${extraction.po_link.po_extraction_id}`
+                                }
+                            >
                                 <ExternalLink /> Open PO
                             </a>
                         </Button>
@@ -702,7 +711,7 @@ function PurchaseOrderPanel({
                 <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
                     <Select value={selectedPoId} onValueChange={setSelectedPoId}>
                         <SelectTrigger className="min-w-0 sm:max-w-md">
-                            <SelectValue placeholder="Choose uploaded PO" />
+                            <SelectValue placeholder="Choose purchase order" />
                         </SelectTrigger>
                         <SelectContent>
                             {candidates.map((candidate) => (
@@ -845,17 +854,19 @@ function FriendlyData({
 
 function poLinkHelpText(status: string, extraction: FileExtraction): string {
     if (status === 'linked') {
-        return 'This invoice or receipt is linked to an uploaded purchase order.';
+        return extraction.po_link?.po_number
+            ? `This invoice or receipt is linked to PO ${extraction.po_link.po_number}.`
+            : 'This invoice or receipt is linked to a purchase order.';
     }
 
     if (status === 'missing_po_number') {
-        return 'No PO number was found. Choose an uploaded PO to fill the missing PO details.';
+        return 'No PO number was found. Choose a purchase order to fill the missing PO details.';
     }
 
     if (status === 'awaiting_purchase_order') {
         return extraction.po_number
-            ? `No uploaded PO matches ${extraction.po_number} yet.`
-            : 'No matching uploaded PO is available yet.';
+            ? `No synced purchase order matches ${extraction.po_number} yet. Please ensure the PO Google Sheet is synced.`
+            : 'No matching purchase order from Google Sheets is available yet.';
     }
 
     if (status === 'purchase_order_already_linked') {
@@ -863,7 +874,7 @@ function poLinkHelpText(status: string, extraction: FileExtraction): string {
     }
 
     if (status === 'ready_to_link') {
-        return 'A matching uploaded PO is available for manual linking.';
+        return 'A matching purchase order is available for manual linking.';
     }
 
     return 'PO linking does not apply to this document.';
@@ -871,7 +882,11 @@ function poLinkHelpText(status: string, extraction: FileExtraction): string {
 
 function candidateLabel(candidate: PurchaseOrderCandidate): string {
     return [
-        candidate.po_number || `PO upload ${candidate.upload_id}`,
+        candidate.po_number
+            ? `PO ${candidate.po_number}`
+            : candidate.upload_id
+              ? `PO upload ${candidate.upload_id}`
+              : `PO #${candidate.id}`,
         candidate.po_date || 'No PO date',
         candidate.vendor_name,
     ]

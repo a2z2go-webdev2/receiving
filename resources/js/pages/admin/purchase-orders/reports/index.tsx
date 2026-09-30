@@ -9,7 +9,7 @@ const reports = [
     {
         title: 'Items Ordered',
         description:
-            'Scheduled items found in uploaded POs, with ordered quantity compared to target quantity.',
+            'Scheduled items found in purchase orders, with ordered quantity compared to target quantity.',
         href: '/admin/purchase-orders/reports/ordered-items',
         icon: ClipboardCheck,
     },
