@@ -155,7 +155,7 @@ class UploadLogController extends Controller
                 'uploadTypes' => fn () => UploadType::query()
                     ->when(! $purchaseOrderView, fn (Builder $query) => $query->where('workflow', '!=', UploadWorkflow::PurchaseOrder))
                     ->orderBy('name')
-                    ->get(['id', 'name']),
+                    ->get(['id', 'name', 'slug']),
                 'can_rematch_all_po' => $canRetryOperations && ! $purchaseOrderView,
                 'pageMode' => $purchaseOrderView ? 'purchase_orders' : 'all_uploads',
                 'basePath' => $purchaseOrderView ? '/admin/purchase-orders' : '/admin/uploads',
@@ -465,27 +465,55 @@ class UploadLogController extends Controller
     public function rematchAllPurchaseOrders(
         Request $request,
         PurchaseOrderLinker $linker,
+        PurchaseOrderSheetSyncService $syncService,
     ): RedirectResponse {
         abort_unless($request->user()?->can('operations.retry'), 403);
+
+        $uploadTypeId = $request->input('upload_type_id');
+        /** @var UploadType|null $uploadType */
+        $uploadType = null;
+        if (! empty($uploadTypeId) && is_numeric($uploadTypeId)) {
+            $uploadType = UploadType::query()->find((int) $uploadTypeId);
+        }
 
         $masterConfig = $this->resolveMasterSheetConfig();
         $syncNote = '';
 
-        if ($masterConfig !== null) {
-            $lock = Cache::lock('sync_po_sheet_queue_lock', 60);
-            if ($lock->get()) {
-                SyncPurchaseOrderSheet::dispatch('all', null, 'apply');
-                $syncNote = ' (Google Sheet background sync queued to refresh POs).';
+        if ($uploadType !== null) {
+            $laneSlug = $uploadType->slug;
+            if ($masterConfig !== null) {
+                try {
+                    $syncService->syncLane($laneSlug);
+                    $syncNote = " ({$uploadType->name} PO sheet synced).";
+                } catch (\Throwable $e) {
+                    Log::warning("Direct Google Sheet sync failed for lane {$laneSlug}: {$e->getMessage()}");
+                    SyncPurchaseOrderSheet::dispatch($laneSlug, null, 'apply');
+                    $syncNote = " ({$uploadType->name} PO sheet background sync queued).";
+                }
             } else {
-                $syncNote = ' (Google Sheet sync is running in background).';
+                $syncNote = ' Note: Google Sheet ID is not configured in settings or SHEET_ID_PURCHASE_ORDERS.';
             }
+
+            $stats = $linker->resyncAll((int) $uploadType->getKey());
+
+            $message = "Re-matched receive logs for {$uploadType->name} against purchase orders ({$stats['processed']} documents checked, {$stats['linked']} linked).{$syncNote}";
         } else {
-            $syncNote = ' Note: Google Sheet ID is not configured in settings or SHEET_ID_PURCHASE_ORDERS.';
+            if ($masterConfig !== null) {
+                $lock = Cache::lock('sync_po_sheet_queue_lock', 60);
+                if ($lock->get()) {
+                    SyncPurchaseOrderSheet::dispatch('all', null, 'apply');
+                    $syncNote = ' (Google Sheet background sync queued to refresh POs).';
+                } else {
+                    $syncNote = ' (Google Sheet sync is running in background).';
+                }
+            } else {
+                $syncNote = ' Note: Google Sheet ID is not configured in settings or SHEET_ID_PURCHASE_ORDERS.';
+            }
+
+            $stats = $linker->resyncAll();
+
+            $message = "Re-matched receive logs against purchase orders ({$stats['processed']} documents checked, {$stats['linked']} linked).{$syncNote}";
         }
-
-        $stats = $linker->resyncAll();
-
-        $message = "Re-matched receive logs against purchase orders ({$stats['processed']} documents checked, {$stats['linked']} linked).{$syncNote}";
 
         return back()->with('status', $message);
     }

@@ -849,3 +849,47 @@ it('cross-links purchase order synced from keysys tab to an invoice uploaded und
     expect($invoice->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
         ->and($invoice->activePurchaseOrderLink->poExtraction->po_number)->toBe('9480');
 });
+
+it('resyncs all extractions scoped to a specific upload type', function (): void {
+    $invoiceA = poLinkExtraction('a2z2go', 'invoice-a.pdf', [
+        'document_type' => 'Invoice',
+        'fields' => [
+            ['label' => 'Company Name', 'value' => 'Alpha Co'],
+            ['label' => 'PO Number', 'value' => 'PO-A1'],
+        ],
+        'items' => [],
+    ]);
+
+    $invoiceB = poLinkExtraction('keysys', 'invoice-b.pdf', [
+        'document_type' => 'Invoice',
+        'fields' => [
+            ['label' => 'Company Name', 'value' => 'Beta Co'],
+            ['label' => 'PO Number', 'value' => 'PO-B1'],
+        ],
+        'items' => [],
+    ]);
+
+    poLinkSheetPurchaseOrder('PO-A1', '2026-03-26', 'a2z2go', [
+        ['itemCode' => 'A1', 'productDescription' => 'Item A', 'quantity' => '1', 'unit' => 'pcs'],
+    ]);
+
+    poLinkSheetPurchaseOrder('PO-B1', '2026-03-26', 'keysys', [
+        ['itemCode' => 'B1', 'productDescription' => 'Item B', 'quantity' => '1', 'unit' => 'pcs'],
+    ]);
+
+    $keysysType = UploadType::query()->where('slug', 'keysys')->firstOrFail();
+
+    $stats = app(PurchaseOrderLinker::class)->resyncAll($keysysType->getKey());
+
+    expect($stats['linked'])->toBe(1)
+        ->and($invoiceB->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and($invoiceB->activePurchaseOrderLink)->not->toBeNull()
+        ->and($invoiceA->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::NotApplicable)
+        ->and($invoiceA->activePurchaseOrderLink)->toBeNull();
+
+    // Now resync all - invoiceA should now link
+    $allStats = app(PurchaseOrderLinker::class)->resyncAll();
+    expect($invoiceA->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and($invoiceA->activePurchaseOrderLink)->not->toBeNull()
+        ->and($invoiceA->activePurchaseOrderLink->poExtraction->po_number)->toBe('PO-A1');
+});

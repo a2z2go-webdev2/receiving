@@ -14,6 +14,7 @@ use App\Models\PurchaseOrderDocumentLink;
 use App\Models\PurchaseOrderItemArrival;
 use App\Models\PurchaseOrderItemSchedule;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -76,14 +77,19 @@ class PurchaseOrderLinker
     }
 
     /** @return array{processed: int, linked: int} */
-    public function resyncAll(): array
+    public function resyncAll(?int $uploadTypeId = null): array
     {
         $processed = 0;
         $linked = 0;
 
         AiExtraction::query()
-            ->whereHas('upload.uploadType', fn ($query) => $query
-                ->where('workflow', UploadWorkflow::Standard->value))
+            ->whereHas('upload', function (Builder $query) use ($uploadTypeId): void {
+                if ($uploadTypeId !== null) {
+                    $query->where('upload_type_id', $uploadTypeId);
+                }
+                $query->whereHas('uploadType', fn (Builder $type) => $type
+                    ->where('workflow', UploadWorkflow::Standard->value));
+            })
             ->orderBy('id')
             ->chunkById(100, function (Collection $extractions) use (&$processed, &$linked): void {
                 foreach ($extractions as $extraction) {

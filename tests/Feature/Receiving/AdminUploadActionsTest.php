@@ -208,6 +208,109 @@ it('re-matches all receive logs against purchase orders', function (): void {
         ->and($extraction->activePurchaseOrderLink->poExtraction->po_number)->toBe('716');
 });
 
+it('re-matches receive logs scoped to a specific upload source', function (): void {
+    [$admin, $uploadA, $fileA, $extractionA] = adminUploadActionFixture();
+    $dataA = [
+        'document_type' => 'Invoice',
+        'fields' => [
+            ['label' => 'Company Name', 'value' => 'Symmetryplast Enterprises'],
+            ['label' => 'PO Number', 'value' => '716'],
+        ],
+        'items' => [],
+    ];
+    $extractionA->forceFill([
+        'raw_extracted_json' => $dataA,
+        'corrected_json' => $dataA,
+        'po_number' => '716',
+        'po_number_normalized' => '716',
+        'po_link_status' => PurchaseOrderLinkStatus::AwaitingPurchaseOrder,
+    ])->save();
+
+    $typeB = UploadType::query()->where('slug', 'keysys')->firstOrFail();
+    $uploadB = ReceivingUpload::query()->create([
+        'submission_id' => fake()->uuid(),
+        'upload_type_id' => $typeB->getKey(),
+        'uploader_user_id' => $uploadA->uploader_user_id,
+        'uploader_email' => $uploadA->uploader_email,
+        'latitude' => 14.5995123,
+        'longitude' => 120.9842234,
+        'location_accuracy_meters' => 149,
+        'location_captured_at' => now(),
+        'r2_bucket' => 'test',
+        'r2_prefix' => 'receiving/test',
+        'file_count' => 1,
+        'serial_number' => 888,
+        'email_status' => EmailStatus::Sent,
+        'ai_status' => AiStatus::Extracted,
+        'review_status' => ReviewStatus::Pending,
+        'review_email_status' => EmailStatus::Pending,
+    ]);
+    $fileB = UploadedFile::query()->create([
+        'receiving_upload_id' => $uploadB->getKey(),
+        'original_file_name' => 'document_b.pdf',
+        'sanitized_file_name' => 'document_b.pdf',
+        'stored_file_name' => 'document_b.pdf',
+        'file_extension' => 'pdf',
+        'r2_bucket' => 'test',
+        'r2_object_key' => 'receiving/document_b.pdf',
+        'r2_staging_object_key' => 'staging/document_b.pdf',
+        'original_file_size' => 100,
+        'final_file_size' => 100,
+        'declared_content_type' => 'application/pdf',
+        'content_type' => 'application/pdf',
+        'ai_status' => AiStatus::Extracted,
+    ]);
+    $extractionB = AiExtraction::query()->create([
+        'receiving_upload_id' => $uploadB->getKey(),
+        'uploaded_file_id' => $fileB->getKey(),
+        'document_type' => 'Invoice',
+        'po_number' => '800',
+        'po_number_normalized' => '800',
+        'po_link_status' => PurchaseOrderLinkStatus::AwaitingPurchaseOrder,
+        'raw_extracted_json' => [
+            'document_type' => 'Invoice',
+            'fields' => [
+                ['label' => 'PO Number', 'value' => '800'],
+            ],
+            'items' => [],
+        ],
+    ]);
+
+    PoExtraction::query()->create([
+        'source_type' => 'google_sheet',
+        'sheet_slug' => 'a2z2go',
+        'po_number' => '716',
+        'po_number_normalized' => '716',
+        'vendor_name' => 'Symmetryplast Enterprises',
+        'status_normalized' => 'confirmed',
+    ]);
+
+    PoExtraction::query()->create([
+        'source_type' => 'google_sheet',
+        'sheet_slug' => 'keysys',
+        'po_number' => '800',
+        'po_number_normalized' => '800',
+        'vendor_name' => 'Keysys Supplier',
+        'status_normalized' => 'confirmed',
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->withSession(['admin.otp_verified_at' => now()->getTimestamp()])
+        ->post(route('admin.uploads.rematch-all-po'), [
+            'upload_type_id' => $typeB->getKey(),
+        ]);
+
+    $response->assertRedirect()
+        ->assertSessionHas('status', fn (string $status): bool => str_contains($status, 'KEYSYS INC.'));
+
+    expect($extractionB->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and($extractionB->activePurchaseOrderLink)->not->toBeNull()
+        ->and($extractionB->activePurchaseOrderLink->poExtraction->po_number)->toBe('800');
+
+    expect($extractionA->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::AwaitingPurchaseOrder)
+        ->and($extractionA->activePurchaseOrderLink)->toBeNull();
+});
+
 it('re-matches a single receive log against purchase orders', function (): void {
     [$admin, $upload, $file, $extraction] = adminUploadActionFixture();
     $data = [

@@ -1,5 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
+    ChevronDown,
     ClipboardList,
     Eye,
     Inbox,
@@ -102,7 +103,7 @@ type Filters = {
     review_status: string;
     upload_type_id: string;
 };
-type UploadType = { id: number; name: string };
+type UploadType = { id: number; name: string; slug?: string };
 
 const emptyFilters: Filters = {
     search: '',
@@ -133,19 +134,28 @@ export default function UploadsIndex({
     const [deleting, setDeleting] = useState<Upload | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [rematchingAll, setRematchingAll] = useState(false);
+    const [rematchingTarget, setRematchingTarget] = useState<string | null>(null);
     const [deletingSubmit, setDeletingSubmit] = useState(false);
     const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
     const [filterValues, setFilterValues] = useState(filters);
     const purchaseOrderView = pageMode === 'purchase_orders';
 
-    function handleRematchAll() {
+    const selectedUploadType = uploadTypes.find(
+        (type) => String(type.id) === String(filterValues.upload_type_id),
+    );
+
+    function handleRematch(uploadTypeId?: number | string, sourceName?: string) {
         setRematchingAll(true);
+        setRematchingTarget(sourceName || (uploadTypeId ? String(uploadTypeId) : 'all'));
         router.post(
             '/admin/uploads/rematch-po',
-            {},
+            uploadTypeId ? { upload_type_id: uploadTypeId } : {},
             {
                 preserveScroll: true,
-                onFinish: () => setRematchingAll(false),
+                onFinish: () => {
+                    setRematchingAll(false);
+                    setRematchingTarget(null);
+                },
             },
         );
     }
@@ -242,22 +252,75 @@ export default function UploadsIndex({
                             </Button>
                         </div>
                     ) : can_rematch_all_po ? (
-                        <div className="flex gap-1.5">
+                        <div className="inline-flex items-center -space-x-px rounded-md shadow-xs">
                             <Button
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                onClick={handleRematchAll}
+                                onClick={() =>
+                                    handleRematch(selectedUploadType?.id, selectedUploadType?.name)
+                                }
                                 disabled={rematchingAll}
-                                className="gap-1.5 text-xs"
+                                className="gap-1.5 rounded-r-none text-xs"
                             >
                                 <RefreshCw
                                     className={`size-3.5 ${rematchingAll ? 'animate-spin' : ''}`}
                                 />
                                 {rematchingAll
-                                    ? 'Matching with PO sheets...'
-                                    : 'Match with PO sheets'}
+                                    ? rematchingTarget && rematchingTarget !== 'all'
+                                        ? `Matching ${rematchingTarget}...`
+                                        : 'Matching with PO sheets...'
+                                    : selectedUploadType
+                                      ? `Match ${selectedUploadType.name} PO sheet`
+                                      : 'Match with PO sheets'}
                             </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={rematchingAll}
+                                        className="rounded-l-none border-l-0 px-2 text-xs"
+                                        aria-label="Select upload source to match"
+                                    >
+                                        <ChevronDown className="size-3.5 text-muted-foreground" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56">
+                                    <DropdownMenuLabel className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                        Match by upload source
+                                    </DropdownMenuLabel>
+                                    {uploadTypes.map((type) => {
+                                        const isSelected = selectedUploadType?.id === type.id;
+                                        return (
+                                            <DropdownMenuItem
+                                                key={type.id}
+                                                onClick={() => handleRematch(type.id, type.name)}
+                                                className={`gap-2 text-xs ${isSelected ? 'font-medium' : ''}`}
+                                            >
+                                                <Inbox className="size-3.5 text-muted-foreground" />
+                                                <span className="flex-1 truncate">
+                                                    Match {type.name} only
+                                                </span>
+                                                {isSelected && (
+                                                    <span className="text-[10px] text-muted-foreground">
+                                                        (current)
+                                                    </span>
+                                                )}
+                                            </DropdownMenuItem>
+                                        );
+                                    })}
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                        onClick={() => handleRematch(undefined, 'all')}
+                                        className="gap-2 text-xs font-medium"
+                                    >
+                                        <RefreshCw className="size-3.5 text-muted-foreground" />
+                                        <span>Match all upload types</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                     ) : undefined
                 }
