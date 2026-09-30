@@ -135,6 +135,7 @@ export default function UploadDetail({
     const isPurchaseOrder =
         upload.serial_prefix === 'POSN' ||
         upload.upload_type.toLowerCase().includes('purchase order');
+    const hasInvoiceFile = upload.files.some((f) => isInvoiceType(f.extraction?.document_type));
 
     function destroyUpload() {
         setDeletingSubmit(true);
@@ -266,6 +267,7 @@ export default function UploadDetail({
                                 adminView={adminView}
                                 uploadId={upload.id}
                                 canManagePurchaseOrderLinks={upload.can_manage_purchase_order_links}
+                                hasInvoiceFile={hasInvoiceFile}
                             />
                         ))}
                     </div>
@@ -436,6 +438,7 @@ function FileDetails({
     adminView,
     uploadId,
     canManagePurchaseOrderLinks,
+    hasInvoiceFile,
 }: {
     file: FileRow;
     opening: boolean;
@@ -445,8 +448,16 @@ function FileDetails({
     adminView: boolean;
     uploadId: number;
     canManagePurchaseOrderLinks: boolean;
+    hasInvoiceFile: boolean;
 }) {
     const detailsId = `file-details-${file.id}`;
+    const shouldShowPoBadge =
+        file.extraction &&
+        (hasInvoiceFile
+            ? isInvoiceType(file.extraction.document_type)
+            : isDeliveryReceiptType(file.extraction.document_type));
+    const poBadge =
+        shouldShowPoBadge && file.extraction ? invoicePoBadgeInfo(file.extraction) : null;
 
     return (
         <section className="overflow-hidden rounded-lg border bg-card">
@@ -473,6 +484,7 @@ function FileDetails({
                         value={file.extraction?.document_type}
                         label={`Document: ${file.extraction?.document_type ?? 'Not identified'}`}
                     />
+                    {poBadge && <StatusBadge value={poBadge.status} label={poBadge.label} />}
                     <Button
                         type="button"
                         variant="outline"
@@ -876,4 +888,60 @@ function friendlyLabel(value: string): string {
 
 function friendlyStatus(value: string): string {
     return value.replaceAll('_', ' ').replace(/^\w/, (character) => character.toUpperCase());
+}
+
+function isInvoiceType(docType: string | null | undefined): boolean {
+    if (!docType) return false;
+    return docType.toLowerCase().includes('invoice');
+}
+
+function isDeliveryReceiptType(docType: string | null | undefined): boolean {
+    if (!docType) return false;
+    const normalized = docType.toLowerCase();
+    if (normalized.includes('purchase order') || normalized === 'po') {
+        return false;
+    }
+    return normalized.includes('delivery') || normalized.includes('receipt') || normalized === 'dr';
+}
+
+function formatPoIdentifier(rawPo: string): string {
+    const trimmed = rawPo.trim();
+    if (/^po[\s#:-]*/i.test(trimmed)) {
+        return trimmed;
+    }
+    return `PO ${trimmed}`;
+}
+
+function invoicePoBadgeInfo(extraction: FileExtraction): {
+    status: string;
+    label: string;
+} {
+    const isLinked = extraction.po_link_status === 'linked' || Boolean(extraction.po_link);
+    if (isLinked) {
+        const rawPo =
+            extraction.po_link?.po_number ||
+            extraction.po_number ||
+            (extraction.po_link?.po_upload_id
+                ? `upload #${extraction.po_link.po_upload_id}`
+                : null);
+        const poLabel = rawPo ? formatPoIdentifier(rawPo) : 'PO';
+        return {
+            status: 'linked',
+            label: `Linked: ${poLabel}`,
+        };
+    }
+
+    const rawPo = extraction.po_number?.trim();
+    if (rawPo) {
+        const poLabel = formatPoIdentifier(rawPo);
+        return {
+            status: extraction.po_link_status ?? 'awaiting_purchase_order',
+            label: `Not linked: ${poLabel}`,
+        };
+    }
+
+    return {
+        status: 'missing_po_number',
+        label: 'Not linked: No PO#',
+    };
 }
