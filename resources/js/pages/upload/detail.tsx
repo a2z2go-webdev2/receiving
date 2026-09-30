@@ -11,7 +11,7 @@ import {
     Trash2,
     Unlink,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { FlashMessage } from '@/components/receiving/flash-message';
 import { PageShell } from '@/components/receiving/page-shell';
 import { StatusBadge } from '@/components/receiving/status-badge';
@@ -138,6 +138,17 @@ export default function UploadDetail({
         upload.upload_type.toLowerCase().includes('purchase order');
     const hasInvoiceFile = upload.files.some((f) => isInvoiceType(f.extraction?.document_type));
 
+    const sortedFiles = useMemo(() => {
+        return [...upload.files].sort((a, b) => {
+            const rankA = getDocumentTypeRank(a.extraction?.document_type);
+            const rankB = getDocumentTypeRank(b.extraction?.document_type);
+            if (rankA !== rankB) {
+                return rankA - rankB;
+            }
+            return a.id - b.id;
+        });
+    }, [upload.files]);
+
     function destroyUpload() {
         setDeletingSubmit(true);
         router.delete(`/admin/uploads/${upload.id}`, {
@@ -255,7 +266,7 @@ export default function UploadDetail({
                         </div>
                     </div>
                     <div className="space-y-2">
-                        {upload.files.map((file) => (
+                        {sortedFiles.map((file) => (
                             <FileDetails
                                 key={`${upload.id}-${file.id}`}
                                 file={file}
@@ -942,10 +953,43 @@ function isInvoiceType(docType: string | null | undefined): boolean {
 function isDeliveryReceiptType(docType: string | null | undefined): boolean {
     if (!docType) return false;
     const normalized = docType.toLowerCase();
-    if (normalized.includes('purchase order') || normalized === 'po') {
+    if (
+        normalized.includes('purchase order') ||
+        normalized === 'po' ||
+        normalized.includes('invoice')
+    ) {
         return false;
     }
-    return normalized.includes('delivery') || normalized.includes('receipt') || normalized === 'dr';
+    return (
+        normalized.includes('delivery') ||
+        normalized.includes('receipt') ||
+        normalized === 'dr' ||
+        normalized.includes('waybill') ||
+        normalized.includes('packing')
+    );
+}
+
+function isPurchaseOrderType(docType: string | null | undefined): boolean {
+    if (!docType) return false;
+    const normalized = docType.toLowerCase();
+    return (
+        normalized.includes('purchase order') ||
+        normalized.includes('purchase_order') ||
+        normalized === 'po'
+    );
+}
+
+function getDocumentTypeRank(docType: string | null | undefined): number {
+    if (isInvoiceType(docType)) {
+        return 1;
+    }
+    if (isDeliveryReceiptType(docType)) {
+        return 2;
+    }
+    if (isPurchaseOrderType(docType)) {
+        return 3;
+    }
+    return 4;
 }
 
 function formatPoIdentifier(rawPo: string): string {
