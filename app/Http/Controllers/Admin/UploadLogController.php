@@ -26,6 +26,7 @@ use App\Services\GoogleSheets\PurchaseOrderSheetSyncService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -365,16 +366,24 @@ class UploadLogController extends Controller
 
         $masterConfig = $this->resolveMasterSheetConfig();
 
+        $syncQueued = false;
         if ($masterConfig !== null) {
-            SyncPurchaseOrderSheet::dispatch('all', null, 'apply');
+            // Deduplicate background queue jobs to save Laravel Cloud worker compute
+            $lock = Cache::lock('sync_po_sheet_queue_lock', 60);
+            if ($lock->get()) {
+                SyncPurchaseOrderSheet::dispatch('all', null, 'apply');
+                $syncQueued = true;
+            }
         }
 
         $stats = $linker->resyncAll();
 
         $message = "Re-matched receive logs against purchase orders ({$stats['processed']} documents checked, {$stats['linked']} linked).";
 
-        if ($masterConfig !== null) {
+        if ($syncQueued) {
             $message .= ' Google Sheet PO sync has been queued in the background.';
+        } elseif ($masterConfig !== null) {
+            $message .= ' (A Google Sheet sync is already active or recently queued).';
         } else {
             $message .= ' Note: Google Sheet ID is not configured in settings or SHEET_ID_PURCHASE_ORDERS.';
         }
