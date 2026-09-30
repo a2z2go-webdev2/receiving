@@ -211,6 +211,12 @@ class PurchaseOrderSheetSyncService
                 }
 
                 if ($order['preview_status'] === 'unchanged') {
+                    if ($orderKeys !== null) {
+                        $existingPo = $existingPos->get($order['po_number_normalized']);
+                        if ($existingPo !== null) {
+                            $this->linker->syncPoExtraction($existingPo);
+                        }
+                    }
                     $skippedCount++;
 
                     continue;
@@ -400,6 +406,62 @@ class PurchaseOrderSheetSyncService
     }
 
     /**
+     * Get candidate tab names for a lane in order of preference.
+     *
+     * @return array<int, string>
+     */
+    public function candidateTabNamesForLane(string $laneSlug, ?GoogleSheetConfig $config = null): array
+    {
+        $normalizedSlug = strtolower(trim($laneSlug));
+        $candidates = [];
+
+        if ($config !== null && ! empty($config->tab_name)) {
+            $candidates[] = $config->tab_name;
+        }
+
+        $defaults = match ($normalizedSlug) {
+            'keysys' => [
+                'Purchase Orders - KEYSYS',
+                'Purchase Orders KEYSYS',
+                'KEYSYS - Purchase Orders',
+                'KEYSYS',
+            ],
+            'a2z2go', 'a2z' => [
+                'Purchase Orders A2Z',
+                'Purchase Orders - A2Z',
+                'Purchase Orders - A2Z2GO',
+                'Purchase Orders A2Z2GO',
+                'A2Z',
+            ],
+            'bonita' => [
+                'Purchase Orders BONITA',
+                'Purchase Orders - BONITA',
+                'BONITA - Purchase Orders',
+                'BONITA',
+            ],
+            'pingcon' => [
+                'Purchase Orders',
+                'Purchase Orders - PINGCON',
+                'Purchase Orders PINGCON',
+                'PINGCON',
+            ],
+            default => [
+                "Purchase Orders - {$laneSlug}",
+                "Purchase Orders {$laneSlug}",
+                'Purchase Orders',
+            ],
+        };
+
+        foreach ($defaults as $tab) {
+            if (! in_array($tab, $candidates, true)) {
+                $candidates[] = $tab;
+            }
+        }
+
+        return $candidates;
+    }
+
+    /**
      * Resolve the appropriate sheet tab name for a configuration.
      *
      * @param  array<int, string>|null  $availableTabs
@@ -420,13 +482,9 @@ class PurchaseOrderSheetSyncService
         }
 
         // 3. Fallback to default tab naming conventions
-        return match (strtolower($config->slug)) {
-            'a2z2go', 'a2z' => 'Purchase Orders A2Z',
-            'bonita' => 'Purchase Orders BONITA',
-            'keysys' => 'Purchase Orders KEYSYS',
-            'pingcon' => 'Purchase Orders',
-            default => 'Purchase Orders',
-        };
+        $candidates = $this->candidateTabNamesForLane($config->slug, $config);
+
+        return $candidates[0] ?? 'Purchase Orders';
     }
 
     /**
@@ -537,9 +595,12 @@ class PurchaseOrderSheetSyncService
                 $poTabs = array_values(array_unique([
                     $masterTab,
                     'Purchase Orders',
-                    'Purchase Orders BONITA',
-                    'Purchase Orders A2Z',
+                    'Purchase Orders - KEYSYS',
                     'Purchase Orders KEYSYS',
+                    'Purchase Orders BONITA',
+                    'Purchase Orders - BONITA',
+                    'Purchase Orders A2Z',
+                    'Purchase Orders - A2Z',
                 ]));
             }
         }
@@ -633,46 +694,61 @@ class PurchaseOrderSheetSyncService
             throw new RuntimeException("Spreadsheet ID is not configured for lane '{$laneSlug}'. Set it in Admin Settings or SHEET_ID_PURCHASE_ORDERS in .env.");
         }
 
-        $defaultTab = match (strtolower(trim($laneSlug))) {
-            'a2z2go', 'a2z' => 'Purchase Orders A2Z',
-            'bonita' => 'Purchase Orders BONITA',
-            'keysys' => 'Purchase Orders KEYSYS',
-            'pingcon' => 'Purchase Orders',
-            default => 'Purchase Orders',
-        };
-
-        $tabName = ! empty($config->tab_name) && $config->tab_name !== 'Purchase Orders'
-            ? $config->tab_name
-            : ($laneSlug === 'pingcon' ? 'Purchase Orders' : $defaultTab);
-
-        if ($config->tab_name !== $tabName) {
-            $config->update(['tab_name' => $tabName]);
-        }
-
-        $targetRange = $this->formatRangeWithTab($tabName);
+        $candidateTabs = $this->candidateTabNamesForLane($laneSlug, $config);
+        $tabName = $candidateTabs[0];
 
         $rows = $overrideRows;
         if ($rows === null) {
-            try {
-                $rows = $this->fetchSheetRows($config, $targetRange);
-            } catch (\Throwable $e) {
-                // If default tab failed, try discovering actual tabs from the spreadsheet
+            $lastException = null;
+            $fetched = false;
+
+            // 1. Try each candidate tab name sequentially
+            foreach ($candidateTabs as $candidateTab) {
+                try {
+                    $targetRange = $this->formatRangeWithTab($candidateTab);
+                    $rows = $this->fetchSheetRows($config, $targetRange);
+                    $tabName = $candidateTab;
+                    $fetched = true;
+                    if ($config->tab_name !== $tabName) {
+                        $config->update(['tab_name' => $tabName]);
+                    }
+                    break;
+                } catch (\Throwable $e) {
+                    $lastException = $e;
+                }
+            }
+
+            // 2. If candidates failed, try discovering actual tabs from the spreadsheet
+            if (! $fetched) {
                 try {
                     $tabs = $this->apiService->fetchSpreadsheetTabs($spreadsheetId);
                     $matchedTab = $this->matchTabFromList($laneSlug, $tabs);
-                    if ($matchedTab !== null && $matchedTab !== $tabName) {
+                    if ($matchedTab !== null) {
                         $tabName = $matchedTab;
                         $config->update(['tab_name' => $tabName]);
                         $targetRange = $this->formatRangeWithTab($tabName);
                         $rows = $this->fetchSheetRows($config, $targetRange);
-                    } else {
-                        throw $e;
+                        $fetched = true;
                     }
                 } catch (\Throwable) {
-                    throw $e;
+                    // Suppress and fall through
                 }
             }
+
+            if (! $fetched && $rows === null) {
+                throw $lastException ?? new RuntimeException("Could not fetch rows for lane '{$laneSlug}' from Google Sheets.");
+            }
+        } else {
+            $tabName = ! empty($config->tab_name) && $config->tab_name !== 'Purchase Orders'
+                ? $config->tab_name
+                : ($laneSlug === 'pingcon' ? 'Purchase Orders' : $candidateTabs[0]);
+
+            if ($config->tab_name !== $tabName) {
+                $config->update(['tab_name' => $tabName]);
+            }
         }
+
+        $targetRange = $this->formatRangeWithTab($tabName);
 
         if ($mode === 'preview') {
             $result = $this->preview($config, $targetRange, $rows);

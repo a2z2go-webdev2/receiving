@@ -538,12 +538,43 @@ class UploadLogController extends Controller
 
             try {
                 if (! empty($targetPoNumbers)) {
-                    $syncService->syncLane($laneSlug, targetPoNumbers: $targetPoNumbers);
+                    $syncedLanes = [];
 
-                    $upload->load('extractions.activePurchaseOrderLink.poExtraction');
-                    $hasUnlinked = $upload->extractions->contains(fn ($e) => $e->activePurchaseOrderLink === null);
-                    if ($hasUnlinked && $laneSlug !== 'pingcon') {
-                        $syncService->syncLane('pingcon', targetPoNumbers: $targetPoNumbers);
+                    // 1. Sync the upload's own lane first
+                    try {
+                        $syncService->syncLane($laneSlug, targetPoNumbers: $targetPoNumbers);
+                        $syncedLanes[] = $laneSlug;
+                    } catch (\Throwable $e) {
+                        Log::warning("Direct Google Sheet sync failed for upload {$serial} (lane {$laneSlug}): {$e->getMessage()}");
+                    }
+
+                    $upload->load(['uploadType', 'extractions.upload.uploadType', 'extractions.activePurchaseOrderLink.poExtraction']);
+                    foreach ($upload->extractions as $extraction) {
+                        $linker->syncExtraction($extraction);
+                    }
+
+                    // 2. If any extractions still have unlinked PO numbers, search other PO lanes (keysys, a2z2go, bonita, pingcon)
+                    $poLanes = ['keysys', 'a2z2go', 'bonita', 'pingcon'];
+                    foreach ($poLanes as $otherLane) {
+                        $upload->load('extractions.activePurchaseOrderLink.poExtraction');
+                        $hasUnlinked = $upload->extractions->contains(fn ($e) => $e->activePurchaseOrderLink === null);
+                        if (! $hasUnlinked) {
+                            break;
+                        }
+                        if (in_array($otherLane, $syncedLanes, true)) {
+                            continue;
+                        }
+                        $syncedLanes[] = $otherLane;
+
+                        try {
+                            $syncService->syncLane($otherLane, targetPoNumbers: $targetPoNumbers);
+                            $upload->load(['uploadType', 'extractions.upload.uploadType', 'extractions.activePurchaseOrderLink.poExtraction']);
+                            foreach ($upload->extractions as $extraction) {
+                                $linker->syncExtraction($extraction);
+                            }
+                        } catch (\Throwable $e) {
+                            Log::warning("Cross-lane Google Sheet sync failed for upload {$serial} (lane {$otherLane}): {$e->getMessage()}");
+                        }
                     }
                 } else {
                     $lock = Cache::lock('sync_po_sheet_queue_lock', 60);
@@ -561,8 +592,16 @@ class UploadLogController extends Controller
                         $linkedCount++;
                     }
                 }
+
+                if ($linkedCount < $upload->extractions->count()) {
+                    $lock = Cache::lock('sync_po_sheet_queue_lock', 60);
+                    if ($lock->get()) {
+                        SyncPurchaseOrderSheet::dispatch('all', null, 'apply');
+                        $syncNote .= ' Google Sheet background sync has been queued to search for matching POs.';
+                    }
+                }
             } catch (\Throwable $e) {
-                Log::warning("Direct Google Sheet sync failed for upload {$serial} (lane {$laneSlug}): {$e->getMessage()}");
+                Log::warning("Google Sheet sync failed for upload {$serial}: {$e->getMessage()}");
                 $lock = Cache::lock('sync_po_sheet_queue_lock', 60);
                 if ($lock->get()) {
                     SyncPurchaseOrderSheet::dispatch('all', null, 'apply');

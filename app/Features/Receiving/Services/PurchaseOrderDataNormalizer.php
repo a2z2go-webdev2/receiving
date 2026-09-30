@@ -53,6 +53,12 @@ class PurchaseOrderDataNormalizer
         return $this->fieldValue($data, ['PO Date', 'Purchase Order Date', 'P.O. Date']);
     }
 
+    /** @param array<string, mixed>|null $data */
+    public function invoiceNumber(?array $data): ?string
+    {
+        return CorrectedDataMetadata::invoiceNumber($data);
+    }
+
     /** @param array<string, mixed>|AiExtraction|string|null $dataOrExtraction */
     public function isInvoiceOrReceipt(array|AiExtraction|string|null $dataOrExtraction): bool
     {
@@ -62,11 +68,16 @@ class PurchaseOrderDataNormalizer
                 return true;
             }
 
+            if ($this->hasMeaningfulValue($dataOrExtraction->invoice_number)) {
+                return true;
+            }
+
             $data = $dataOrExtraction->preferredData() ?? $dataOrExtraction->raw_extracted_json;
 
             return is_array($data) && $this->isInvoiceOrReceipt($data);
         }
 
+        $data = null;
         if (is_string($dataOrExtraction)) {
             $documentType = Str::lower(trim($dataOrExtraction));
         } elseif (is_array($dataOrExtraction)) {
@@ -76,12 +87,13 @@ class PurchaseOrderDataNormalizer
                 ?? $dataOrExtraction['doc_type']
                 ?? ''
             )));
+            $data = $dataOrExtraction;
         } else {
             return false;
         }
 
         if ($documentType === '') {
-            return false;
+            return $data !== null && $this->hasMeaningfulValue($this->invoiceNumber($data));
         }
 
         // Explicitly exclude Purchase Order documents (e.g. "purchase order", "purchase_order", "po")
@@ -95,7 +107,7 @@ class PurchaseOrderDataNormalizer
         }
 
         // Only delivery receipt and invoice document types (including common variants and billing receipts)
-        return Str::contains($documentType, [
+        if (Str::contains($documentType, [
             'invoice',
             'receipt',
             'delivery',
@@ -107,7 +119,12 @@ class PurchaseOrderDataNormalizer
             'bill',
             'slip',
             'waybill',
-        ]);
+        ])) {
+            return true;
+        }
+
+        // If classified as 'other' or unrecognized, but contains an explicit invoice number, treat as linkable invoice
+        return $data !== null && $this->hasMeaningfulValue($this->invoiceNumber($data));
     }
 
     /** @param array<string, mixed> $data @return array<string, mixed> */

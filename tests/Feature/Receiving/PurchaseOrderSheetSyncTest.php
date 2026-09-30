@@ -191,7 +191,7 @@ class PurchaseOrderSheetSyncTest extends TestCase
 
         $this->assertSame('Purchase Orders A2Z', $syncService->resolveTabName($a2z));
         $this->assertSame('Purchase Orders BONITA', $syncService->resolveTabName($bonita));
-        $this->assertSame('Purchase Orders KEYSYS', $syncService->resolveTabName($keysys));
+        $this->assertSame('Purchase Orders - KEYSYS', $syncService->resolveTabName($keysys));
         $this->assertSame('Purchase Orders', $syncService->resolveTabName($pingcon));
     }
 

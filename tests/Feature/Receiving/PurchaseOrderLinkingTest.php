@@ -800,3 +800,52 @@ it('syncing a purchase order from pingcon tab automatically links previously wai
     expect($invoice->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
         ->and(PurchaseOrderDocumentLink::query()->where('ai_extraction_id', $invoice->getKey())->sole()->po_extraction_id)->toBe($po->getKey());
 });
+
+it('links an invoice with document_type Other when it contains an explicit invoice number and po number', function (): void {
+    $po = poLinkSheetPurchaseOrder('9480', '2026-03-26', 'keysys', [
+        ['itemCode' => 'W2220', 'productDescription' => 'Item 1', 'quantity' => '1', 'unit' => 'pcs'],
+    ]);
+
+    $invoice = poLinkExtraction('pingcon', 'adecs-invoice.pdf', [
+        'document_type' => 'Other',
+        'fields' => [
+            ['label' => 'Company Name', 'value' => 'ADECS INTERNATIONAL CORP.'],
+            ['label' => 'Invoice Number', 'value' => '485025'],
+            ['label' => 'PO Number', 'value' => '9480'],
+            ['label' => 'Gross', 'value' => '3,650.00'],
+        ],
+        'items' => [
+            ['itemCode' => 'W2220', 'description' => 'Item 1', 'quantity' => '1'],
+        ],
+    ]);
+
+    app(PurchaseOrderLinker::class)->syncExtraction($invoice);
+
+    expect($invoice->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and($invoice->activePurchaseOrderLink)->not->toBeNull()
+        ->and($invoice->activePurchaseOrderLink->poExtraction->po_number)->toBe('9480');
+});
+
+it('cross-links purchase order synced from keysys tab to an invoice uploaded under another lane', function (): void {
+    $invoice = poLinkExtraction('pingcon', 'adecs-waiting.pdf', [
+        'document_type' => 'Invoice',
+        'fields' => [
+            ['label' => 'Company Name', 'value' => 'ADECS INTERNATIONAL CORP.'],
+            ['label' => 'PO Number', 'value' => '9480'],
+        ],
+        'items' => [],
+    ]);
+
+    app(PurchaseOrderLinker::class)->syncExtraction($invoice);
+    expect($invoice->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::AwaitingPurchaseOrder);
+
+    // Sync PO from keysys tab
+    $po = poLinkSheetPurchaseOrder('9480', '2026-03-26', 'keysys', [
+        ['itemCode' => 'W2220', 'productDescription' => 'Item 1', 'quantity' => '1', 'unit' => 'pcs'],
+    ]);
+
+    app(PurchaseOrderLinker::class)->syncPoExtraction($po);
+
+    expect($invoice->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and($invoice->activePurchaseOrderLink->poExtraction->po_number)->toBe('9480');
+});
