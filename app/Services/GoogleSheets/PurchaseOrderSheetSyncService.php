@@ -287,6 +287,10 @@ class PurchaseOrderSheetSyncService
     private function resolveConfig(GoogleSheetConfig|string $configOrSlug): GoogleSheetConfig
     {
         if ($configOrSlug instanceof GoogleSheetConfig) {
+            if (empty($configOrSlug->spreadsheet_id) && $envId = config('services.google.purchase_orders_sheet_id')) {
+                $configOrSlug->update(['spreadsheet_id' => $envId]);
+            }
+
             return $configOrSlug;
         }
 
@@ -304,6 +308,31 @@ class PurchaseOrderSheetSyncService
         }
 
         return $config;
+    }
+
+    /**
+     * Determine whether a spreadsheet tab represents a Purchase Order sheet.
+     * Excludes Sales Orders, delivery receipts, summaries, and other non-PO sheets.
+     */
+    public function isPurchaseOrderTab(string $tabName): bool
+    {
+        $lower = strtolower(trim($tabName));
+
+        if (
+            str_contains($lower, 'sales order')
+            || str_contains($lower, 'sales r')
+            || str_contains($lower, 'so ')
+            || str_ends_with($lower, ' so')
+            || str_contains($lower, 'delivery receipt')
+            || str_contains($lower, 'inventory')
+        ) {
+            return false;
+        }
+
+        return str_contains($lower, 'purchase order')
+            || str_contains($lower, 'purchase_order')
+            || str_contains($lower, 'po')
+            || $lower === 'pos';
     }
 
     /**
@@ -341,6 +370,10 @@ class PurchaseOrderSheetSyncService
      */
     public function resolveSlugFromTabName(string $tabName): string
     {
+        if (! $this->isPurchaseOrderTab($tabName)) {
+            return Str::slug($tabName);
+        }
+
         $lower = strtolower(trim($tabName));
 
         if (str_contains($lower, 'a2z')) {
@@ -408,8 +441,10 @@ class PurchaseOrderSheetSyncService
             Log::warning("Could not fetch tab list for spreadsheet {$config->spreadsheet_id}: {$e->getMessage()}. Using standard tabs.");
         }
 
-        if (empty($tabs)) {
-            $tabs = [
+        $poTabs = array_values(array_filter($tabs, fn (string $t) => $this->isPurchaseOrderTab($t)));
+
+        if (empty($poTabs)) {
+            $poTabs = [
                 'Purchase Orders',
                 'Purchase Orders BONITA',
                 'Purchase Orders A2Z',
@@ -419,7 +454,7 @@ class PurchaseOrderSheetSyncService
 
         $results = [];
 
-        foreach ($tabs as $tabName) {
+        foreach ($poTabs as $tabName) {
             $slug = $this->resolveSlugFromTabName($tabName);
 
             /** @var GoogleSheetConfig $targetConfig */
@@ -451,7 +486,7 @@ class PurchaseOrderSheetSyncService
 
         return [
             'spreadsheet_id' => $config->spreadsheet_id,
-            'total_tabs' => count($tabs),
+            'total_tabs' => count($poTabs),
             'tabs_synced' => $results,
         ];
     }
@@ -484,8 +519,9 @@ class PurchaseOrderSheetSyncService
     private function matchTabFromList(string $slug, array $tabs): ?string
     {
         $normalizedSlug = strtolower(trim($slug));
+        $poTabs = array_values(array_filter($tabs, fn (string $t) => $this->isPurchaseOrderTab($t)));
 
-        foreach ($tabs as $tab) {
+        foreach ($poTabs as $tab) {
             if (strtolower(trim($tab)) === $normalizedSlug) {
                 return $tab;
             }
@@ -499,14 +535,14 @@ class PurchaseOrderSheetSyncService
             default => $normalizedSlug,
         };
 
-        foreach ($tabs as $tab) {
+        foreach ($poTabs as $tab) {
             if (str_contains(strtolower($tab), $keyword)) {
                 return $tab;
             }
         }
 
         if ($normalizedSlug === 'pingcon') {
-            foreach ($tabs as $tab) {
+            foreach ($poTabs as $tab) {
                 if (strtolower(trim($tab)) === 'purchase orders') {
                     return $tab;
                 }

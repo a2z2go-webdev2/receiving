@@ -31,8 +31,22 @@ class SyncPurchaseOrderSheetCommand extends Command
                     ->where('spreadsheet_id', '!=', '')
                     ->first();
 
+                if ($masterConfig === null && $envSheetId = config('services.google.purchase_orders_sheet_id')) {
+                    $masterConfig = GoogleSheetConfig::query()->firstOrCreate(
+                        ['slug' => 'bonita'],
+                        [
+                            'name' => 'BONITA',
+                            'sheet_type' => 'purchase_order',
+                            'spreadsheet_id' => $envSheetId,
+                        ]
+                    );
+                    if (empty($masterConfig->spreadsheet_id)) {
+                        $masterConfig->update(['spreadsheet_id' => $envSheetId]);
+                    }
+                }
+
                 if ($masterConfig === null) {
-                    $this->error('No GoogleSheetConfig found with a configured spreadsheet_id.');
+                    $this->error('No GoogleSheetConfig found with a configured spreadsheet_id and SHEET_ID_PURCHASE_ORDERS is not set.');
 
                     return Command::FAILURE;
                 }
@@ -49,6 +63,19 @@ class SyncPurchaseOrderSheetCommand extends Command
             }
 
             $config = GoogleSheetConfig::query()->where('slug', $target)->first();
+            if ($config === null && $envSheetId = config('services.google.purchase_orders_sheet_id')) {
+                $config = GoogleSheetConfig::query()->firstOrCreate(
+                    ['slug' => $target],
+                    [
+                        'name' => ucfirst($target),
+                        'sheet_type' => 'purchase_order',
+                        'spreadsheet_id' => $envSheetId,
+                    ]
+                );
+            }
+            if ($config !== null && empty($config->spreadsheet_id) && $envSheetId = config('services.google.purchase_orders_sheet_id')) {
+                $config->update(['spreadsheet_id' => $envSheetId]);
+            }
             if ($config === null) {
                 $this->error("Sheet configuration not found for slug '{$target}'.");
 

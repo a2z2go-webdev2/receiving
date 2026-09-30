@@ -232,5 +232,48 @@ class PurchaseOrderSheetSyncTest extends TestCase
         $this->assertSame('keysys', $syncService->resolveSlugFromTabName('Purchase Orders KEYSYS'));
         $this->assertSame('pingcon', $syncService->resolveSlugFromTabName('Purchase Orders'));
         $this->assertSame('pingcon', $syncService->resolveSlugFromTabName('Purchase Orders PINGCON'));
+
+        // Non-PO tabs like Sales Orders must not map to PO lane slugs
+        $this->assertSame('bonita-sales-order', $syncService->resolveSlugFromTabName('BONITA SALES ORDER'));
+        $this->assertSame('a2z2go-sales-order', $syncService->resolveSlugFromTabName('A2Z2GO SALES ORDER'));
+        $this->assertSame('keysys-sales-order', $syncService->resolveSlugFromTabName('KEYSYS SALES ORDER'));
+        $this->assertSame('pingcon-sales-order', $syncService->resolveSlugFromTabName('PINGCON SALES ORDER'));
+        $this->assertSame('sales-report', $syncService->resolveSlugFromTabName('Sales Report'));
+    }
+
+    public function test_is_purchase_order_tab_identifies_po_tabs_and_excludes_sales_orders(): void
+    {
+        /** @var PurchaseOrderSheetSyncService $syncService */
+        $syncService = app(PurchaseOrderSheetSyncService::class);
+
+        $this->assertTrue($syncService->isPurchaseOrderTab('Purchase Orders'));
+        $this->assertTrue($syncService->isPurchaseOrderTab('Purchase Orders BONITA'));
+        $this->assertTrue($syncService->isPurchaseOrderTab('Purchase Orders A2Z'));
+        $this->assertTrue($syncService->isPurchaseOrderTab('Purchase Orders KEYSYS'));
+        $this->assertTrue($syncService->isPurchaseOrderTab('PO List'));
+
+        $this->assertFalse($syncService->isPurchaseOrderTab('BONITA SALES ORDER'));
+        $this->assertFalse($syncService->isPurchaseOrderTab('A2Z2GO SALES ORDER'));
+        $this->assertFalse($syncService->isPurchaseOrderTab('KEYSYS SALES ORDER'));
+        $this->assertFalse($syncService->isPurchaseOrderTab('PINGCON SALES ORDER'));
+        $this->assertFalse($syncService->isPurchaseOrderTab('Sales Report'));
+        $this->assertFalse($syncService->isPurchaseOrderTab('Delivery Receipts'));
+    }
+
+    public function test_resolve_tab_name_ignores_sales_order_tabs(): void
+    {
+        /** @var PurchaseOrderSheetSyncService $syncService */
+        $syncService = app(PurchaseOrderSheetSyncService::class);
+
+        $config = new GoogleSheetConfig(['slug' => 'bonita']);
+
+        $allTabs = [
+            'BONITA SALES ORDER',
+            'Purchase Orders BONITA',
+            'Sales Report',
+        ];
+
+        // Must match 'Purchase Orders BONITA', NOT 'BONITA SALES ORDER' even if it appears first
+        $this->assertSame('Purchase Orders BONITA', $syncService->resolveTabName($config, $allTabs));
     }
 }

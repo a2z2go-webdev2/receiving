@@ -363,18 +363,17 @@ class UploadLogController extends Controller
     ): RedirectResponse {
         abort_unless($request->user()?->can('operations.retry'), 403);
 
-        $masterConfig = GoogleSheetConfig::query()
-            ->whereNotNull('spreadsheet_id')
-            ->where('spreadsheet_id', '!=', '')
-            ->first();
+        $masterConfig = $this->resolveMasterSheetConfig();
 
         $sheetSynced = false;
+        $syncWarning = null;
         if ($masterConfig !== null) {
             try {
                 $syncService->syncAllTabs($masterConfig, 'apply');
                 $sheetSynced = true;
             } catch (\Throwable $e) {
-                Log::warning("Could not sync PO sheet during rematch-all: {$e->getMessage()}");
+                $syncWarning = $e->getMessage();
+                Log::warning("Could not sync PO sheet during rematch-all: {$syncWarning}");
             }
         }
 
@@ -383,6 +382,12 @@ class UploadLogController extends Controller
         $message = $sheetSynced
             ? "Synced PO Google Sheets and re-matched receive logs ({$stats['processed']} documents checked, {$stats['linked']} linked)."
             : "Re-matched receive logs against purchase orders ({$stats['processed']} documents checked, {$stats['linked']} linked).";
+
+        if ($syncWarning !== null) {
+            $message .= " Note: Google Sheet sync warning: {$syncWarning}";
+        } elseif ($masterConfig === null) {
+            $message .= " Note: Google Sheet ID is not configured in settings or SHEET_ID_PURCHASE_ORDERS.";
+        }
 
         return back()->with('status', $message);
     }
@@ -396,16 +401,15 @@ class UploadLogController extends Controller
     ): RedirectResponse {
         abort_unless($request->user()?->can('operations.retry'), 403);
 
-        $masterConfig = GoogleSheetConfig::query()
-            ->whereNotNull('spreadsheet_id')
-            ->where('spreadsheet_id', '!=', '')
-            ->first();
+        $masterConfig = $this->resolveMasterSheetConfig();
 
+        $syncWarning = null;
         if ($masterConfig !== null) {
             try {
                 $syncService->syncAllTabs($masterConfig, 'apply');
             } catch (\Throwable $e) {
-                Log::warning("Could not sync PO sheet during single rematch: {$e->getMessage()}");
+                $syncWarning = $e->getMessage();
+                Log::warning("Could not sync PO sheet during single rematch: {$syncWarning}");
             }
         }
 
@@ -421,7 +425,46 @@ class UploadLogController extends Controller
 
         $serial = $serials->prefix($upload->uploadType).'-'.$serials->number($upload);
 
-        return back()->with('status', "Re-matched purchase order for {$serial} ({$linkedCount} document(s) linked).");
+        $message = "Re-matched purchase order for {$serial} ({$linkedCount} document(s) linked).";
+        if ($syncWarning !== null) {
+            $message .= " Note: Google Sheet sync warning: {$syncWarning}";
+        } elseif ($masterConfig === null) {
+            $message .= " Note: Google Sheet ID is not configured in settings or SHEET_ID_PURCHASE_ORDERS.";
+        }
+
+        return back()->with('status', $message);
+    }
+
+    private function resolveMasterSheetConfig(): ?GoogleSheetConfig
+    {
+        $config = GoogleSheetConfig::query()
+            ->whereNotNull('spreadsheet_id')
+            ->where('spreadsheet_id', '!=', '')
+            ->first();
+
+        if ($config !== null) {
+            return $config;
+        }
+
+        $envSheetId = config('services.google.purchase_orders_sheet_id');
+        if (! empty($envSheetId)) {
+            $config = GoogleSheetConfig::query()->firstOrCreate(
+                ['slug' => 'bonita'],
+                [
+                    'name' => 'BONITA',
+                    'sheet_type' => 'purchase_order',
+                    'spreadsheet_id' => $envSheetId,
+                ]
+            );
+
+            if (empty($config->spreadsheet_id)) {
+                $config->update(['spreadsheet_id' => $envSheetId]);
+            }
+
+            return $config;
+        }
+
+        return null;
     }
 
     private function resolvePurchaseOrderSerialId(

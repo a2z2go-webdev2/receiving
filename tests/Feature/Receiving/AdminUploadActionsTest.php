@@ -8,6 +8,7 @@ use App\Features\Receiving\Jobs\StartAiExtraction;
 use App\Mail\ReceivingReviewReady;
 use App\Mail\ReceivingUploadReceived;
 use App\Models\AiExtraction;
+use App\Models\GoogleSheetConfig;
 use App\Models\PoExtraction;
 use App\Models\ReceivingUpload;
 use App\Models\ReviewLink;
@@ -242,6 +243,18 @@ it('re-matches a single receive log against purchase orders', function (): void 
     expect($extraction->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
         ->and($extraction->activePurchaseOrderLink)->not->toBeNull()
         ->and($extraction->activePurchaseOrderLink->poExtraction->po_number)->toBe('716');
+});
+
+it('includes note in rematch status when google sheet id is not configured', function (): void {
+    [$admin, $upload] = adminUploadActionFixture();
+    config(['services.google.purchase_orders_sheet_id' => '']);
+    GoogleSheetConfig::query()->update(['spreadsheet_id' => '']);
+
+    $this->actingAs($admin)
+        ->withSession(['admin.otp_verified_at' => now()->getTimestamp()])
+        ->post(route('admin.uploads.rematch-po', $upload))
+        ->assertRedirect()
+        ->assertSessionHas('status', fn ($msg) => str_contains((string) $msg, 'Google Sheet ID is not configured'));
 });
 
 /** @return array{User, ReceivingUpload, UploadedFile, AiExtraction, ReviewLink} */
