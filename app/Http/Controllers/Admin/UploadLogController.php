@@ -22,10 +22,12 @@ use App\Models\GoogleSheetConfig;
 use App\Models\ReceivingUpload;
 use App\Models\UploadType;
 use App\Models\User;
+use App\Services\GoogleSheets\PurchaseOrderSheetSyncService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -389,6 +391,7 @@ class UploadLogController extends Controller
         ReceivingUpload $upload,
         PurchaseOrderLinker $linker,
         UploadSerialNumber $serials,
+        PurchaseOrderSheetSyncService $syncService,
     ): RedirectResponse {
         abort_unless($request->user()?->can('operations.retry'), 403);
 
@@ -403,19 +406,49 @@ class UploadLogController extends Controller
         }
 
         $serial = $serials->prefix($upload->uploadType).'-'.$serials->number($upload);
-
         $masterConfig = $this->resolveMasterSheetConfig();
-        $message = "Re-matched purchase order for {$serial} ({$linkedCount} document(s) linked).";
+        $syncNote = '';
 
-        if ($masterConfig === null) {
-            $message .= ' Note: Google Sheet ID is not configured in settings or SHEET_ID_PURCHASE_ORDERS.';
-        } elseif ($linkedCount < $upload->extractions->count()) {
-            $lock = Cache::lock('sync_po_sheet_queue_lock', 60);
-            if ($lock->get()) {
-                SyncPurchaseOrderSheet::dispatch('all', null, 'apply');
-                $message .= ' Google Sheet background sync has been queued to search for matching POs.';
+        if ($linkedCount < $upload->extractions->count() && $masterConfig !== null) {
+            $laneSlug = $upload->uploadType->slug ?? 'pingcon';
+            try {
+                $syncService->syncLane($laneSlug);
+
+                $upload->load('extractions.activePurchaseOrderLink.poExtraction');
+                $hasUnlinked = $upload->extractions->contains(fn ($e) => $e->activePurchaseOrderLink === null);
+                if ($hasUnlinked && $laneSlug !== 'pingcon') {
+                    $syncService->syncLane('pingcon');
+                }
+
+                $upload->load(['uploadType', 'extractions.upload.uploadType', 'extractions.activePurchaseOrderLink.poExtraction']);
+                $linkedCount = 0;
+                foreach ($upload->extractions as $extraction) {
+                    $status = $linker->syncExtraction($extraction);
+                    if ($status === PurchaseOrderLinkStatus::Linked) {
+                        $linkedCount++;
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning("Direct Google Sheet sync failed for upload {$serial} (lane {$laneSlug}): {$e->getMessage()}");
+                $lock = Cache::lock('sync_po_sheet_queue_lock', 60);
+                if ($lock->get()) {
+                    SyncPurchaseOrderSheet::dispatch('all', null, 'apply');
+                    $syncNote .= ' Google Sheet background sync has been queued to search for matching POs.';
+                }
             }
+        } elseif ($masterConfig === null) {
+            $syncNote = ' Note: Google Sheet ID is not configured in settings or SHEET_ID_PURCHASE_ORDERS.';
         }
+
+        $upload->load('extractions.activePurchaseOrderLink.poExtraction');
+        $linkedPoNumbers = $upload->extractions
+            ->map(fn ($e) => $e->activePurchaseOrderLink?->poExtraction?->po_number)
+            ->filter()
+            ->unique()
+            ->values();
+
+        $poList = $linkedPoNumbers->isNotEmpty() ? ' to PO '.implode(', ', $linkedPoNumbers->all()) : '';
+        $message = "Re-matched purchase order for {$serial} ({$linkedCount} document(s) linked{$poList}).{$syncNote}";
 
         return back()->with('status', $message);
     }

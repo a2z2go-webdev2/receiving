@@ -316,6 +316,21 @@ class PurchaseOrderSheetSyncService
     private function resolveConfig(GoogleSheetConfig|string $configOrSlug): GoogleSheetConfig
     {
         $envPoSheetId = config('services.google.purchase_orders_sheet_id');
+        if (empty($envPoSheetId)) {
+            $master = GoogleSheetConfig::query()
+                ->where('sheet_type', 'purchase_order')
+                ->whereNotNull('spreadsheet_id')
+                ->where('spreadsheet_id', '!=', '')
+                ->first();
+            if ($master === null) {
+                $master = GoogleSheetConfig::query()
+                    ->whereIn('slug', ['purchase_orders', 'purchase-orders', 'po', 'po_master'])
+                    ->whereNotNull('spreadsheet_id')
+                    ->where('spreadsheet_id', '!=', '')
+                    ->first();
+            }
+            $envPoSheetId = $master?->spreadsheet_id;
+        }
 
         if ($configOrSlug instanceof GoogleSheetConfig) {
             if (! empty($envPoSheetId) && ($configOrSlug->sheet_type !== 'purchase_order' || empty($configOrSlug->spreadsheet_id))) {
@@ -401,8 +416,8 @@ class PurchaseOrderSheetSyncService
         }
 
         // 3. Fallback to default tab naming conventions
-        return match ($config->slug) {
-            'a2z2go' => 'Purchase Orders A2Z',
+        return match (strtolower($config->slug)) {
+            'a2z2go', 'a2z' => 'Purchase Orders A2Z',
             'bonita' => 'Purchase Orders BONITA',
             'keysys' => 'Purchase Orders KEYSYS',
             'pingcon' => 'Purchase Orders',
@@ -584,6 +599,87 @@ class PurchaseOrderSheetSyncService
             'tabs_synced' => $results,
             'tab_errors' => $tabErrors,
         ];
+    }
+
+    /**
+     * Synchronize purchase orders for a specific lane directly from Google Sheets.
+     *
+     * @param  array<int, mixed>|null  $overrideRows
+     * @return array{
+     *     slug: string,
+     *     tab_name: string,
+     *     snapshot_hash: string,
+     *     applied_count: int,
+     *     skipped_count: int,
+     *     failed_count: int,
+     *     total_orders: int
+     * }
+     */
+    public function syncLane(
+        string $laneSlug,
+        string $mode = 'apply',
+        ?array $overrideRows = null,
+    ): array {
+        $config = $this->resolveConfig($laneSlug);
+        $envPoSheetId = config('services.google.purchase_orders_sheet_id');
+        $spreadsheetId = ! empty($envPoSheetId) ? $envPoSheetId : $config->spreadsheet_id;
+
+        if (empty($spreadsheetId)) {
+            throw new RuntimeException("Spreadsheet ID is not configured for lane '{$laneSlug}'. Set it in Admin Settings or SHEET_ID_PURCHASE_ORDERS in .env.");
+        }
+
+        $defaultTab = match (strtolower(trim($laneSlug))) {
+            'a2z2go', 'a2z' => 'Purchase Orders A2Z',
+            'bonita' => 'Purchase Orders BONITA',
+            'keysys' => 'Purchase Orders KEYSYS',
+            'pingcon' => 'Purchase Orders',
+            default => 'Purchase Orders',
+        };
+
+        $tabName = ! empty($config->tab_name) && $config->tab_name !== 'Purchase Orders'
+            ? $config->tab_name
+            : ($laneSlug === 'pingcon' ? 'Purchase Orders' : $defaultTab);
+
+        if ($config->tab_name !== $tabName) {
+            $config->update(['tab_name' => $tabName]);
+        }
+
+        $targetRange = $this->formatRangeWithTab($tabName);
+
+        $rows = $overrideRows;
+        if ($rows === null) {
+            try {
+                $rows = $this->fetchSheetRows($config, $targetRange);
+            } catch (\Throwable $e) {
+                // If default tab failed, try discovering actual tabs from the spreadsheet
+                try {
+                    $tabs = $this->apiService->fetchSpreadsheetTabs($spreadsheetId);
+                    $matchedTab = $this->matchTabFromList($laneSlug, $tabs);
+                    if ($matchedTab !== null && $matchedTab !== $tabName) {
+                        $tabName = $matchedTab;
+                        $config->update(['tab_name' => $tabName]);
+                        $targetRange = $this->formatRangeWithTab($tabName);
+                        $rows = $this->fetchSheetRows($config, $targetRange);
+                    } else {
+                        throw $e;
+                    }
+                } catch (\Throwable) {
+                    throw $e;
+                }
+            }
+        }
+
+        if ($mode === 'preview') {
+            $result = $this->preview($config, $targetRange, $rows);
+        } else {
+            $result = $this->applySnapshot($config, range: $targetRange, overrideRows: $rows);
+            $this->linker->resyncAll();
+        }
+
+        return array_merge($result, [
+            'slug' => $config->slug,
+            'tab_name' => $tabName,
+        ]);
     }
 
     /**

@@ -322,4 +322,26 @@ class PurchaseOrderSheetSyncTest extends TestCase
         $this->assertCount(2, $values);
         $this->assertSame('PO-999', $values[1][0]);
     }
+
+    public function test_sync_lane_synchronizes_specific_lane_and_resyncs_links(): void
+    {
+        config(['services.google.purchase_orders_sheet_id' => 'mock-spreadsheet-id']);
+
+        /** @var PurchaseOrderSheetSyncService $syncService */
+        $syncService = app(PurchaseOrderSheetSyncService::class);
+
+        $result = $syncService->syncLane('bonita', overrideRows: $this->sampleRows);
+
+        $this->assertSame('bonita', $result['slug']);
+        $this->assertSame('Purchase Orders BONITA', $result['tab_name']);
+        $this->assertSame(2, $result['applied_count']);
+
+        $po = PoExtraction::query()
+            ->where('po_number', 'PO-2026-001')
+            ->where('sheet_slug', 'bonita')
+            ->first();
+
+        $this->assertNotNull($po);
+        $this->assertSame('bonita', $po->sheet_slug);
+    }
 }

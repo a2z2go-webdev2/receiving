@@ -314,6 +314,46 @@ it('queues background sync when document is awaiting PO and google sheet is conf
     Queue::assertPushed(SyncPurchaseOrderSheet::class);
 });
 
+it('synchronously syncs lane PO tab from google sheets and links invoice immediately on rematch', function (): void {
+    [$admin, $upload, $file, $extraction] = adminUploadActionFixture();
+    config(['services.google.purchase_orders_sheet_id' => 'mock-po-sheet-id']);
+
+    Http::fake([
+        'https://sheets.googleapis.com/v4/spreadsheets/mock-po-sheet-id/values/*' => Http::response([
+            'values' => [
+                ['PO Number', 'Supplier', 'Type', 'Status', 'Date', 'Net Total', 'VAT Total', 'Total Amount', 'Item Code', 'Item Description', 'Qty', 'Unit', 'Unit Price', 'Line Total', 'Notes'],
+                ['716', 'Symmetryplast Enterprises', 'Standard', 'Confirmed', '2026-03-20', '500.00', '60.00', '560.00', 'ITEM-1', 'Test Item', '10', 'PCS', '50.00', '500.00', ''],
+            ],
+        ], 200),
+    ]);
+
+    $data = [
+        'document_type' => 'Invoice',
+        'fields' => [
+            ['label' => 'Company Name', 'value' => 'Symmetryplast Enterprises'],
+            ['label' => 'PO Number', 'value' => '716'],
+        ],
+        'items' => [],
+    ];
+    $extraction->forceFill([
+        'raw_extracted_json' => $data,
+        'corrected_json' => $data,
+        'po_number' => '716',
+        'po_number_normalized' => '716',
+        'po_link_status' => PurchaseOrderLinkStatus::AwaitingPurchaseOrder,
+    ])->save();
+
+    $this->actingAs($admin)
+        ->withSession(['admin.otp_verified_at' => now()->getTimestamp()])
+        ->post(route('admin.uploads.rematch-po', $upload))
+        ->assertRedirect()
+        ->assertSessionHas('status', fn ($msg) => str_contains((string) $msg, '1 document(s) linked to PO 716'));
+
+    expect($extraction->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and($extraction->activePurchaseOrderLink)->not->toBeNull()
+        ->and($extraction->activePurchaseOrderLink->poExtraction->po_number)->toBe('716');
+});
+
 it('includes note in rematch status when google sheet id is not configured', function (): void {
     [$admin, $upload] = adminUploadActionFixture();
     config(['services.google.purchase_orders_sheet_id' => '']);
