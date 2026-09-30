@@ -166,6 +166,10 @@ class PurchaseOrderSheetSyncService
                 array_column($preview['orders'], 'po_number_normalized')
             )));
 
+            if ($orderKeys !== null) {
+                $targetPoNumbers = array_values(array_intersect($targetPoNumbers, $orderKeys));
+            }
+
             $existingPos = empty($targetPoNumbers) ? collect() : PoExtraction::query()
                 ->with('items')
                 ->where('source_type', 'google_sheet')
@@ -619,6 +623,7 @@ class PurchaseOrderSheetSyncService
         string $laneSlug,
         string $mode = 'apply',
         ?array $overrideRows = null,
+        ?array $targetPoNumbers = null,
     ): array {
         $config = $this->resolveConfig($laneSlug);
         $envPoSheetId = config('services.google.purchase_orders_sheet_id');
@@ -672,8 +677,7 @@ class PurchaseOrderSheetSyncService
         if ($mode === 'preview') {
             $result = $this->preview($config, $targetRange, $rows);
         } else {
-            $result = $this->applySnapshot($config, range: $targetRange, overrideRows: $rows);
-            $this->linker->resyncAll();
+            $result = $this->applySnapshot($config, range: $targetRange, overrideRows: $rows, orderKeys: $targetPoNumbers);
         }
 
         return array_merge($result, [

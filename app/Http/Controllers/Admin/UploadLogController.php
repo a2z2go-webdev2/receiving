@@ -392,6 +392,7 @@ class UploadLogController extends Controller
         PurchaseOrderLinker $linker,
         UploadSerialNumber $serials,
         PurchaseOrderSheetSyncService $syncService,
+        PurchaseOrderDataNormalizer $normalizer,
     ): RedirectResponse {
         abort_unless($request->user()?->can('operations.retry'), 403);
 
@@ -411,13 +412,41 @@ class UploadLogController extends Controller
 
         if ($linkedCount < $upload->extractions->count() && $masterConfig !== null) {
             $laneSlug = $upload->uploadType->slug ?? 'pingcon';
-            try {
-                $syncService->syncLane($laneSlug);
 
-                $upload->load('extractions.activePurchaseOrderLink.poExtraction');
-                $hasUnlinked = $upload->extractions->contains(fn ($e) => $e->activePurchaseOrderLink === null);
-                if ($hasUnlinked && $laneSlug !== 'pingcon') {
-                    $syncService->syncLane('pingcon');
+            $targetPoNumbers = [];
+            foreach ($upload->extractions as $extraction) {
+                if ($extraction->activePurchaseOrderLink !== null) {
+                    continue;
+                }
+                $rawNumber = $extraction->po_number;
+                if (empty($rawNumber)) {
+                    $data = $extraction->preferredData() ?? $extraction->raw_extracted_json;
+                    if (is_array($data)) {
+                        $rawNumber = $normalizer->poNumber($data);
+                    }
+                }
+                if (! empty($rawNumber)) {
+                    $candidates = $normalizer->poIdentifierCandidates($rawNumber);
+                    $targetPoNumbers = array_merge($targetPoNumbers, $candidates);
+                }
+            }
+            $targetPoNumbers = array_values(array_unique(array_filter($targetPoNumbers)));
+
+            try {
+                if (! empty($targetPoNumbers)) {
+                    $syncService->syncLane($laneSlug, targetPoNumbers: $targetPoNumbers);
+
+                    $upload->load('extractions.activePurchaseOrderLink.poExtraction');
+                    $hasUnlinked = $upload->extractions->contains(fn ($e) => $e->activePurchaseOrderLink === null);
+                    if ($hasUnlinked && $laneSlug !== 'pingcon') {
+                        $syncService->syncLane('pingcon', targetPoNumbers: $targetPoNumbers);
+                    }
+                } else {
+                    $lock = Cache::lock('sync_po_sheet_queue_lock', 60);
+                    if ($lock->get()) {
+                        SyncPurchaseOrderSheet::dispatch('all', null, 'apply');
+                        $syncNote .= ' Google Sheet background sync has been queued to search for matching POs.';
+                    }
                 }
 
                 $upload->load(['uploadType', 'extractions.upload.uploadType', 'extractions.activePurchaseOrderLink.poExtraction']);
