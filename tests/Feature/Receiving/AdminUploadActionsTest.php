@@ -2,11 +2,13 @@
 
 use App\Enums\AiStatus;
 use App\Enums\EmailStatus;
+use App\Enums\PurchaseOrderLinkStatus;
 use App\Enums\ReviewStatus;
 use App\Features\Receiving\Jobs\StartAiExtraction;
 use App\Mail\ReceivingReviewReady;
 use App\Mail\ReceivingUploadReceived;
 use App\Models\AiExtraction;
+use App\Models\PoExtraction;
 use App\Models\ReceivingUpload;
 use App\Models\ReviewLink;
 use App\Models\UploadedFile;
@@ -164,6 +166,82 @@ it('resends only the review email for a completed extraction', function (): void
     Mail::assertNotSent(ReceivingUploadReceived::class);
     expect($upload->refresh()->email_status)->toBe(EmailStatus::Sent)
         ->and($upload->review_email_status)->toBe(EmailStatus::Sent);
+});
+
+it('re-matches all receive logs against purchase orders', function (): void {
+    [$admin, $upload, $file, $extraction] = adminUploadActionFixture();
+    $data = [
+        'document_type' => 'Invoice',
+        'fields' => [
+            ['label' => 'Company Name', 'value' => 'Symmetryplast Enterprises'],
+            ['label' => 'PO Number', 'value' => '716'],
+        ],
+        'items' => [],
+    ];
+    $extraction->forceFill([
+        'raw_extracted_json' => $data,
+        'corrected_json' => $data,
+        'po_number' => '716',
+        'po_number_normalized' => '716',
+        'po_link_status' => PurchaseOrderLinkStatus::AwaitingPurchaseOrder,
+    ])->save();
+
+    PoExtraction::query()->create([
+        'source_type' => 'google_sheet',
+        'sheet_slug' => 'a2z2go',
+        'po_number' => '716',
+        'po_number_normalized' => '716',
+        'vendor_name' => 'Symmetryplast Enterprises',
+        'status_normalized' => 'confirmed',
+    ]);
+
+    $this->actingAs($admin)
+        ->withSession(['admin.otp_verified_at' => now()->getTimestamp()])
+        ->post(route('admin.uploads.rematch-all-po'))
+        ->assertRedirect()
+        ->assertSessionHas('status');
+
+    expect($extraction->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and($extraction->activePurchaseOrderLink)->not->toBeNull()
+        ->and($extraction->activePurchaseOrderLink->poExtraction->po_number)->toBe('716');
+});
+
+it('re-matches a single receive log against purchase orders', function (): void {
+    [$admin, $upload, $file, $extraction] = adminUploadActionFixture();
+    $data = [
+        'document_type' => 'Invoice',
+        'fields' => [
+            ['label' => 'Company Name', 'value' => 'Symmetryplast Enterprises'],
+            ['label' => 'PO Number', 'value' => '716'],
+        ],
+        'items' => [],
+    ];
+    $extraction->forceFill([
+        'raw_extracted_json' => $data,
+        'corrected_json' => $data,
+        'po_number' => '716',
+        'po_number_normalized' => '716',
+        'po_link_status' => PurchaseOrderLinkStatus::AwaitingPurchaseOrder,
+    ])->save();
+
+    PoExtraction::query()->create([
+        'source_type' => 'google_sheet',
+        'sheet_slug' => 'a2z2go',
+        'po_number' => '716',
+        'po_number_normalized' => '716',
+        'vendor_name' => 'Symmetryplast Enterprises',
+        'status_normalized' => 'confirmed',
+    ]);
+
+    $this->actingAs($admin)
+        ->withSession(['admin.otp_verified_at' => now()->getTimestamp()])
+        ->post(route('admin.uploads.rematch-po', $upload))
+        ->assertRedirect()
+        ->assertSessionHas('status');
+
+    expect($extraction->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and($extraction->activePurchaseOrderLink)->not->toBeNull()
+        ->and($extraction->activePurchaseOrderLink->poExtraction->po_number)->toBe('716');
 });
 
 /** @return array{User, ReceivingUpload, UploadedFile, AiExtraction, ReviewLink} */

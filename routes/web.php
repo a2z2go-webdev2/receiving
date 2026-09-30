@@ -205,6 +205,8 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
         Route::middleware('starter.permission:'.Permission::RetryOperations->value)->group(function (): void {
             Route::post('uploads/{upload}/extractions/{extraction}/purchase-order-link', [PurchaseOrderDocumentLinkController::class, 'store'])->name('uploads.purchase-order-link.store');
             Route::delete('uploads/{upload}/extractions/{extraction}/purchase-order-link', [PurchaseOrderDocumentLinkController::class, 'destroy'])->name('uploads.purchase-order-link.destroy');
+            Route::post('uploads/rematch-po', [UploadLogController::class, 'rematchAllPurchaseOrders'])->name('uploads.rematch-all-po');
+            Route::post('uploads/{upload}/rematch-po', [UploadLogController::class, 'rematchPurchaseOrder'])->name('uploads.rematch-po');
             Route::post('uploads/{upload}/resend-receiving', [UploadLogController::class, 'resendReceiving'])->name('uploads.resend-receiving');
             Route::post('uploads/{upload}/resend-review', [UploadLogController::class, 'resendReview'])->name('uploads.resend-review');
             Route::post('uploads/{upload}/reprocess', [UploadLogController::class, 'reprocess'])->name('uploads.reprocess');

@@ -12,16 +12,20 @@ use App\Features\Receiving\Services\ActivityLogger;
 use App\Features\Receiving\Services\DeleteReceivingUploadService;
 use App\Features\Receiving\Services\PurchaseOrderDataNormalizer;
 use App\Features\Receiving\Services\ReceivingUploadReprocessor;
+use App\Features\Receiving\Services\PurchaseOrderLinker;
 use App\Features\Receiving\Services\ReviewLinkService;
 use App\Features\Receiving\Services\UploadNotificationSender;
 use App\Features\Receiving\Services\UploadSerialNumber;
 use App\Http\Controllers\Controller;
+use App\Models\GoogleSheetConfig;
 use App\Models\ReceivingUpload;
 use App\Models\UploadType;
 use App\Models\User;
+use App\Services\GoogleSheets\PurchaseOrderSheetSyncService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -128,6 +132,7 @@ class UploadLogController extends Controller
                 && $upload->review_status !== ReviewStatus::Verified,
             'can_reprocess' => $canRetryOperations
                 && ! in_array($upload->ai_status, [AiStatus::Pending, AiStatus::Processing], true),
+            'can_rematch_po' => $canRetryOperations && ! $purchaseOrderView,
             'can_delete' => $canRetryOperations,
         ]);
 
@@ -146,6 +151,7 @@ class UploadLogController extends Controller
                     ->when(! $purchaseOrderView, fn (Builder $query) => $query->where('workflow', '!=', UploadWorkflow::PurchaseOrder))
                     ->orderBy('name')
                     ->get(['id', 'name']),
+                'can_rematch_all_po' => $canRetryOperations && ! $purchaseOrderView,
                 'pageMode' => $purchaseOrderView ? 'purchase_orders' : 'all_uploads',
                 'basePath' => $purchaseOrderView ? '/admin/purchase-orders' : '/admin/uploads',
             ]
@@ -348,6 +354,74 @@ class UploadLogController extends Controller
 
         return redirect()->route($defaultRoute)
             ->with('status', "{$typeLabel} {$serial} was permanently deleted.");
+    }
+
+    public function rematchAllPurchaseOrders(
+        Request $request,
+        PurchaseOrderLinker $linker,
+        PurchaseOrderSheetSyncService $syncService,
+    ): RedirectResponse {
+        abort_unless($request->user()?->can('operations.retry'), 403);
+
+        $masterConfig = GoogleSheetConfig::query()
+            ->whereNotNull('spreadsheet_id')
+            ->where('spreadsheet_id', '!=', '')
+            ->first();
+
+        $sheetSynced = false;
+        if ($masterConfig !== null) {
+            try {
+                $syncService->syncAllTabs($masterConfig, 'apply');
+                $sheetSynced = true;
+            } catch (\Throwable $e) {
+                Log::warning("Could not sync PO sheet during rematch-all: {$e->getMessage()}");
+            }
+        }
+
+        $stats = $linker->resyncAll();
+
+        $message = $sheetSynced
+            ? "Synced PO Google Sheets and re-matched receive logs ({$stats['processed']} documents checked, {$stats['linked']} linked)."
+            : "Re-matched receive logs against purchase orders ({$stats['processed']} documents checked, {$stats['linked']} linked).";
+
+        return back()->with('status', $message);
+    }
+
+    public function rematchPurchaseOrder(
+        Request $request,
+        ReceivingUpload $upload,
+        PurchaseOrderLinker $linker,
+        PurchaseOrderSheetSyncService $syncService,
+        UploadSerialNumber $serials,
+    ): RedirectResponse {
+        abort_unless($request->user()?->can('operations.retry'), 403);
+
+        $masterConfig = GoogleSheetConfig::query()
+            ->whereNotNull('spreadsheet_id')
+            ->where('spreadsheet_id', '!=', '')
+            ->first();
+
+        if ($masterConfig !== null) {
+            try {
+                $syncService->syncAllTabs($masterConfig, 'apply');
+            } catch (\Throwable $e) {
+                Log::warning("Could not sync PO sheet during single rematch: {$e->getMessage()}");
+            }
+        }
+
+        $upload->load(['uploadType', 'extractions.upload.uploadType', 'extractions.activePurchaseOrderLink.poExtraction']);
+
+        $linkedCount = 0;
+        foreach ($upload->extractions as $extraction) {
+            $status = $linker->syncExtraction($extraction);
+            if ($status === PurchaseOrderLinkStatus::Linked) {
+                $linkedCount++;
+            }
+        }
+
+        $serial = $serials->prefix($upload->uploadType).'-'.$serials->number($upload);
+
+        return back()->with('status', "Re-matched purchase order for {$serial} ({$linkedCount} document(s) linked).");
     }
 
     private function resolvePurchaseOrderSerialId(

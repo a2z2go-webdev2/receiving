@@ -85,6 +85,7 @@ type Upload = {
     can_resend_receiving: boolean;
     can_resend_review: boolean;
     can_reprocess: boolean;
+    can_rematch_po: boolean;
     can_delete: boolean;
 };
 type Paginator<T> = {
@@ -117,22 +118,37 @@ export default function UploadsIndex({
     uploadTypes,
     pageMode,
     basePath,
+    can_rematch_all_po = false,
 }: {
     uploads: Paginator<Upload>;
     filters: Filters;
     uploadTypes: UploadType[];
     pageMode: 'all_uploads' | 'purchase_orders';
     basePath: string;
+    can_rematch_all_po?: boolean;
 }) {
     useLivePageData(['uploads']);
 
     const [reprocessing, setReprocessing] = useState<Upload | null>(null);
     const [deleting, setDeleting] = useState<Upload | null>(null);
     const [submitting, setSubmitting] = useState(false);
+    const [rematchingAll, setRematchingAll] = useState(false);
     const [deletingSubmit, setDeletingSubmit] = useState(false);
     const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
     const [filterValues, setFilterValues] = useState(filters);
     const purchaseOrderView = pageMode === 'purchase_orders';
+
+    function handleRematchAll() {
+        setRematchingAll(true);
+        router.post(
+            '/admin/uploads/rematch-po',
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => setRematchingAll(false),
+            },
+        );
+    }
 
     function reprocess() {
         if (!reprocessing) return;
@@ -223,6 +239,24 @@ export default function UploadsIndex({
                                     <ClipboardList className="size-3.5" />
                                     Item records
                                 </Link>
+                            </Button>
+                        </div>
+                    ) : can_rematch_all_po ? (
+                        <div className="flex gap-1.5">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={handleRematchAll}
+                                disabled={rematchingAll}
+                                className="gap-1.5 text-xs"
+                            >
+                                <RefreshCw
+                                    className={`size-3.5 ${rematchingAll ? 'animate-spin' : ''}`}
+                                />
+                                {rematchingAll
+                                    ? 'Matching with PO sheets...'
+                                    : 'Match with PO sheets'}
                             </Button>
                         </div>
                     ) : undefined
@@ -771,6 +805,7 @@ function UploadActions({
         upload.can_resend_receiving ||
         upload.can_resend_review ||
         upload.can_reprocess ||
+        upload.can_rematch_po ||
         upload.can_delete;
 
     return (
@@ -807,6 +842,19 @@ function UploadActions({
                 {upload.can_reprocess && (
                     <DropdownMenuItem onSelect={onReprocess}>
                         <RefreshCw /> Extract files again with AI
+                    </DropdownMenuItem>
+                )}
+                {upload.can_rematch_po && (
+                    <DropdownMenuItem
+                        onSelect={() =>
+                            router.post(
+                                `/admin/uploads/${upload.id}/rematch-po`,
+                                {},
+                                { preserveScroll: true },
+                            )
+                        }
+                    >
+                        <RefreshCw /> Re-match with PO sheet
                     </DropdownMenuItem>
                 )}
                 {upload.can_delete && (

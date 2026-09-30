@@ -6,6 +6,7 @@ import {
     Link2,
     Mail,
     MapPin,
+    RefreshCw,
     RotateCcw,
     Trash2,
     Unlink,
@@ -608,6 +609,18 @@ function PurchaseOrderPanel({
         );
     }
 
+    function rematchPurchaseOrder() {
+        setSubmitting(true);
+        router.post(
+            `/admin/uploads/${uploadId}/rematch-po`,
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => setSubmitting(false),
+            },
+        );
+    }
+
     if (purchaseOrderStatus) {
         return (
             <section className="rounded-lg border bg-background p-3 xl:col-span-2">
@@ -704,6 +717,22 @@ function PurchaseOrderPanel({
                             </Button>
                         )}
                     </div>
+                </div>
+            )}
+
+            {adminView && canManagePurchaseOrderLinks && !extraction.po_link && (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={rematchPurchaseOrder}
+                        disabled={submitting}
+                        className="gap-1.5 text-xs"
+                    >
+                        <RefreshCw className={`size-3.5 ${submitting ? 'animate-spin' : ''}`} />
+                        Re-match with PO sheet
+                    </Button>
                 </div>
             )}
 
