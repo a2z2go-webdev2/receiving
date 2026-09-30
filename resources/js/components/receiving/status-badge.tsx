@@ -24,6 +24,7 @@ const bad = new Set([
     'deactivated',
     'banned',
     'error',
+    'conflict',
 ]);
 const waiting = new Set([
     'pending',
@@ -41,9 +42,10 @@ const waiting = new Set([
     'short',
     'over',
     'unverified',
+    'ambiguous',
 ]);
 const info = new Set(['info', 'automatic', 'manual']);
-const neutral = new Set(['not_required']);
+const neutral = new Set(['not_required', 'not_applicable']);
 
 export function StatusBadge({
     value,
@@ -72,7 +74,22 @@ export function StatusBadge({
     );
 }
 
+const statusLabels: Record<string, string> = {
+    awaiting_purchase_order: 'Unmatched PO #',
+    missing_po_number: 'No PO #',
+    purchase_order_already_linked: 'Already Linked',
+    ready_to_link: 'Ready to Link',
+    not_applicable: 'N/A',
+    linked: 'Linked',
+    conflict: 'Conflict',
+    ambiguous: 'Ambiguous',
+};
+
 function friendlyStatus(value: string): string {
+    if (statusLabels[value]) {
+        return statusLabels[value];
+    }
+
     return value
         .replace(/([a-z])([A-Z])/g, '$1 $2')
         .replaceAll('_', ' ')
