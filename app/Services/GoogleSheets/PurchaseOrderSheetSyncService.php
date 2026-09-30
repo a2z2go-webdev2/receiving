@@ -485,12 +485,14 @@ class PurchaseOrderSheetSyncService
             }
 
             if (empty($poTabs)) {
-                $poTabs = [
+                $masterTab = ! empty($config->tab_name) ? $config->tab_name : 'Purchase Orders';
+                $poTabs = array_values(array_unique([
+                    $masterTab,
+                    'Purchase Orders',
                     'Purchase Orders BONITA',
                     'Purchase Orders A2Z',
                     'Purchase Orders KEYSYS',
-                    'Purchase Orders',
-                ];
+                ]));
             }
         }
 

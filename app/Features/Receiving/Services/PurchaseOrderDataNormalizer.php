@@ -16,7 +16,29 @@ class PurchaseOrderDataNormalizer
     /** @param array<string, mixed> $data */
     public function poNumber(array $data): ?string
     {
-        return $this->fieldValue($data, ['PO Number', 'Purchase Order Number', 'PO No', 'P.O. No']);
+        $topLevel = $data['po_number'] ?? $data['poNumber'] ?? $data['po'] ?? null;
+        if (is_scalar($topLevel) && $this->hasMeaningfulValue((string) $topLevel)) {
+            return trim((string) $topLevel);
+        }
+
+        return $this->fieldValue($data, [
+            'PO Number',
+            'Purchase Order Number',
+            'PO No',
+            'P.O. No',
+            'PO #',
+            'P.O. #',
+            'Purchase Order',
+            'Purchase Order #',
+            'PO',
+            'P.O.',
+            'PO Ref',
+            'PO Reference',
+            'Customer PO',
+            'Customer PO Number',
+            'Buyer PO',
+            'Ref PO',
+        ]);
     }
 
     /** @param array<string, mixed> $data */

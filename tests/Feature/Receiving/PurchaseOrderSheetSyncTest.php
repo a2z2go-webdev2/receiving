@@ -6,8 +6,10 @@ use App\Models\GoogleSheetConfig;
 use App\Models\GoogleSheetSyncRecord;
 use App\Models\PoExtraction;
 use App\Models\PoExtractionItem;
+use App\Services\GoogleSheets\GoogleSheetsApiService;
 use App\Services\GoogleSheets\PurchaseOrderSheetSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -291,11 +293,20 @@ class PurchaseOrderSheetSyncTest extends TestCase
 
     public function test_google_sheets_api_retries_with_candidate_range_when_unable_to_parse_range(): void
     {
-        \Illuminate\Support\Facades\Http::fake([
-            'https://sheets.googleapis.com/v4/spreadsheets/mock-sheet-id/values/%27Purchase%20Orders%20BONITA%27%21A%3AZ*' => \Illuminate\Support\Facades\Http::response([
+        Http::fake([
+            'https://sheets.googleapis.com/v4/spreadsheets/mock-sheet-id/values/\'Purchase%20Orders%20BONITA\'!A:Z*' => Http::response([
                 'error' => ['message' => "Unable to parse range: 'Purchase Orders BONITA'!A:Z"],
             ], 400),
-            'https://sheets.googleapis.com/v4/spreadsheets/mock-sheet-id/values/%27Purchase%20Orders%20BONITA%27*' => \Illuminate\Support\Facades\Http::response([
+            'https://sheets.googleapis.com/v4/spreadsheets/mock-sheet-id/values/%27Purchase%20Orders%20BONITA%27%21A%3AZ*' => Http::response([
+                'error' => ['message' => "Unable to parse range: 'Purchase Orders BONITA'!A:Z"],
+            ], 400),
+            'https://sheets.googleapis.com/v4/spreadsheets/mock-sheet-id/values/\'Purchase%20Orders%20BONITA\'*' => Http::response([
+                'values' => [
+                    ['PO Number', 'Supplier'],
+                    ['PO-999', 'Vendor Inc'],
+                ],
+            ], 200),
+            'https://sheets.googleapis.com/v4/spreadsheets/mock-sheet-id/values/%27Purchase%20Orders%20BONITA%27*' => Http::response([
                 'values' => [
                     ['PO Number', 'Supplier'],
                     ['PO-999', 'Vendor Inc'],
@@ -303,8 +314,8 @@ class PurchaseOrderSheetSyncTest extends TestCase
             ], 200),
         ]);
 
-        /** @var \App\Services\GoogleSheets\GoogleSheetsApiService $apiService */
-        $apiService = app(\App\Services\GoogleSheets\GoogleSheetsApiService::class);
+        /** @var GoogleSheetsApiService $apiService */
+        $apiService = app(GoogleSheetsApiService::class);
 
         $values = $apiService->fetchRange('mock-sheet-id', "'Purchase Orders BONITA'!A:Z");
 
@@ -312,4 +323,3 @@ class PurchaseOrderSheetSyncTest extends TestCase
         $this->assertSame('PO-999', $values[1][0]);
     }
 }
-

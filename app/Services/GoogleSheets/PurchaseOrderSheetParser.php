@@ -106,18 +106,23 @@ class PurchaseOrderSheetParser
                     'row_hash' => '',
                 ];
 
-                if (! in_array($statusNormalized, ['in_preparation', 'confirmed', 'received'], true)) {
+                if ($statusNormalized === 'unknown') {
                     $grouped[$orderKey]['validation_errors'][] = "Unrecognized PO status: '{$rawStatus}'.";
                 }
             } else {
-                // Validate header consistency across rows of the same PO
+                // Header consistency across rows of the same PO: fill missing values if initial row lacked them
                 $currentSupplier = trim((string) ($mapped['supplier'] ?? ''));
-                if ($currentSupplier !== '' && strcasecmp($currentSupplier, $grouped[$orderKey]['supplier']) !== 0) {
+                if ($grouped[$orderKey]['supplier'] === '' && $currentSupplier !== '') {
+                    $grouped[$orderKey]['supplier'] = $currentSupplier;
+                } elseif ($currentSupplier !== '' && strcasecmp($currentSupplier, $grouped[$orderKey]['supplier']) !== 0) {
                     $grouped[$orderKey]['validation_errors'][] = "Supplier mismatch in PO {$poNumber}: '{$currentSupplier}' vs '{$grouped[$orderKey]['supplier']}'.";
                 }
 
                 $currentDate = trim((string) ($mapped['date'] ?? ''));
-                if ($currentDate !== '' && $grouped[$orderKey]['po_date'] !== null && $currentDate !== $grouped[$orderKey]['po_date']) {
+                if ($grouped[$orderKey]['po_date'] === null && $currentDate !== '') {
+                    $grouped[$orderKey]['po_date'] = $currentDate;
+                    $grouped[$orderKey]['po_date_value'] = $this->normalizer->parseDate($currentDate)?->toDateString();
+                } elseif ($currentDate !== '' && $grouped[$orderKey]['po_date'] !== null && $currentDate !== $grouped[$orderKey]['po_date']) {
                     $grouped[$orderKey]['validation_errors'][] = "Date mismatch in PO {$poNumber}: '{$currentDate}' vs '{$grouped[$orderKey]['po_date']}'.";
                 }
             }
@@ -177,9 +182,13 @@ class PurchaseOrderSheetParser
 
         return match (true) {
             str_contains($clean, 'preparation') || str_contains($clean, 'draft') => 'in_preparation',
-            str_contains($clean, 'confirmed') || str_contains($clean, 'approved') => 'confirmed',
             str_contains($clean, 'received') || str_contains($clean, 'delivered') || str_contains($clean, 'completed') => 'received',
-            default => 'unknown',
+            $clean === ''
+                || str_contains($clean, 'confirm') || str_contains($clean, 'approv')
+                || str_contains($clean, 'open') || str_contains($clean, 'pend')
+                || str_contains($clean, 'order') || str_contains($clean, 'issu')
+                || str_contains($clean, 'active') || str_contains($clean, 'valid') => 'confirmed',
+            default => 'confirmed',
         };
     }
 

@@ -143,7 +143,7 @@ class PurchaseOrderResolver
     public function isPoEligible(PoExtraction $po): bool
     {
         if ($po->source_type === 'google_sheet') {
-            return in_array($po->status_normalized, ['confirmed', 'received'], true);
+            return $po->status_normalized !== 'in_preparation';
         }
 
         return true;
@@ -206,6 +206,15 @@ class PurchaseOrderResolver
      */
     public function hasSupplierConflict(string $left, string $right): bool
     {
+        $cleanLeft = Str::lower(preg_replace('/[^a-z0-9]/i', '', $left) ?? '');
+        $cleanRight = Str::lower(preg_replace('/[^a-z0-9]/i', '', $right) ?? '');
+
+        if ($cleanLeft !== '' && $cleanRight !== '') {
+            if ($cleanLeft === $cleanRight || str_contains($cleanLeft, $cleanRight) || str_contains($cleanRight, $cleanLeft)) {
+                return false;
+            }
+        }
+
         $leftTokens = $this->vendorTokens($left);
         $rightTokens = $this->vendorTokens($right);
 

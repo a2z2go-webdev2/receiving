@@ -11,8 +11,8 @@ use App\Enums\UploadWorkflow;
 use App\Features\Receiving\Services\ActivityLogger;
 use App\Features\Receiving\Services\DeleteReceivingUploadService;
 use App\Features\Receiving\Services\PurchaseOrderDataNormalizer;
-use App\Features\Receiving\Services\ReceivingUploadReprocessor;
 use App\Features\Receiving\Services\PurchaseOrderLinker;
+use App\Features\Receiving\Services\ReceivingUploadReprocessor;
 use App\Features\Receiving\Services\ReviewLinkService;
 use App\Features\Receiving\Services\UploadNotificationSender;
 use App\Features\Receiving\Services\UploadSerialNumber;
@@ -361,32 +361,33 @@ class UploadLogController extends Controller
     public function rematchAllPurchaseOrders(
         Request $request,
         PurchaseOrderLinker $linker,
+        PurchaseOrderSheetSyncService $syncService,
     ): RedirectResponse {
         abort_unless($request->user()?->can('operations.retry'), 403);
 
         $masterConfig = $this->resolveMasterSheetConfig();
+        $syncNote = '';
 
-        $syncQueued = false;
         if ($masterConfig !== null) {
-            // Deduplicate background queue jobs to save Laravel Cloud worker compute
-            $lock = Cache::lock('sync_po_sheet_queue_lock', 60);
-            if ($lock->get()) {
-                SyncPurchaseOrderSheet::dispatch('all', null, 'apply');
-                $syncQueued = true;
+            try {
+                $tab = ! empty($masterConfig->tab_name) ? $masterConfig->tab_name : 'Purchase Orders';
+                $result = $syncService->applySnapshot($masterConfig, range: $tab);
+                $syncNote = " (Synced {$result['applied_count']} POs from Google Sheet).";
+            } catch (\Throwable $e) {
+                Log::warning("Immediate PO master sync warning: {$e->getMessage()}. Dispatching background sync.");
+                $lock = Cache::lock('sync_po_sheet_queue_lock', 60);
+                if ($lock->get()) {
+                    SyncPurchaseOrderSheet::dispatch('all', null, 'apply');
+                }
+                $syncNote = " Note: Google Sheet sync warning: {$e->getMessage()}";
             }
+        } else {
+            $syncNote = ' Note: Google Sheet ID is not configured in settings or SHEET_ID_PURCHASE_ORDERS.';
         }
 
         $stats = $linker->resyncAll();
 
-        $message = "Re-matched receive logs against purchase orders ({$stats['processed']} documents checked, {$stats['linked']} linked).";
-
-        if ($syncQueued) {
-            $message .= ' Google Sheet PO sync has been queued in the background.';
-        } elseif ($masterConfig !== null) {
-            $message .= ' (A Google Sheet sync is already active or recently queued).';
-        } else {
-            $message .= ' Note: Google Sheet ID is not configured in settings or SHEET_ID_PURCHASE_ORDERS.';
-        }
+        $message = "Re-matched receive logs against purchase orders ({$stats['processed']} documents checked, {$stats['linked']} linked).{$syncNote}";
 
         return back()->with('status', $message);
     }
@@ -396,12 +397,18 @@ class UploadLogController extends Controller
         ReceivingUpload $upload,
         PurchaseOrderLinker $linker,
         UploadSerialNumber $serials,
+        PurchaseOrderSheetSyncService $syncService,
     ): RedirectResponse {
         abort_unless($request->user()?->can('operations.retry'), 403);
 
         $masterConfig = $this->resolveMasterSheetConfig();
         if ($masterConfig !== null) {
-            SyncPurchaseOrderSheet::dispatch('all', null, 'apply');
+            try {
+                $tab = ! empty($masterConfig->tab_name) ? $masterConfig->tab_name : 'Purchase Orders';
+                $syncService->applySnapshot($masterConfig, range: $tab);
+            } catch (\Throwable $e) {
+                Log::warning("Single upload rematch PO master sync warning: {$e->getMessage()}");
+            }
         }
 
         $upload->load(['uploadType', 'extractions.upload.uploadType', 'extractions.activePurchaseOrderLink.poExtraction']);
@@ -417,9 +424,7 @@ class UploadLogController extends Controller
         $serial = $serials->prefix($upload->uploadType).'-'.$serials->number($upload);
 
         $message = "Re-matched purchase order for {$serial} ({$linkedCount} document(s) linked).";
-        if ($masterConfig !== null) {
-            $message .= ' Google Sheet PO sync has been queued in the background.';
-        } else {
+        if ($masterConfig === null) {
             $message .= ' Note: Google Sheet ID is not configured in settings or SHEET_ID_PURCHASE_ORDERS.';
         }
 

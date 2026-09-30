@@ -50,47 +50,29 @@ class GoogleSheetsApiService
             $headers['Authorization'] = "Bearer {$token}";
         }
 
-        // Build list of candidate range formats to try if "Unable to parse range" is encountered.
-        // Google Sheets API v4 can reject specific notations depending on sheet names, quotes, or column coordinates.
-        $candidates = [$range];
-
-        if (str_contains($range, '!')) {
-            [$tabPart, $cellPart] = explode('!', $range, 2);
-            $cleanTab = trim($tabPart, "'\"");
-            $escapedTab = str_replace("'", "''", $cleanTab);
-            $quotedTab = "'{$escapedTab}'";
-
-            // 1. Quoted tab alone (Google Sheets API returns all data on tab)
-            $candidates[] = $quotedTab;
-            // 2. Unquoted tab with coordinates
-            $candidates[] = "{$cleanTab}!{$cellPart}";
-            // 3. Tab with explicit row boundary
-            $candidates[] = "{$quotedTab}!A1:Z50000";
-        } else {
-            $clean = trim($range, "'\"");
-            $candidates[] = "'".str_replace("'", "''", $clean)."'";
-        }
-
-        $candidates = array_values(array_unique($candidates));
+        // Build list of candidate URL path formats to try if "Unable to parse range" is encountered.
+        // Google Sheets API v4 range parser expects delimiters ' ! : to be literal in path,
+        // with inner sheet name spaces encoded as %20. Full rawurlencode can turn ! into %21 causing parse errors.
+        $candidates = $this->buildCandidateUrlPaths($range);
 
         $lastError = null;
-        foreach ($candidates as $candidateRange) {
-            $url = "https://sheets.googleapis.com/v4/spreadsheets/{$cleanId}/values/".rawurlencode($candidateRange);
+        foreach ($candidates as $candidatePath) {
+            $url = "https://sheets.googleapis.com/v4/spreadsheets/{$cleanId}/values/{$candidatePath}";
 
             $response = Http::withHeaders($headers)
                 ->timeout(15)
                 ->get($url, $params);
 
             if ($response->successful()) {
-                if ($candidateRange !== $range) {
-                    Log::info("Google Sheets range fallback succeeded with format '{$candidateRange}' (original: '{$range}')");
+                if ($candidatePath !== $candidates[0]) {
+                    Log::info("Google Sheets range fallback succeeded with format '{$candidatePath}' (original: '{$range}')");
                 }
 
                 return $response->json('values') ?? [];
             }
 
             $errorMsg = $response->json('error.message') ?? $response->body();
-            $lastError = "Google Sheets API error on '{$candidateRange}': {$errorMsg}";
+            $lastError = "Google Sheets API error on '{$candidatePath}': {$errorMsg}";
 
             // If not a range parsing error (e.g. auth 401, permission 403, not found 404), fail fast
             if (! str_contains($errorMsg, 'Unable to parse range')) {
@@ -98,11 +80,60 @@ class GoogleSheetsApiService
                 throw new RuntimeException($lastError);
             }
 
-            Log::warning("Google Sheets range attempt '{$candidateRange}' failed ({$errorMsg}), trying next candidate...");
+            Log::warning("Google Sheets range attempt '{$candidatePath}' failed ({$errorMsg}), trying next candidate...");
         }
 
         Log::error($lastError);
         throw new RuntimeException($lastError);
+    }
+
+    /**
+     * Build list of candidate URL path formats for a given range in Google Sheets API v4.
+     *
+     * @return array<int, string>
+     */
+    public function buildCandidateUrlPaths(string $range): array
+    {
+        $candidates = [];
+
+        if (str_contains($range, '!')) {
+            [$tabPart, $cellPart] = explode('!', $range, 2);
+            $cleanTab = trim($tabPart, "'\"");
+            $escapedTab = str_replace("'", "''", $cleanTab);
+            $encodedTab = rawurlencode($escapedTab);
+
+            // 1. Quoted sheet with spaces encoded as %20, literal ! and : (Standard RFC / Google Sheets REST)
+            $candidates[] = "'{$encodedTab}'!{$cellPart}";
+            // 2. Quoted sheet alone (Google Sheets returns entire sheet data)
+            $candidates[] = "'{$encodedTab}'";
+            // 3. Unquoted sheet with coordinates
+            $candidates[] = "{$encodedTab}!{$cellPart}";
+            // 4. Unquoted sheet alone
+            $candidates[] = $encodedTab;
+            // 5. Explicit open row range A1:Z
+            $candidates[] = "'{$encodedTab}'!A1:Z";
+            // 6. Full rawurlencode
+            $candidates[] = rawurlencode("'{$escapedTab}'!{$cellPart}");
+            // 7. Raw range rawurlencode
+            $candidates[] = rawurlencode($range);
+        } else {
+            $clean = trim($range, "'\"");
+            $escaped = str_replace("'", "''", $clean);
+            $encoded = rawurlencode($escaped);
+
+            // 1. Quoted sheet name
+            $candidates[] = "'{$encoded}'";
+            // 2. Quoted sheet with A:Z coordinates
+            $candidates[] = "'{$encoded}'!A:Z";
+            // 3. Unquoted sheet name
+            $candidates[] = $encoded;
+            // 4. Full rawurlencode
+            $candidates[] = rawurlencode("'{$escaped}'");
+            // 5. Raw range rawurlencode
+            $candidates[] = rawurlencode($range);
+        }
+
+        return array_values(array_unique($candidates));
     }
 
     /**
