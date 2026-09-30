@@ -33,10 +33,38 @@ class SyncPurchaseOrderSheet implements ShouldQueue
     public function handle(PurchaseOrderSheetSyncService $syncService): void
     {
         if ($this->configOrSlug === 'all' || $this->configOrSlug === 'all_po') {
-            $masterConfig = GoogleSheetConfig::query()
-                ->whereNotNull('spreadsheet_id')
-                ->where('spreadsheet_id', '!=', '')
-                ->first();
+            $envSheetId = config('services.google.purchase_orders_sheet_id');
+            $masterConfig = null;
+
+            if (! empty($envSheetId)) {
+                $masterConfig = GoogleSheetConfig::query()->firstOrCreate(
+                    ['slug' => 'purchase_orders'],
+                    [
+                        'name' => 'Purchase Orders Master',
+                        'sheet_type' => 'purchase_order',
+                        'spreadsheet_id' => $envSheetId,
+                        'tab_name' => 'Purchase Orders',
+                    ]
+                );
+
+                if ($masterConfig->spreadsheet_id !== $envSheetId || $masterConfig->sheet_type !== 'purchase_order') {
+                    $masterConfig->update([
+                        'spreadsheet_id' => $envSheetId,
+                        'sheet_type' => 'purchase_order',
+                    ]);
+                }
+            } else {
+                $masterConfig = GoogleSheetConfig::query()
+                    ->where('sheet_type', 'purchase_order')
+                    ->whereNotNull('spreadsheet_id')
+                    ->where('spreadsheet_id', '!=', '')
+                    ->first()
+                    ?? GoogleSheetConfig::query()
+                        ->whereIn('slug', ['purchase_orders', 'purchase-orders', 'po'])
+                        ->whereNotNull('spreadsheet_id')
+                        ->where('spreadsheet_id', '!=', '')
+                        ->first();
+            }
 
             if ($masterConfig === null) {
                 throw new RuntimeException('No configured Google Sheet found to sync purchase order tabs.');

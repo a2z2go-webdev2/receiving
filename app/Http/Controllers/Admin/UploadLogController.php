@@ -445,7 +445,31 @@ class UploadLogController extends Controller
 
     private function resolveMasterSheetConfig(): ?GoogleSheetConfig
     {
+        $envSheetId = config('services.google.purchase_orders_sheet_id');
+        if (! empty($envSheetId)) {
+            $config = GoogleSheetConfig::query()->firstOrCreate(
+                ['slug' => 'purchase_orders'],
+                [
+                    'name' => 'Purchase Orders Master',
+                    'sheet_type' => 'purchase_order',
+                    'spreadsheet_id' => $envSheetId,
+                    'tab_name' => 'Purchase Orders',
+                ]
+            );
+
+            if ($config->spreadsheet_id !== $envSheetId || $config->sheet_type !== 'purchase_order') {
+                $config->update([
+                    'spreadsheet_id' => $envSheetId,
+                    'sheet_type' => 'purchase_order',
+                ]);
+            }
+
+            return $config;
+        }
+
+        // Search for explicit purchase_order sheet configuration
         $config = GoogleSheetConfig::query()
+            ->where('sheet_type', 'purchase_order')
             ->whereNotNull('spreadsheet_id')
             ->where('spreadsheet_id', '!=', '')
             ->first();
@@ -454,25 +478,12 @@ class UploadLogController extends Controller
             return $config;
         }
 
-        $envSheetId = config('services.google.purchase_orders_sheet_id');
-        if (! empty($envSheetId)) {
-            $config = GoogleSheetConfig::query()->firstOrCreate(
-                ['slug' => 'bonita'],
-                [
-                    'name' => 'BONITA',
-                    'sheet_type' => 'purchase_order',
-                    'spreadsheet_id' => $envSheetId,
-                ]
-            );
-
-            if (empty($config->spreadsheet_id)) {
-                $config->update(['spreadsheet_id' => $envSheetId]);
-            }
-
-            return $config;
-        }
-
-        return null;
+        // Fallback to PO-specific slugs
+        return GoogleSheetConfig::query()
+            ->whereIn('slug', ['purchase_orders', 'purchase-orders', 'po'])
+            ->whereNotNull('spreadsheet_id')
+            ->where('spreadsheet_id', '!=', '')
+            ->first();
     }
 
     private function resolvePurchaseOrderSerialId(

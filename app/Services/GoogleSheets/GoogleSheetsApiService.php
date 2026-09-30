@@ -39,8 +39,6 @@ class GoogleSheetsApiService
         }
 
         $apiKey = config('services.google.sheets_api_key');
-        $url = "https://sheets.googleapis.com/v4/spreadsheets/{$cleanId}/values/".rawurlencode($range);
-
         $params = [];
         if ($apiKey) {
             $params['key'] = $apiKey;
@@ -52,17 +50,65 @@ class GoogleSheetsApiService
             $headers['Authorization'] = "Bearer {$token}";
         }
 
-        $response = Http::withHeaders($headers)
-            ->timeout(30)
-            ->get($url, $params);
+        // Build list of candidate range formats to try if "Unable to parse range" is encountered.
+        // Google Sheets API v4 can reject specific notations depending on sheet names, quotes, or column coordinates.
+        $candidates = [$range];
 
-        if (! $response->successful()) {
-            $errorMsg = $response->json('error.message') ?? $response->body();
-            Log::error("Google Sheets API error on {$range}: {$errorMsg}");
-            throw new RuntimeException("Google Sheets API error on '{$range}': {$errorMsg}");
+        if (str_contains($range, '!')) {
+            [$tabPart, $cellPart] = explode('!', $range, 2);
+            $cleanTab = trim($tabPart, "'\"");
+            $escapedTab = str_replace("'", "''", $cleanTab);
+            $quotedTab = "'{$escapedTab}'";
+
+            // 1. Quoted tab alone (Google Sheets API returns all data on tab)
+            $candidates[] = $quotedTab;
+            // 2. Unquoted tab alone
+            $candidates[] = $cleanTab;
+            // 3. Quoted tab with explicit A1 start
+            $candidates[] = "{$quotedTab}!A1:Z";
+            $candidates[] = "{$quotedTab}!A1:Z50000";
+            // 4. Unquoted tab with coordinates
+            $candidates[] = "{$cleanTab}!{$cellPart}";
+            $candidates[] = "{$cleanTab}!A1:Z50000";
+        } else {
+            $clean = trim($range, "'\"");
+            $candidates[] = "'".str_replace("'", "''", $clean)."'";
+            $candidates[] = "{$clean}!A:Z";
+            $candidates[] = "{$clean}!A1:Z";
         }
 
-        return $response->json('values') ?? [];
+        $candidates = array_values(array_unique($candidates));
+
+        $lastError = null;
+        foreach ($candidates as $candidateRange) {
+            $url = "https://sheets.googleapis.com/v4/spreadsheets/{$cleanId}/values/".rawurlencode($candidateRange);
+
+            $response = Http::withHeaders($headers)
+                ->timeout(30)
+                ->get($url, $params);
+
+            if ($response->successful()) {
+                if ($candidateRange !== $range) {
+                    Log::info("Google Sheets range fallback succeeded with format '{$candidateRange}' (original: '{$range}')");
+                }
+
+                return $response->json('values') ?? [];
+            }
+
+            $errorMsg = $response->json('error.message') ?? $response->body();
+            $lastError = "Google Sheets API error on '{$candidateRange}': {$errorMsg}";
+
+            // If not a range parsing error (e.g. auth 401, permission 403, not found 404), fail fast
+            if (! str_contains($errorMsg, 'Unable to parse range')) {
+                Log::error($lastError);
+                throw new RuntimeException($lastError);
+            }
+
+            Log::warning("Google Sheets range attempt '{$candidateRange}' failed ({$errorMsg}), trying next candidate...");
+        }
+
+        Log::error($lastError);
+        throw new RuntimeException($lastError);
     }
 
     /**
@@ -80,35 +126,42 @@ class GoogleSheetsApiService
         $apiKey = config('services.google.sheets_api_key');
         $url = "https://sheets.googleapis.com/v4/spreadsheets/{$cleanId}";
 
-        $params = [
-            'fields' => 'sheets(properties(sheetId,title))',
-        ];
-        if ($apiKey) {
-            $params['key'] = $apiKey;
-        }
-
         $headers = [];
         $token = $this->resolveAccessToken();
         if ($token) {
             $headers['Authorization'] = "Bearer {$token}";
         }
 
-        $response = Http::withHeaders($headers)
-            ->timeout(30)
-            ->get($url, $params);
+        // Try with field mask first, fall back to full spreadsheet metadata if needed
+        $paramOptions = [
+            ['fields' => 'sheets(properties(sheetId,title))'],
+            [],
+        ];
 
-        if (! $response->successful()) {
-            $errorMsg = $response->json('error.message') ?? $response->body();
-            Log::error("Google Sheets API error on spreadsheet {$cleanId}: {$errorMsg}");
-            throw new RuntimeException("Google Sheets API error on spreadsheet '{$cleanId}': {$errorMsg}");
+        $lastError = null;
+        foreach ($paramOptions as $params) {
+            if ($apiKey) {
+                $params['key'] = $apiKey;
+            }
+
+            $response = Http::withHeaders($headers)
+                ->timeout(30)
+                ->get($url, $params);
+
+            if ($response->successful()) {
+                $sheets = $response->json('sheets') ?? [];
+
+                return array_values(array_filter(array_map(
+                    fn ($s) => isset($s['properties']['title']) ? (string) $s['properties']['title'] : null,
+                    $sheets
+                )));
+            }
+
+            $lastError = $response->json('error.message') ?? $response->body();
         }
 
-        $sheets = $response->json('sheets') ?? [];
-
-        return array_values(array_filter(array_map(
-            fn ($s) => isset($s['properties']['title']) ? (string) $s['properties']['title'] : null,
-            $sheets
-        )));
+        Log::error("Google Sheets API error on spreadsheet {$cleanId}: {$lastError}");
+        throw new RuntimeException("Google Sheets API error on spreadsheet '{$cleanId}': {$lastError}");
     }
 
     /**

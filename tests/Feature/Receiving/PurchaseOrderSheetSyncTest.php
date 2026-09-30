@@ -276,4 +276,40 @@ class PurchaseOrderSheetSyncTest extends TestCase
         // Must match 'Purchase Orders BONITA', NOT 'BONITA SALES ORDER' even if it appears first
         $this->assertSame('Purchase Orders BONITA', $syncService->resolveTabName($config, $allTabs));
     }
+
+    public function test_is_purchase_order_tab_recognizes_lane_tabs(): void
+    {
+        /** @var PurchaseOrderSheetSyncService $syncService */
+        $syncService = app(PurchaseOrderSheetSyncService::class);
+
+        $this->assertTrue($syncService->isPurchaseOrderTab('BONITA'));
+        $this->assertTrue($syncService->isPurchaseOrderTab('A2Z'));
+        $this->assertTrue($syncService->isPurchaseOrderTab('KEYSYS'));
+        $this->assertTrue($syncService->isPurchaseOrderTab('PINGCON'));
+        $this->assertTrue($syncService->isPurchaseOrderTab('pos'));
+    }
+
+    public function test_google_sheets_api_retries_with_candidate_range_when_unable_to_parse_range(): void
+    {
+        \Illuminate\Support\Facades\Http::fake([
+            'https://sheets.googleapis.com/v4/spreadsheets/mock-sheet-id/values/%27Purchase%20Orders%20BONITA%27%21A%3AZ*' => \Illuminate\Support\Facades\Http::response([
+                'error' => ['message' => "Unable to parse range: 'Purchase Orders BONITA'!A:Z"],
+            ], 400),
+            'https://sheets.googleapis.com/v4/spreadsheets/mock-sheet-id/values/%27Purchase%20Orders%20BONITA%27*' => \Illuminate\Support\Facades\Http::response([
+                'values' => [
+                    ['PO Number', 'Supplier'],
+                    ['PO-999', 'Vendor Inc'],
+                ],
+            ], 200),
+        ]);
+
+        /** @var \App\Services\GoogleSheets\GoogleSheetsApiService $apiService */
+        $apiService = app(\App\Services\GoogleSheets\GoogleSheetsApiService::class);
+
+        $values = $apiService->fetchRange('mock-sheet-id', "'Purchase Orders BONITA'!A:Z");
+
+        $this->assertCount(2, $values);
+        $this->assertSame('PO-999', $values[1][0]);
+    }
 }
+

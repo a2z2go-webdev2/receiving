@@ -286,25 +286,35 @@ class PurchaseOrderSheetSyncService
 
     private function resolveConfig(GoogleSheetConfig|string $configOrSlug): GoogleSheetConfig
     {
+        $envPoSheetId = config('services.google.purchase_orders_sheet_id');
+
         if ($configOrSlug instanceof GoogleSheetConfig) {
-            if (empty($configOrSlug->spreadsheet_id) && $envId = config('services.google.purchase_orders_sheet_id')) {
-                $configOrSlug->update(['spreadsheet_id' => $envId]);
+            if (! empty($envPoSheetId) && ($configOrSlug->sheet_type !== 'purchase_order' || empty($configOrSlug->spreadsheet_id))) {
+                $configOrSlug->update([
+                    'spreadsheet_id' => $envPoSheetId,
+                    'sheet_type' => 'purchase_order',
+                ]);
             }
 
             return $configOrSlug;
         }
 
-        $config = GoogleSheetConfig::query()->firstOrCreate(
-            ['slug' => $configOrSlug],
-            [
+        $config = GoogleSheetConfig::query()->where('slug', $configOrSlug)->first();
+
+        if ($config === null) {
+            return GoogleSheetConfig::query()->create([
+                'slug' => $configOrSlug,
                 'name' => ucfirst(str_replace('_', ' ', $configOrSlug)),
                 'sheet_type' => 'purchase_order',
-                'spreadsheet_id' => config('services.google.purchase_orders_sheet_id'),
-            ]
-        );
+                'spreadsheet_id' => $envPoSheetId,
+            ]);
+        }
 
-        if (empty($config->spreadsheet_id) && $envId = config('services.google.purchase_orders_sheet_id')) {
-            $config->update(['spreadsheet_id' => $envId]);
+        if (! empty($envPoSheetId) && ($config->sheet_type !== 'purchase_order' || empty($config->spreadsheet_id))) {
+            $config->update([
+                'spreadsheet_id' => $envPoSheetId,
+                'sheet_type' => 'purchase_order',
+            ]);
         }
 
         return $config;
@@ -325,6 +335,8 @@ class PurchaseOrderSheetSyncService
             || str_ends_with($lower, ' so')
             || str_contains($lower, 'delivery receipt')
             || str_contains($lower, 'inventory')
+            || str_contains($lower, 'summary')
+            || str_contains($lower, 'form response')
         ) {
             return false;
         }
@@ -332,7 +344,11 @@ class PurchaseOrderSheetSyncService
         return str_contains($lower, 'purchase order')
             || str_contains($lower, 'purchase_order')
             || str_contains($lower, 'po')
-            || $lower === 'pos';
+            || $lower === 'pos'
+            || str_contains($lower, 'bonita')
+            || str_contains($lower, 'a2z')
+            || str_contains($lower, 'keysys')
+            || str_contains($lower, 'pingcon');
     }
 
     /**
@@ -410,7 +426,11 @@ class PurchaseOrderSheetSyncService
         }
 
         $cellRange = $range ?: 'A:Z';
-        $cleanTab = trim($tabName, " '\"");
+        $cleanTab = trim($tabName);
+        if ((str_starts_with($cleanTab, "'") && str_ends_with($cleanTab, "'"))
+            || (str_starts_with($cleanTab, '"') && str_ends_with($cleanTab, '"'))) {
+            $cleanTab = substr($cleanTab, 1, -1);
+        }
         $escapedTab = str_replace("'", "''", $cleanTab);
 
         return "'{$escapedTab}'!{$cellRange}";
@@ -432,27 +452,46 @@ class PurchaseOrderSheetSyncService
         string $mode = 'apply',
     ): array {
         $config = $this->resolveConfig($configOrSlug);
+        $envPoSheetId = config('services.google.purchase_orders_sheet_id');
+        $spreadsheetId = ! empty($envPoSheetId) ? $envPoSheetId : $config->spreadsheet_id;
 
-        if (empty($config->spreadsheet_id)) {
+        if (empty($spreadsheetId)) {
             throw new RuntimeException("Spreadsheet ID is not configured for sheet '{$config->slug}'.");
         }
 
         $tabs = [];
         try {
-            $tabs = $this->apiService->fetchSpreadsheetTabs($config->spreadsheet_id);
+            $tabs = $this->apiService->fetchSpreadsheetTabs($spreadsheetId);
         } catch (\Throwable $e) {
-            Log::warning("Could not fetch tab list for spreadsheet {$config->spreadsheet_id}: {$e->getMessage()}. Using standard tabs.");
+            Log::warning("Could not fetch tab list for spreadsheet {$spreadsheetId}: {$e->getMessage()}. Using standard tabs.");
         }
 
         $poTabs = array_values(array_filter($tabs, fn (string $t) => $this->isPurchaseOrderTab($t)));
 
         if (empty($poTabs)) {
-            $poTabs = [
-                'Purchase Orders BONITA',
-                'Purchase Orders A2Z',
-                'Purchase Orders KEYSYS',
-                'Purchase Orders',
-            ];
+            if (! empty($tabs)) {
+                // If spreadsheet tabs were fetched from the API, use non-excluded tabs
+                $poTabs = array_values(array_filter($tabs, function (string $t) {
+                    $lower = strtolower(trim($t));
+
+                    return ! (
+                        str_contains($lower, 'sales order')
+                        || str_contains($lower, 'sales r')
+                        || str_contains($lower, 'delivery receipt')
+                        || str_contains($lower, 'inventory')
+                        || str_contains($lower, 'form response')
+                    );
+                }));
+            }
+
+            if (empty($poTabs)) {
+                $poTabs = [
+                    'Purchase Orders BONITA',
+                    'Purchase Orders A2Z',
+                    'Purchase Orders KEYSYS',
+                    'Purchase Orders',
+                ];
+            }
         }
 
         $results = [];
@@ -469,15 +508,16 @@ class PurchaseOrderSheetSyncService
                     [
                         'name' => ucfirst($slug),
                         'sheet_type' => 'purchase_order',
-                        'spreadsheet_id' => $config->spreadsheet_id,
+                        'spreadsheet_id' => $spreadsheetId,
                         'tab_name' => $tabName,
                     ]
                 );
 
-                if ($targetConfig->spreadsheet_id !== $config->spreadsheet_id || $targetConfig->tab_name !== $tabName) {
+                if ($targetConfig->spreadsheet_id !== $spreadsheetId || $targetConfig->tab_name !== $tabName) {
                     $targetConfig->update([
-                        'spreadsheet_id' => $config->spreadsheet_id,
+                        'spreadsheet_id' => $spreadsheetId,
                         'tab_name' => $tabName,
+                        'sheet_type' => 'purchase_order',
                     ]);
                 }
 
@@ -507,7 +547,7 @@ class PurchaseOrderSheetSyncService
         }
 
         return [
-            'spreadsheet_id' => $config->spreadsheet_id,
+            'spreadsheet_id' => $spreadsheetId,
             'total_tabs' => count($poTabs),
             'synced_tabs' => $syncedCount,
             'tabs_synced' => $results,
@@ -520,7 +560,9 @@ class PurchaseOrderSheetSyncService
      */
     private function fetchSheetRows(GoogleSheetConfig $config, ?string $range = null): array
     {
-        $sheetId = $config->spreadsheet_id ?: config('services.google.purchase_orders_sheet_id');
+        $envPoSheetId = config('services.google.purchase_orders_sheet_id');
+        $sheetId = ! empty($envPoSheetId) ? $envPoSheetId : $config->spreadsheet_id;
+
         if (empty($sheetId)) {
             throw new RuntimeException("Spreadsheet ID is not configured for sheet '{$config->slug}'. Set it in Admin Settings or SHEET_ID_PURCHASE_ORDERS in .env.");
         }
@@ -532,20 +574,7 @@ class PurchaseOrderSheetSyncService
             $targetRange = $this->formatRangeWithTab($tabName, $range);
         }
 
-        try {
-            return $this->apiService->fetchRange($sheetId, $targetRange);
-        } catch (\Throwable $e) {
-            if (str_contains($e->getMessage(), 'Unable to parse range') && str_contains($targetRange, '!A:Z')) {
-                $fallbackRange = str_replace('!A:Z', '!A1:Z50000', $targetRange);
-                try {
-                    return $this->apiService->fetchRange($sheetId, $fallbackRange);
-                } catch (\Throwable) {
-                    // rethrow original
-                }
-            }
-
-            throw $e;
-        }
+        return $this->apiService->fetchRange($sheetId, $targetRange);
     }
 
     /**

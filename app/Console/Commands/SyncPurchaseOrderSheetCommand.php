@@ -26,23 +26,37 @@ class SyncPurchaseOrderSheetCommand extends Command
 
         try {
             if ($target === 'all' || $target === 'all_po') {
-                $masterConfig = GoogleSheetConfig::query()
-                    ->whereNotNull('spreadsheet_id')
-                    ->where('spreadsheet_id', '!=', '')
-                    ->first();
+                $envSheetId = config('services.google.purchase_orders_sheet_id');
+                $masterConfig = null;
 
-                if ($masterConfig === null && $envSheetId = config('services.google.purchase_orders_sheet_id')) {
+                if (! empty($envSheetId)) {
                     $masterConfig = GoogleSheetConfig::query()->firstOrCreate(
-                        ['slug' => 'bonita'],
+                        ['slug' => 'purchase_orders'],
                         [
-                            'name' => 'BONITA',
+                            'name' => 'Purchase Orders Master',
                             'sheet_type' => 'purchase_order',
                             'spreadsheet_id' => $envSheetId,
+                            'tab_name' => 'Purchase Orders',
                         ]
                     );
-                    if (empty($masterConfig->spreadsheet_id)) {
-                        $masterConfig->update(['spreadsheet_id' => $envSheetId]);
+
+                    if ($masterConfig->spreadsheet_id !== $envSheetId || $masterConfig->sheet_type !== 'purchase_order') {
+                        $masterConfig->update([
+                            'spreadsheet_id' => $envSheetId,
+                            'sheet_type' => 'purchase_order',
+                        ]);
                     }
+                } else {
+                    $masterConfig = GoogleSheetConfig::query()
+                        ->where('sheet_type', 'purchase_order')
+                        ->whereNotNull('spreadsheet_id')
+                        ->where('spreadsheet_id', '!=', '')
+                        ->first()
+                        ?? GoogleSheetConfig::query()
+                            ->whereIn('slug', ['purchase_orders', 'purchase-orders', 'po'])
+                            ->whereNotNull('spreadsheet_id')
+                            ->where('spreadsheet_id', '!=', '')
+                            ->first();
                 }
 
                 if ($masterConfig === null) {
