@@ -3,6 +3,7 @@
 namespace App\Services\GoogleSheets;
 
 use App\Enums\PurchaseOrderArrivalStatus;
+use App\Enums\UploadWorkflow;
 use App\Features\Receiving\Services\PurchaseOrderDataNormalizer;
 use App\Features\Receiving\Services\PurchaseOrderLinker;
 use App\Models\AiExtraction;
@@ -10,6 +11,7 @@ use App\Models\GoogleSheetConfig;
 use App\Models\GoogleSheetSyncRecord;
 use App\Models\PoExtraction;
 use App\Models\PoExtractionItem;
+use App\Models\UploadType;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -914,12 +916,58 @@ class PurchaseOrderSheetSyncService
         if ($hasStillUnlinked && ! isset($laneSlugs['pingcon'])) {
             try {
                 $this->syncLane('pingcon', targetPoNumbers: $targetPoNumbers);
+                $laneSlugs['pingcon'] = true;
             } catch (\Throwable $e) {
                 Log::warning("Auto Master PO sheet fallback sync failed: {$e->getMessage()}");
             }
+
+            $hasStillUnlinked = false;
+            foreach ($unlinked as $extraction) {
+                $extraction->load('activePurchaseOrderLink');
+                if ($extraction->activePurchaseOrderLink === null) {
+                    $hasStillUnlinked = true;
+                    break;
+                }
+            }
         }
 
-        // 4. Ensure all extractions get fresh local resolution
+        // 4. Cross-lane fallback: if still unlinked, search remaining configured receiving lanes
+        // (handles cases where a user accidentally uploaded an invoice under the wrong upload type)
+        if ($hasStillUnlinked) {
+            $allLanes = UploadType::query()
+                ->where('workflow', UploadWorkflow::Standard)
+                ->whereNotNull('slug')
+                ->pluck('slug')
+                ->all();
+
+            foreach ($allLanes as $fallbackLane) {
+                if (isset($laneSlugs[$fallbackLane])) {
+                    continue;
+                }
+
+                $stillUnlinkedCheck = false;
+                foreach ($unlinked as $extraction) {
+                    $extraction->load('activePurchaseOrderLink');
+                    if ($extraction->activePurchaseOrderLink === null) {
+                        $stillUnlinkedCheck = true;
+                        break;
+                    }
+                }
+
+                if (! $stillUnlinkedCheck) {
+                    break;
+                }
+
+                try {
+                    $this->syncLane($fallbackLane, targetPoNumbers: $targetPoNumbers);
+                    $laneSlugs[$fallbackLane] = true;
+                } catch (\Throwable $e) {
+                    Log::warning("Auto cross-lane PO sheet fallback sync failed for {$fallbackLane}: {$e->getMessage()}");
+                }
+            }
+        }
+
+        // 5. Ensure all extractions get fresh local resolution
         foreach ($unlinked as $extraction) {
             $extraction->load('activePurchaseOrderLink');
             if ($extraction->activePurchaseOrderLink === null) {

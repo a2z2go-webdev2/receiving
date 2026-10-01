@@ -570,7 +570,48 @@ class UploadLogController extends Controller
                     }
                 }
 
-                // 4c. If still unlinked after primary & master sheets, queue background sync for full search
+                // 4c. Cross-lane fallback: if still unlinked, sync remaining standard upload lanes
+                if ($stillUnlinked) {
+                    $otherLanes = UploadType::query()
+                        ->where('workflow', UploadWorkflow::Standard->value)
+                        ->whereNotNull('slug')
+                        ->whereNotIn('slug', array_filter([$primaryLane, 'pingcon']))
+                        ->pluck('slug')
+                        ->all();
+
+                    foreach ($otherLanes as $otherLane) {
+                        $stillUnlinkedCheck = false;
+                        foreach ($remainingUnlinked as $extraction) {
+                            $extraction->load('activePurchaseOrderLink');
+                            if ($extraction->activePurchaseOrderLink === null) {
+                                $stillUnlinkedCheck = true;
+                                break;
+                            }
+                        }
+
+                        if (! $stillUnlinkedCheck) {
+                            break;
+                        }
+
+                        try {
+                            $syncService->syncLane($otherLane, targetPoNumbers: $targetPoNumbers);
+                            $syncNote = ' (PO sheets synced across all lanes).';
+                        } catch (\Throwable $e) {
+                            Log::warning("Cross-lane Google Sheet sync failed for {$otherLane}: {$e->getMessage()}");
+                        }
+                    }
+
+                    $stillUnlinked = false;
+                    foreach ($remainingUnlinked as $extraction) {
+                        $extraction->load('activePurchaseOrderLink');
+                        if ($extraction->activePurchaseOrderLink === null) {
+                            $stillUnlinked = true;
+                            break;
+                        }
+                    }
+                }
+
+                // 4d. If still unlinked after all direct lane searches, queue background sync for full search
                 if ($stillUnlinked) {
                     $lock = Cache::lock('sync_po_sheet_queue_lock', 60);
                     if ($lock->get()) {

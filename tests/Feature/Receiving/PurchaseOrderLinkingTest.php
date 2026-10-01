@@ -893,3 +893,48 @@ it('resyncs all extractions scoped to a specific upload type', function (): void
         ->and($invoiceA->activePurchaseOrderLink)->not->toBeNull()
         ->and($invoiceA->activePurchaseOrderLink->poExtraction->po_number)->toBe('PO-A1');
 });
+
+it('disambiguates between identical PO numbers across lanes using document vendor', function (): void {
+    $normalizer = app(PurchaseOrderDataNormalizer::class);
+    PoExtraction::query()->create([
+        'source_type' => 'google_sheet',
+        'sheet_slug' => 'a2z2go',
+        'po_number' => 'PO-DUAL-100',
+        'po_number_normalized' => $normalizer->normalizeIdentifier('PO-DUAL-100'),
+        'po_date' => '2026-09-01',
+        'po_date_value' => CarbonImmutable::parse('2026-09-01'),
+        'vendor_name' => 'Alpha Parts Inc',
+        'arrival_status' => PurchaseOrderArrivalStatus::Pending,
+        'status_normalized' => 'confirmed',
+    ]);
+
+    PoExtraction::query()->create([
+        'source_type' => 'google_sheet',
+        'sheet_slug' => 'bonita',
+        'po_number' => 'PO-DUAL-100',
+        'po_number_normalized' => $normalizer->normalizeIdentifier('PO-DUAL-100'),
+        'po_date' => '2026-09-01',
+        'po_date_value' => CarbonImmutable::parse('2026-09-01'),
+        'vendor_name' => 'Beta Logistics Corp',
+        'arrival_status' => PurchaseOrderArrivalStatus::Pending,
+        'status_normalized' => 'confirmed',
+    ]);
+
+    // An invoice was uploaded under A2Z2GO by mistake, but the document vendor clearly says 'Beta Logistics Corp'
+    $invoice = poLinkExtraction('a2z2go', 'misplaced-invoice.pdf', [
+        'document_type' => 'Invoice',
+        'fields' => [
+            ['label' => 'Supplier', 'value' => 'Beta Logistics Corp'],
+            ['label' => 'PO Number', 'value' => 'PO-DUAL-100'],
+        ],
+        'items' => [],
+    ]);
+
+    app(PurchaseOrderLinker::class)->syncExtraction($invoice);
+
+    expect($invoice->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and($invoice->activePurchaseOrderLink)->not->toBeNull()
+        ->and($invoice->activePurchaseOrderLink->poExtraction->po_number)->toBe('PO-DUAL-100')
+        ->and($invoice->activePurchaseOrderLink->poExtraction->sheet_slug)->toBe('bonita')
+        ->and($invoice->activePurchaseOrderLink->poExtraction->vendor_name)->toBe('Beta Logistics Corp');
+});

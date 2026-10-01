@@ -609,4 +609,89 @@ class PurchaseOrderSheetSyncTest extends TestCase
         $this->assertNotNull($extraction->activePurchaseOrderLink);
         $this->assertSame('PO-2026-001', $extraction->activePurchaseOrderLink->poExtraction->po_number);
     }
+
+    public function test_match_extractions_cross_lane_syncs_other_lanes_when_user_uploads_to_wrong_lane(): void
+    {
+        config(['services.google.purchase_orders_sheet_id' => 'mock-spreadsheet-id']);
+
+        $user = User::factory()->create();
+        $a2zType = UploadType::query()->firstOrCreate(
+            ['slug' => 'a2z2go'],
+            ['name' => 'A2Z2GO', 'r2_prefix' => 'a2z2go', 'workflow' => UploadWorkflow::Standard, 'is_active' => true]
+        );
+        UploadType::query()->firstOrCreate(
+            ['slug' => 'bonita'],
+            ['name' => 'BONITA', 'r2_prefix' => 'bonita', 'workflow' => UploadWorkflow::Standard, 'is_active' => true]
+        );
+
+        $upload = ReceivingUpload::query()->create([
+            'submission_id' => 'sub-cross-lane',
+            'upload_type_id' => $a2zType->getKey(),
+            'uploader_user_id' => $user->getKey(),
+            'uploader_email' => $user->email,
+            'r2_bucket' => 'test',
+            'r2_prefix' => 'test',
+            'file_count' => 1,
+        ]);
+        $file = UploadedFile::query()->create([
+            'receiving_upload_id' => $upload->getKey(),
+            'original_file_name' => 'bonita-misplaced.pdf',
+            'sanitized_file_name' => 'bonita-misplaced.pdf',
+            'stored_file_name' => 'bonita-misplaced.pdf',
+            'file_extension' => 'pdf',
+            'r2_bucket' => 'test',
+            'r2_object_key' => 'receiving/bonita-misplaced.pdf',
+            'r2_staging_object_key' => 'staging/1/bonita-misplaced.pdf',
+            'original_file_size' => 10,
+            'final_file_size' => 10,
+            'declared_content_type' => 'application/pdf',
+            'content_type' => 'application/pdf',
+        ]);
+        $extraction = AiExtraction::query()->create([
+            'receiving_upload_id' => $upload->getKey(),
+            'uploaded_file_id' => $file->getKey(),
+            'ai_status' => AiStatus::Extracted,
+            'review_status' => ReviewStatus::Pending,
+            'document_type' => 'Invoice',
+            'raw_extracted_json' => [
+                'document_type' => 'Invoice',
+                'fields' => [
+                    ['label' => 'PO Number', 'value' => 'PO-2026-001'],
+                    ['label' => 'Company Name', 'value' => 'Acme Corp'],
+                ],
+                'items' => [
+                    ['description' => 'Widget A', 'quantity' => '10'],
+                ],
+            ],
+            'po_number' => 'PO-2026-001',
+        ]);
+
+        $mockApi = Mockery::mock(GoogleSheetsApiService::class);
+        // 1. A2Z lane returns empty table
+        $mockApi->shouldReceive('fetchRange')
+            ->once()
+            ->with('mock-spreadsheet-id', Mockery::on(fn (string $range): bool => str_contains($range, 'A2Z')))
+            ->andReturn([$this->sampleRows[0]]);
+        // 2. Pingcon fallback returns empty table
+        $mockApi->shouldReceive('fetchRange')
+            ->once()
+            ->with('mock-spreadsheet-id', Mockery::on(fn (string $range): bool => str_contains($range, 'PINGCON')))
+            ->andReturn([$this->sampleRows[0]]);
+        // 3. Bonita cross-lane returns sample rows with PO-2026-001
+        $mockApi->shouldReceive('fetchRange')
+            ->once()
+            ->with('mock-spreadsheet-id', Mockery::on(fn (string $range): bool => str_contains($range, 'BONITA')))
+            ->andReturn($this->sampleRows);
+        $this->app->instance(GoogleSheetsApiService::class, $mockApi);
+
+        /** @var PurchaseOrderSheetSyncService $syncService */
+        $syncService = app(PurchaseOrderSheetSyncService::class);
+        $syncService->matchExtractions([$extraction]);
+
+        $extraction->refresh();
+        $this->assertSame(PurchaseOrderLinkStatus::Linked, $extraction->po_link_status);
+        $this->assertNotNull($extraction->activePurchaseOrderLink);
+        $this->assertSame('PO-2026-001', $extraction->activePurchaseOrderLink->poExtraction->po_number);
+        $this->assertSame('bonita', $extraction->activePurchaseOrderLink->poExtraction->sheet_slug);
+    }
 }

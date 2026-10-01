@@ -119,6 +119,20 @@ class PurchaseOrderResolver
         }
 
         if ($hasRealConflict) {
+            // If document vendor is available, attempt to disambiguate by matching non-conflicting vendor
+            if ($documentVendor !== null) {
+                $matchingVendorPos = $eligiblePos->filter(fn (PoExtraction $po) => $po->vendor_name !== null && ! $this->hasSupplierConflict($documentVendor, $po->vendor_name)
+                );
+                if ($matchingVendorPos->count() === 1) {
+                    return new PurchaseOrderResolution(
+                        PurchaseOrderLinkStatus::Linked,
+                        $matchingVendorPos->first(),
+                        $eligiblePos,
+                        'vendor_disambiguated'
+                    );
+                }
+            }
+
             return new PurchaseOrderResolution(
                 PurchaseOrderLinkStatus::Ambiguous,
                 null,
@@ -250,6 +264,11 @@ class PurchaseOrderResolver
      */
     private function extractVendorName(array $data): ?string
     {
+        $topLevel = $data['vendor_name'] ?? $data['supplier_name'] ?? $data['supplier'] ?? $data['vendor'] ?? $data['company_name'] ?? null;
+        if (is_scalar($topLevel) && $this->normalizer->hasMeaningfulValue((string) $topLevel)) {
+            return trim((string) $topLevel);
+        }
+
         $fields = $data['fields'] ?? [];
         if (! is_array($fields)) {
             return null;
