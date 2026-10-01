@@ -247,6 +247,7 @@ export default function SheetsSyncPage({
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        Accept: 'application/json',
                         'X-CSRF-TOKEN':
                             (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)
                                 ?.content || '',
@@ -254,8 +255,21 @@ export default function SheetsSyncPage({
                 },
             );
 
+            if (!res.ok) {
+                const text = await res.text();
+                let errMsg = `Sync failed (status ${res.status})`;
+                try {
+                    const parsed = JSON.parse(text);
+                    errMsg = parsed.error || parsed.message || errMsg;
+                } catch {
+                    if (res.status === 419) errMsg = 'Session expired. Please refresh the page.';
+                }
+                showToast(errMsg, 'error');
+                return;
+            }
+
             const data = await res.json();
-            if (res.ok && data.success) {
+            if (data.success) {
                 showToast(data.message, 'success');
                 loadItems();
                 pollProgress();
@@ -276,14 +290,32 @@ export default function SheetsSyncPage({
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    Accept: 'application/json',
                     'X-CSRF-TOKEN':
                         (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)
                             ?.content || '',
                 },
             });
 
+            if (!res.ok) {
+                const text = await res.text();
+                let errMsg = `Server returned status ${res.status}`;
+                try {
+                    const parsed = JSON.parse(text);
+                    errMsg = parsed.error || parsed.message || errMsg;
+                } catch {
+                    if (res.status === 504 || res.status === 502) {
+                        errMsg = 'Request timed out on server. Please try again.';
+                    } else if (res.status === 419) {
+                        errMsg = 'Session expired. Please refresh the page.';
+                    }
+                }
+                showToast(errMsg, 'error');
+                return;
+            }
+
             const data = await res.json();
-            if (res.ok && data.success) {
+            if (data.success) {
                 showToast(data.message, 'success');
                 loadItems();
                 pollProgress();
@@ -309,6 +341,7 @@ export default function SheetsSyncPage({
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    Accept: 'application/json',
                     'X-CSRF-TOKEN':
                         (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)
                             ?.content || '',
@@ -316,8 +349,21 @@ export default function SheetsSyncPage({
                 body: JSON.stringify(config),
             });
 
+            if (!res.ok) {
+                const text = await res.text();
+                let errMsg = `Batch sync failed (${res.status})`;
+                try {
+                    const parsed = JSON.parse(text);
+                    errMsg = parsed.error || parsed.message || errMsg;
+                } catch {
+                    if (res.status === 419) errMsg = 'Session expired. Please refresh the page.';
+                }
+                showToast(errMsg, 'error');
+                return;
+            }
+
             const data = await res.json();
-            if (res.ok && data.success) {
+            if (data.success) {
                 showToast(data.message, 'success');
                 await pollProgress();
             } else {

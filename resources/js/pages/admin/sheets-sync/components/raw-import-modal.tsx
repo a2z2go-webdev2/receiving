@@ -44,6 +44,7 @@ export function RawImportModal({
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    Accept: 'application/json',
                     'X-CSRF-TOKEN':
                         (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)
                             ?.content || '',
@@ -51,8 +52,21 @@ export function RawImportModal({
                 body: JSON.stringify({ content }),
             });
 
+            if (!res.ok) {
+                const text = await res.text();
+                let errMsg = 'Failed to import table content.';
+                try {
+                    const parsed = JSON.parse(text);
+                    errMsg = parsed.error || parsed.message || errMsg;
+                } catch {
+                    if (res.status === 419) errMsg = 'Session expired. Please refresh the page.';
+                }
+                setError(errMsg);
+                return;
+            }
+
             const data = await res.json();
-            if (res.ok && data.success) {
+            if (data.success) {
                 setContent('');
                 onImportSuccess(data.message);
                 onOpenChange(false);

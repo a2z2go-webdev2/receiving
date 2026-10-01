@@ -135,7 +135,8 @@ class GoogleSheetsDataSyncService
     public function stageData(string $slug, array $logs, array $files, array $extractions): void
     {
         DB::transaction(function () use ($slug, $logs, $files, $extractions): void {
-            // 1. Stage Logs
+            // 1. Stage Logs (Batch upsert)
+            $logRows = [];
             foreach ($logs as $log) {
                 $snRaw = $this->tableParser->getCaseInsensitive($log, ['serial number', 'serial_number', 'sn']);
                 $sn = (int) preg_replace('/[^\d]/', '', $snRaw);
@@ -159,66 +160,110 @@ class GoogleSheetsDataSyncService
                 $tokenExpires = $this->tableParser->getCaseInsensitive($log, ['review expires at', 'review_expires_at']);
                 $uploaderLoc = $this->tableParser->getCaseInsensitive($log, ['uploader location', 'uploader_location']);
 
-                GoogleSheetLog::query()->updateOrCreate(
-                    ['sheet_slug' => $slug, 'serial_number' => $sn],
+                $logRows[] = [
+                    'sheet_slug' => $slug,
+                    'serial_number' => $sn,
+                    'timestamp' => $timestamp,
+                    'drive_folder_link' => $driveLink,
+                    'file_count' => max(1, $fileCount),
+                    'email_status' => $emailStatus,
+                    'ai_status' => $aiStatus,
+                    'review_status' => $reviewStatus,
+                    'review_token' => $reviewToken,
+                    'reviewed_at' => $reviewedAt,
+                    'reviewed_by' => $reviewedBy,
+                    'review_token_created_at' => $tokenCreated,
+                    'review_expires_at' => $tokenExpires,
+                    'uploader_location' => $uploaderLoc,
+                    'updated_at' => now(),
+                ];
+            }
+
+            foreach (array_chunk($logRows, 250) as $chunk) {
+                GoogleSheetLog::query()->upsert(
+                    $chunk,
+                    ['sheet_slug', 'serial_number'],
                     [
-                        'timestamp' => $timestamp,
-                        'drive_folder_link' => $driveLink,
-                        'file_count' => max(1, $fileCount),
-                        'email_status' => $emailStatus,
-                        'ai_status' => $aiStatus,
-                        'review_status' => $reviewStatus,
-                        'review_token' => $reviewToken,
-                        'reviewed_at' => $reviewedAt,
-                        'reviewedBy' => $reviewedBy,
-                        'reviewed_by' => $reviewedBy,
-                        'review_token_created_at' => $tokenCreated,
-                        'review_expires_at' => $tokenExpires,
-                        'uploader_location' => $uploaderLoc,
+                        'timestamp', 'drive_folder_link', 'file_count', 'email_status',
+                        'ai_status', 'review_status', 'review_token', 'reviewed_at',
+                        'reviewed_by', 'review_token_created_at', 'review_expires_at',
+                        'uploader_location', 'updated_at',
                     ]
                 );
             }
 
             // 2. Stage Files
+            $existingFiles = GoogleSheetFile::query()
+                ->where('sheet_slug', $slug)
+                ->get()
+                ->keyBy(fn ($item): string => "{$item->serial_number}_{$item->file_name}");
+
+            $filesToInsert = [];
             foreach ($files as $f) {
                 $sn = (int) ($f['serial_number'] ?? 0);
                 $fname = trim((string) ($f['file_name'] ?? ''));
                 $fid = trim((string) ($f['file_id'] ?? ''));
 
                 if ($sn > 0 && ($fname !== '' || $fid !== '')) {
-                    GoogleSheetFile::query()->updateOrCreate(
-                        [
-                            'sheet_slug' => $slug,
-                            'serial_number' => $sn,
-                            'file_name' => $fname ?: "file_{$fid}",
-                        ],
-                        [
+                    $fileName = $fname ?: "file_{$fid}";
+                    $key = "{$sn}_{$fileName}";
+                    $existing = $existingFiles->get($key);
+
+                    if ($existing) {
+                        $existing->update([
                             'file_no' => $f['file_no'] ?? null,
                             'file_id' => $fid ?: null,
                             'file_url' => $f['file_url'] ?? null,
                             'mime_type' => $f['mime_type'] ?? 'image/jpeg',
                             'r2_url' => $f['r2_url'] ?? null,
                             'row_index' => $f['_rowIndex'] ?? null,
-                        ]
-                    );
+                        ]);
+                    } else {
+                        $filesToInsert[] = [
+                            'sheet_slug' => $slug,
+                            'serial_number' => $sn,
+                            'file_name' => $fileName,
+                            'file_no' => $f['file_no'] ?? null,
+                            'file_id' => $fid ?: null,
+                            'file_url' => $f['file_url'] ?? null,
+                            'mime_type' => $f['mime_type'] ?? 'image/jpeg',
+                            'r2_url' => $f['r2_url'] ?? null,
+                            'row_index' => $f['_rowIndex'] ?? null,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                    }
                 }
             }
 
-            // 3. Stage Extractions
+            foreach (array_chunk($filesToInsert, 250) as $chunk) {
+                GoogleSheetFile::query()->insert($chunk);
+            }
+
+            // 3. Stage Extractions (Batch upsert)
+            $extractionRows = [];
             foreach ($extractions as $e) {
                 $sn = (int) ($e['serial_number'] ?? 0);
                 if ($sn > 0) {
-                    GoogleSheetExtraction::query()->updateOrCreate(
-                        ['sheet_slug' => $slug, 'serial_number' => $sn],
-                        [
-                            'ai_status' => $e['ai_status'] ?? null,
-                            'raw_ai_json' => $e['raw_ai_json'] ?? null,
-                            'corrected_json' => $e['corrected_json'] ?? null,
-                            'extracted_at' => $e['extracted_at'] ?? null,
-                            'error_message' => $e['error_message'] ?? null,
-                        ]
-                    );
+                    $extractionRows[] = [
+                        'sheet_slug' => $slug,
+                        'serial_number' => $sn,
+                        'ai_status' => $e['ai_status'] ?? null,
+                        'raw_ai_json' => $e['raw_ai_json'] ?? null,
+                        'corrected_json' => $e['corrected_json'] ?? null,
+                        'extracted_at' => $e['extracted_at'] ?? null,
+                        'error_message' => $e['error_message'] ?? null,
+                        'updated_at' => now(),
+                    ];
                 }
+            }
+
+            foreach (array_chunk($extractionRows, 250) as $chunk) {
+                GoogleSheetExtraction::query()->upsert(
+                    $chunk,
+                    ['sheet_slug', 'serial_number'],
+                    ['ai_status', 'raw_ai_json', 'corrected_json', 'extracted_at', 'error_message', 'updated_at']
+                );
             }
         });
     }

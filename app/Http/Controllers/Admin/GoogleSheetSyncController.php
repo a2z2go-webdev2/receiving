@@ -216,6 +216,8 @@ class GoogleSheetSyncController extends Controller
      */
     public function refresh(string $slug): JsonResponse
     {
+        @set_time_limit(180);
+
         try {
             $result = $this->syncService->refreshFromApi($slug);
             $sheetConfig = GoogleSheetConfig::query()->where('slug', $slug)->first();
