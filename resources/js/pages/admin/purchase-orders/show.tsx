@@ -10,8 +10,6 @@ import {
     Layers,
     Package,
     Receipt,
-    Truck,
-    User as UserIcon,
 } from 'lucide-react';
 import { PageShell } from '@/components/receiving/page-shell';
 import { StatusBadge } from '@/components/receiving/status-badge';
@@ -119,8 +117,21 @@ type PurchaseOrder = {
     };
 };
 
+function formatMoney(amount: string | number | null | undefined): string {
+    if (amount === null || amount === undefined || amount === '') {
+        return '—';
+    }
+    const num =
+        typeof amount === 'number' ? amount : parseFloat(String(amount).replace(/[^0-9.-]+/g, ''));
+    if (isNaN(num)) {
+        return String(amount);
+    }
+    return `₱${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
+}
+
 export default function PurchaseOrderShow({ purchaseOrder }: { purchaseOrder: PurchaseOrder }) {
     const isSheet = purchaseOrder.source_type === 'google_sheet';
+    const hasFinancialBreakdown = purchaseOrder.subtotal !== null || purchaseOrder.vat !== null;
 
     return (
         <>
@@ -155,168 +166,354 @@ export default function PurchaseOrderShow({ purchaseOrder }: { purchaseOrder: Pu
                 }
             >
                 {/* Header status bar */}
-                <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-muted-foreground text-xs font-medium">
-                                Arrival status
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex items-center justify-between">
-                            <StatusBadge value={purchaseOrder.arrival_status} />
-                            {purchaseOrder.waiting_time.days !== null && (
-                                <span className="text-xs text-muted-foreground">
-                                    {purchaseOrder.waiting_time.days}d waiting
-                                </span>
-                            )}
-                        </CardContent>
-                    </Card>
+                {isSheet ? (
+                    <div
+                        className={`mb-6 grid gap-4 sm:grid-cols-2 ${
+                            hasFinancialBreakdown
+                                ? purchaseOrder.subtotal !== null && purchaseOrder.vat !== null
+                                    ? 'lg:grid-cols-5'
+                                    : 'lg:grid-cols-4'
+                                : 'lg:grid-cols-3'
+                        }`}
+                    >
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-muted-foreground text-xs font-medium">
+                                    Status
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex items-center justify-between">
+                                <StatusBadge value={purchaseOrder.source_status} />
+                                <Badge
+                                    variant="outline"
+                                    className="text-[10px] font-normal uppercase"
+                                >
+                                    {purchaseOrder.sheet_source?.name ?? 'Google Sheet'}
+                                </Badge>
+                            </CardContent>
+                        </Card>
 
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-muted-foreground text-xs font-medium">
-                                Source status
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex items-center justify-between">
-                            <StatusBadge value={purchaseOrder.source_status} />
-                            <Badge variant="outline" className="text-[10px] font-normal uppercase">
-                                {isSheet ? 'Google Sheet' : 'PDF Upload'}
-                            </Badge>
-                        </CardContent>
-                    </Card>
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-muted-foreground text-xs font-medium">
+                                    PO date
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex items-center gap-2 text-sm font-semibold">
+                                <Calendar className="size-4 text-muted-foreground" />
+                                {purchaseOrder.po_date_value ??
+                                    purchaseOrder.po_date ??
+                                    'Not recorded'}
+                            </CardContent>
+                        </Card>
 
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-muted-foreground text-xs font-medium">
-                                PO date
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex items-center gap-2 text-sm font-semibold">
-                            <Calendar className="size-4 text-muted-foreground" />
-                            {purchaseOrder.po_date_value ?? purchaseOrder.po_date ?? 'Not recorded'}
-                        </CardContent>
-                    </Card>
+                        {purchaseOrder.subtotal !== null && (
+                            <Card>
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-muted-foreground text-xs font-medium">
+                                        Net total
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="text-base font-bold text-foreground">
+                                    {formatMoney(purchaseOrder.subtotal)}
+                                </CardContent>
+                            </Card>
+                        )}
 
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-muted-foreground text-xs font-medium">
-                                Total amount
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-base font-bold text-foreground">
-                            {purchaseOrder.total_amount ? `₱${purchaseOrder.total_amount}` : '—'}
-                        </CardContent>
-                    </Card>
-                </div>
+                        {purchaseOrder.vat !== null && (
+                            <Card>
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-muted-foreground text-xs font-medium">
+                                        VAT total
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="text-base font-bold text-foreground">
+                                    {formatMoney(purchaseOrder.vat)}
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-muted-foreground text-xs font-medium">
+                                    Total amount
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="text-base font-bold text-foreground">
+                                {formatMoney(purchaseOrder.total_amount)}
+                            </CardContent>
+                        </Card>
+                    </div>
+                ) : (
+                    <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-muted-foreground text-xs font-medium">
+                                    Arrival status
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex items-center justify-between">
+                                <StatusBadge value={purchaseOrder.arrival_status} />
+                                {purchaseOrder.waiting_time.days !== null && (
+                                    <span className="text-xs text-muted-foreground">
+                                        {purchaseOrder.waiting_time.days}d waiting
+                                    </span>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-muted-foreground text-xs font-medium">
+                                    Source status
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex items-center justify-between">
+                                <StatusBadge value={purchaseOrder.source_status} />
+                                <Badge
+                                    variant="outline"
+                                    className="text-[10px] font-normal uppercase"
+                                >
+                                    PDF Upload
+                                </Badge>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-muted-foreground text-xs font-medium">
+                                    PO date
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex items-center gap-2 text-sm font-semibold">
+                                <Calendar className="size-4 text-muted-foreground" />
+                                {purchaseOrder.po_date_value ??
+                                    purchaseOrder.po_date ??
+                                    'Not recorded'}
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-muted-foreground text-xs font-medium">
+                                    Total amount
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="text-base font-bold text-foreground">
+                                {formatMoney(purchaseOrder.total_amount)}
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
 
                 {/* Details grid */}
-                <div className="mb-6 grid gap-6 md:grid-cols-2">
-                    {/* Vendor details */}
-                    <Card>
-                        <CardHeader className="pb-3 border-b">
-                            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                                <Building2 className="size-4 text-primary" />
-                                Vendor / Supplier
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-3 text-xs space-y-2">
-                            <div className="flex justify-between py-1 border-b border-muted">
-                                <span className="text-muted-foreground">Name:</span>
-                                <span className="font-medium text-foreground">
-                                    {purchaseOrder.vendor_name ?? '—'}
-                                </span>
-                            </div>
-                            {purchaseOrder.vendor_raw &&
-                                purchaseOrder.vendor_raw !== purchaseOrder.vendor_name && (
+                {isSheet ? (
+                    <div className="mb-6 grid gap-6 md:grid-cols-2">
+                        {/* Vendor details */}
+                        <Card>
+                            <CardHeader className="pb-3 border-b">
+                                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                                    <Building2 className="size-4 text-primary" />
+                                    Vendor / Supplier
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-3 text-xs space-y-2">
+                                <div className="flex justify-between py-1 border-b border-muted">
+                                    <span className="text-muted-foreground">Supplier:</span>
+                                    <span className="font-medium text-foreground">
+                                        {purchaseOrder.vendor_name ?? '—'}
+                                    </span>
+                                </div>
+                                {purchaseOrder.contact_person && (
                                     <div className="flex justify-between py-1 border-b border-muted">
-                                        <span className="text-muted-foreground">Source raw:</span>
-                                        <span className="font-mono text-[11px]">
-                                            {purchaseOrder.vendor_raw}
+                                        <span className="text-muted-foreground">
+                                            Contact person:
+                                        </span>
+                                        <span>{purchaseOrder.contact_person}</span>
+                                    </div>
+                                )}
+                                {purchaseOrder.buyer_company && (
+                                    <div className="flex justify-between py-1 border-b border-muted">
+                                        <span className="text-muted-foreground">
+                                            Buyer company:
+                                        </span>
+                                        <span>{purchaseOrder.buyer_company}</span>
+                                    </div>
+                                )}
+                                {purchaseOrder.buyer_address && (
+                                    <div className="flex justify-between py-1 border-b border-muted">
+                                        <span className="text-muted-foreground">
+                                            Delivery address:
+                                        </span>
+                                        <span
+                                            className="text-right max-w-[240px] truncate"
+                                            title={purchaseOrder.buyer_address}
+                                        >
+                                            {purchaseOrder.buyer_address}
                                         </span>
                                     </div>
                                 )}
-                            <div className="flex justify-between py-1 border-b border-muted">
-                                <span className="text-muted-foreground">Contact person:</span>
-                                <span>{purchaseOrder.contact_person ?? '—'}</span>
-                            </div>
-                            <div className="flex justify-between py-1 border-b border-muted">
-                                <span className="text-muted-foreground">Email:</span>
-                                <span>{purchaseOrder.vendor_email ?? '—'}</span>
-                            </div>
-                            <div className="flex justify-between py-1 border-b border-muted">
-                                <span className="text-muted-foreground">Mobile:</span>
-                                <span>{purchaseOrder.vendor_mobile ?? '—'}</span>
-                            </div>
-                            <div className="flex justify-between py-1">
-                                <span className="text-muted-foreground">Address:</span>
-                                <span className="text-right max-w-[240px] truncate">
-                                    {purchaseOrder.vendor_address ?? '—'}
-                                </span>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Order & Source Info */}
-                    <Card>
-                        <CardHeader className="pb-3 border-b">
-                            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                                {isSheet ? (
-                                    <FileSpreadsheet className="size-4 text-primary" />
-                                ) : (
-                                    <FileText className="size-4 text-primary" />
+                                {purchaseOrder.buyer_contact_numbers && (
+                                    <div className="flex justify-between py-1">
+                                        <span className="text-muted-foreground">
+                                            Buyer contact:
+                                        </span>
+                                        <span>{purchaseOrder.buyer_contact_numbers}</span>
+                                    </div>
                                 )}
-                                Order & Provenance
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-3 text-xs space-y-2">
-                            <div className="flex justify-between py-1 border-b border-muted">
-                                <span className="text-muted-foreground">PO Number:</span>
-                                <span className="font-mono font-medium text-foreground">
-                                    {purchaseOrder.po_number ?? '—'}
-                                </span>
-                            </div>
-                            <div className="flex justify-between py-1 border-b border-muted">
-                                <span className="text-muted-foreground">PO Reference:</span>
-                                <span>{purchaseOrder.po_reference ?? '—'}</span>
-                            </div>
-                            <div className="flex justify-between py-1 border-b border-muted">
-                                <span className="text-muted-foreground">Payment terms:</span>
-                                <span>{purchaseOrder.payment_terms ?? '—'}</span>
-                            </div>
-                            <div className="flex justify-between py-1 border-b border-muted">
-                                <span className="text-muted-foreground">Source channel:</span>
-                                <span>
-                                    {isSheet
-                                        ? `Google Sheet (${purchaseOrder.sheet_source?.name ?? 'Sync'})`
-                                        : 'Uploaded Document'}
-                                </span>
-                            </div>
-                            {isSheet && purchaseOrder.snapshot_timestamp && (
+                            </CardContent>
+                        </Card>
+
+                        {/* Order & Sheet Details */}
+                        <Card>
+                            <CardHeader className="pb-3 border-b">
+                                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                                    <FileSpreadsheet className="size-4 text-primary" />
+                                    Order & Sheet Details
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-3 text-xs space-y-2">
                                 <div className="flex justify-between py-1 border-b border-muted">
-                                    <span className="text-muted-foreground">
-                                        Last synchronized:
+                                    <span className="text-muted-foreground">PO Number:</span>
+                                    <span className="font-mono font-medium text-foreground">
+                                        {purchaseOrder.po_number ?? '—'}
                                     </span>
+                                </div>
+                                {purchaseOrder.po_reference && (
+                                    <div className="flex justify-between py-1 border-b border-muted">
+                                        <span className="text-muted-foreground">PO Reference:</span>
+                                        <span>{purchaseOrder.po_reference}</span>
+                                    </div>
+                                )}
+                                {purchaseOrder.payment_terms && (
+                                    <div className="flex justify-between py-1 border-b border-muted">
+                                        <span className="text-muted-foreground">
+                                            Payment terms:
+                                        </span>
+                                        <span>{purchaseOrder.payment_terms}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between py-1 border-b border-muted">
+                                    <span className="text-muted-foreground">Source channel:</span>
                                     <span>
-                                        {new Date(
-                                            purchaseOrder.snapshot_timestamp,
-                                        ).toLocaleString()}
+                                        Google Sheet ({purchaseOrder.sheet_source?.name ?? 'Sync'})
                                     </span>
                                 </div>
-                            )}
-                            {purchaseOrder.notes && (
-                                <div className="py-1">
-                                    <span className="text-muted-foreground block mb-0.5">
-                                        Notes:
+                                {purchaseOrder.snapshot_timestamp && (
+                                    <div className="flex justify-between py-1 border-b border-muted">
+                                        <span className="text-muted-foreground">
+                                            Last synchronized:
+                                        </span>
+                                        <span>
+                                            {new Date(
+                                                purchaseOrder.snapshot_timestamp,
+                                            ).toLocaleString()}
+                                        </span>
+                                    </div>
+                                )}
+                                {purchaseOrder.notes && (
+                                    <div className="py-1">
+                                        <span className="text-muted-foreground block mb-0.5">
+                                            Notes / Remarks:
+                                        </span>
+                                        <p className="rounded bg-muted/50 p-2 text-foreground/80 whitespace-pre-wrap">
+                                            {purchaseOrder.notes}
+                                        </p>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
+                ) : (
+                    <div className="mb-6 grid gap-6 md:grid-cols-2">
+                        {/* Vendor details */}
+                        <Card>
+                            <CardHeader className="pb-3 border-b">
+                                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                                    <Building2 className="size-4 text-primary" />
+                                    Vendor / Supplier
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-3 text-xs space-y-2">
+                                <div className="flex justify-between py-1 border-b border-muted">
+                                    <span className="text-muted-foreground">Name:</span>
+                                    <span className="font-medium text-foreground">
+                                        {purchaseOrder.vendor_name ?? '—'}
                                     </span>
-                                    <p className="rounded bg-muted/50 p-2 text-foreground/80">
-                                        {purchaseOrder.notes}
-                                    </p>
                                 </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
+                                {purchaseOrder.vendor_raw &&
+                                    purchaseOrder.vendor_raw !== purchaseOrder.vendor_name && (
+                                        <div className="flex justify-between py-1 border-b border-muted">
+                                            <span className="text-muted-foreground">
+                                                Source raw:
+                                            </span>
+                                            <span className="font-mono text-[11px]">
+                                                {purchaseOrder.vendor_raw}
+                                            </span>
+                                        </div>
+                                    )}
+                                <div className="flex justify-between py-1 border-b border-muted">
+                                    <span className="text-muted-foreground">Contact person:</span>
+                                    <span>{purchaseOrder.contact_person ?? '—'}</span>
+                                </div>
+                                <div className="flex justify-between py-1 border-b border-muted">
+                                    <span className="text-muted-foreground">Email:</span>
+                                    <span>{purchaseOrder.vendor_email ?? '—'}</span>
+                                </div>
+                                <div className="flex justify-between py-1 border-b border-muted">
+                                    <span className="text-muted-foreground">Mobile:</span>
+                                    <span>{purchaseOrder.vendor_mobile ?? '—'}</span>
+                                </div>
+                                <div className="flex justify-between py-1">
+                                    <span className="text-muted-foreground">Address:</span>
+                                    <span className="text-right max-w-[240px] truncate">
+                                        {purchaseOrder.vendor_address ?? '—'}
+                                    </span>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Order & Source Info */}
+                        <Card>
+                            <CardHeader className="pb-3 border-b">
+                                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                                    <FileText className="size-4 text-primary" />
+                                    Order & Provenance
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-3 text-xs space-y-2">
+                                <div className="flex justify-between py-1 border-b border-muted">
+                                    <span className="text-muted-foreground">PO Number:</span>
+                                    <span className="font-mono font-medium text-foreground">
+                                        {purchaseOrder.po_number ?? '—'}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between py-1 border-b border-muted">
+                                    <span className="text-muted-foreground">PO Reference:</span>
+                                    <span>{purchaseOrder.po_reference ?? '—'}</span>
+                                </div>
+                                <div className="flex justify-between py-1 border-b border-muted">
+                                    <span className="text-muted-foreground">Payment terms:</span>
+                                    <span>{purchaseOrder.payment_terms ?? '—'}</span>
+                                </div>
+                                <div className="flex justify-between py-1 border-b border-muted">
+                                    <span className="text-muted-foreground">Source channel:</span>
+                                    <span>Uploaded Document</span>
+                                </div>
+                                {purchaseOrder.notes && (
+                                    <div className="py-1">
+                                        <span className="text-muted-foreground block mb-0.5">
+                                            Notes:
+                                        </span>
+                                        <p className="rounded bg-muted/50 p-2 text-foreground/80">
+                                            {purchaseOrder.notes}
+                                        </p>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
 
                 {/* Ordered Items Table */}
                 <div className="mb-8">
@@ -337,7 +534,7 @@ export default function PurchaseOrderShow({ purchaseOrder }: { purchaseOrder: Pu
                                     <th className="px-3 py-2">Unit</th>
                                     <th className="px-3 py-2 text-right">Unit Price</th>
                                     <th className="px-3 py-2 text-right">Line Total</th>
-                                    <th className="px-3 py-2">Catalog Schedule</th>
+                                    {!isSheet && <th className="px-3 py-2">Catalog Schedule</th>}
                                 </tr>
                             </thead>
                             <tbody className="divide-y">
@@ -377,29 +574,31 @@ export default function PurchaseOrderShow({ purchaseOrder }: { purchaseOrder: Pu
                                             {item.unit ?? '—'}
                                         </td>
                                         <td className="px-3 py-2 text-right">
-                                            {item.unit_price ? `₱${item.unit_price}` : '—'}
+                                            {formatMoney(item.unit_price)}
                                         </td>
                                         <td className="px-3 py-2 text-right font-medium">
-                                            {item.line_total ? `₱${item.line_total}` : '—'}
+                                            {formatMoney(item.line_total)}
                                         </td>
-                                        <td className="px-3 py-2">
-                                            {item.matched_schedule ? (
-                                                <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600">
-                                                    <CheckCircle2 className="size-3" />
-                                                    {item.matched_schedule.sku_number}
-                                                </span>
-                                            ) : (
-                                                <span className="text-[11px] text-muted-foreground">
-                                                    Unmatched
-                                                </span>
-                                            )}
-                                        </td>
+                                        {!isSheet && (
+                                            <td className="px-3 py-2">
+                                                {item.matched_schedule ? (
+                                                    <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600">
+                                                        <CheckCircle2 className="size-3" />
+                                                        {item.matched_schedule.sku_number}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[11px] text-muted-foreground">
+                                                        Unmatched
+                                                    </span>
+                                                )}
+                                            </td>
+                                        )}
                                     </tr>
                                 ))}
                                 {purchaseOrder.items.length === 0 && (
                                     <tr>
                                         <td
-                                            colSpan={8}
+                                            colSpan={isSheet ? 7 : 8}
                                             className="px-3 py-8 text-center text-muted-foreground"
                                         >
                                             No line items recorded for this purchase order.
@@ -411,153 +610,167 @@ export default function PurchaseOrderShow({ purchaseOrder }: { purchaseOrder: Pu
                     </div>
                 </div>
 
-                {/* Receipt Evidence & Warehouse Arrivals */}
-                <div className="mb-8">
-                    <div className="mb-2 flex items-center justify-between">
-                        <h2 className="text-sm font-semibold flex items-center gap-2">
-                            <Receipt className="size-4 text-primary" />
-                            Linked Receipts & Warehouse Stock (
-                            {purchaseOrder.linked_receipts.length})
-                        </h2>
-                    </div>
+                {/* Receipt Evidence & Warehouse Arrivals (Uploads only) */}
+                {!isSheet && (
+                    <div className="mb-8">
+                        <div className="mb-2 flex items-center justify-between">
+                            <h2 className="text-sm font-semibold flex items-center gap-2">
+                                <Receipt className="size-4 text-primary" />
+                                Linked Receipts & Warehouse Stock (
+                                {purchaseOrder.linked_receipts.length})
+                            </h2>
+                        </div>
 
-                    {purchaseOrder.linked_receipts.length === 0 ? (
-                        <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-xs">
-                            <Clock className="size-8 mx-auto mb-2 text-muted-foreground/60" />
-                            <p className="font-medium text-sm text-foreground">
-                                No receiving uploads linked yet
-                            </p>
-                            <p className="mt-1">
-                                When a receiving document (invoice, delivery receipt) matching this
-                                PO is uploaded, receipt evidence and stock will be recorded
-                                automatically.
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {purchaseOrder.linked_receipts.map((receipt) => (
-                                <Card key={receipt.id} className="overflow-hidden">
-                                    <CardHeader className="bg-muted/30 py-2.5 px-4 flex flex-row items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="font-mono text-xs">
-                                                {receipt.serial_prefix}-{receipt.serial_number}
-                                            </Badge>
-                                            <span className="text-xs font-medium text-foreground">
-                                                {receipt.upload_type}{' '}
-                                                {receipt.document_type
-                                                    ? `· ${receipt.document_type}`
-                                                    : ''}
-                                            </span>
-                                            <Badge variant="secondary" className="text-[10px]">
-                                                Linked {receipt.source}
-                                            </Badge>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[11px] text-muted-foreground">
-                                                {new Date(receipt.linked_at).toLocaleDateString()}
-                                            </span>
-                                            {receipt.upload_id && (
-                                                <Button
-                                                    asChild
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-7 text-xs"
+                        {purchaseOrder.linked_receipts.length === 0 ? (
+                            <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-xs">
+                                <Clock className="size-8 mx-auto mb-2 text-muted-foreground/60" />
+                                <p className="font-medium text-sm text-foreground">
+                                    No receiving uploads linked yet
+                                </p>
+                                <p className="mt-1">
+                                    When a receiving document (invoice, delivery receipt) matching
+                                    this PO is uploaded, receipt evidence and stock will be recorded
+                                    automatically.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {purchaseOrder.linked_receipts.map((receipt) => (
+                                    <Card key={receipt.id} className="overflow-hidden">
+                                        <CardHeader className="bg-muted/30 py-2.5 px-4 flex flex-row items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Badge
+                                                    variant="outline"
+                                                    className="font-mono text-xs"
                                                 >
-                                                    <Link
-                                                        href={`/admin/uploads/${receipt.upload_id}`}
+                                                    {receipt.serial_prefix}-{receipt.serial_number}
+                                                </Badge>
+                                                <span className="text-xs font-medium text-foreground">
+                                                    {receipt.upload_type}{' '}
+                                                    {receipt.document_type
+                                                        ? `· ${receipt.document_type}`
+                                                        : ''}
+                                                </span>
+                                                <Badge variant="secondary" className="text-[10px]">
+                                                    Linked {receipt.source}
+                                                </Badge>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[11px] text-muted-foreground">
+                                                    {new Date(
+                                                        receipt.linked_at,
+                                                    ).toLocaleDateString()}
+                                                </span>
+                                                {receipt.upload_id && (
+                                                    <Button
+                                                        asChild
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-7 text-xs"
                                                     >
-                                                        View receipt
-                                                    </Link>
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="p-0">
-                                        {receipt.arrivals.length > 0 ? (
-                                            <table className="w-full text-left text-xs">
-                                                <thead className="border-b bg-muted/20 text-muted-foreground">
-                                                    <tr>
-                                                        <th className="px-4 py-1.5">Item</th>
-                                                        <th className="px-4 py-1.5">Arrived Qty</th>
-                                                        <th className="px-4 py-1.5">
-                                                            Arrival Date
-                                                        </th>
-                                                        <th className="px-4 py-1.5">
-                                                            Posting Status
-                                                        </th>
-                                                        <th className="px-4 py-1.5">
-                                                            Warehouse Lot
-                                                        </th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y">
-                                                    {receipt.arrivals.map((arrival) => (
-                                                        <tr key={arrival.id}>
-                                                            <td className="px-4 py-2">
-                                                                <span className="font-medium text-foreground">
-                                                                    {arrival.product_description ??
-                                                                        arrival.item_code}
-                                                                </span>
-                                                                {arrival.item_code && (
-                                                                    <span className="block text-[10px] font-mono text-muted-foreground">
-                                                                        {arrival.item_code}
-                                                                    </span>
-                                                                )}
-                                                            </td>
-                                                            <td className="px-4 py-2 font-semibold">
-                                                                {arrival.arrived_quantity}{' '}
-                                                                {arrival.unit ?? ''}
-                                                            </td>
-                                                            <td className="px-4 py-2 text-muted-foreground">
-                                                                {arrival.arrival_date ?? '—'}
-                                                            </td>
-                                                            <td className="px-4 py-2">
-                                                                <StatusBadge
-                                                                    value={
-                                                                        arrival.posting_status ??
-                                                                        'pending'
-                                                                    }
-                                                                />
-                                                            </td>
-                                                            <td className="px-4 py-2">
-                                                                {arrival.stock_lot ? (
-                                                                    <div className="flex items-center gap-1.5">
-                                                                        <Layers className="size-3.5 text-emerald-600" />
-                                                                        <span className="font-mono text-xs font-medium">
-                                                                            Lot #
-                                                                            {arrival.stock_lot.id}
-                                                                        </span>
-                                                                        <span className="text-[10px] text-muted-foreground">
-                                                                            (
-                                                                            {
-                                                                                arrival.stock_lot
-                                                                                    .posting_provenance
-                                                                            }
-                                                                            )
-                                                                        </span>
-                                                                    </div>
-                                                                ) : (
-                                                                    <span className="text-muted-foreground text-[11px]">
-                                                                        —
-                                                                    </span>
-                                                                )}
-                                                            </td>
+                                                        <Link
+                                                            href={`/admin/uploads/${receipt.upload_id}`}
+                                                        >
+                                                            View receipt
+                                                        </Link>
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent className="p-0">
+                                            {receipt.arrivals.length > 0 ? (
+                                                <table className="w-full text-left text-xs">
+                                                    <thead className="border-b bg-muted/20 text-muted-foreground">
+                                                        <tr>
+                                                            <th className="px-4 py-1.5">Item</th>
+                                                            <th className="px-4 py-1.5">
+                                                                Arrived Qty
+                                                            </th>
+                                                            <th className="px-4 py-1.5">
+                                                                Arrival Date
+                                                            </th>
+                                                            <th className="px-4 py-1.5">
+                                                                Posting Status
+                                                            </th>
+                                                            <th className="px-4 py-1.5">
+                                                                Warehouse Lot
+                                                            </th>
                                                         </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        ) : (
-                                            <p className="p-4 text-xs text-muted-foreground">
-                                                No specific arrival line items tracked for this
-                                                linked receipt.
-                                            </p>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                                                    </thead>
+                                                    <tbody className="divide-y">
+                                                        {receipt.arrivals.map((arrival) => (
+                                                            <tr key={arrival.id}>
+                                                                <td className="px-4 py-2">
+                                                                    <span className="font-medium text-foreground">
+                                                                        {arrival.product_description ??
+                                                                            arrival.item_code}
+                                                                    </span>
+                                                                    {arrival.item_code && (
+                                                                        <span className="block text-[10px] font-mono text-muted-foreground">
+                                                                            {arrival.item_code}
+                                                                        </span>
+                                                                    )}
+                                                                </td>
+                                                                <td className="px-4 py-2 font-semibold">
+                                                                    {arrival.arrived_quantity}{' '}
+                                                                    {arrival.unit ?? ''}
+                                                                </td>
+                                                                <td className="px-4 py-2 text-muted-foreground">
+                                                                    {arrival.arrival_date ?? '—'}
+                                                                </td>
+                                                                <td className="px-4 py-2">
+                                                                    <StatusBadge
+                                                                        value={
+                                                                            arrival.posting_status ??
+                                                                            'pending'
+                                                                        }
+                                                                    />
+                                                                </td>
+                                                                <td className="px-4 py-2">
+                                                                    {arrival.stock_lot ? (
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <Layers className="size-3.5 text-emerald-600" />
+                                                                            <span className="font-mono text-xs font-medium">
+                                                                                Lot #
+                                                                                {
+                                                                                    arrival
+                                                                                        .stock_lot
+                                                                                        .id
+                                                                                }
+                                                                            </span>
+                                                                            <span className="text-[10px] text-muted-foreground">
+                                                                                (
+                                                                                {
+                                                                                    arrival
+                                                                                        .stock_lot
+                                                                                        .posting_provenance
+                                                                                }
+                                                                                )
+                                                                            </span>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className="text-muted-foreground text-[11px]">
+                                                                            —
+                                                                        </span>
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            ) : (
+                                                <p className="p-4 text-xs text-muted-foreground">
+                                                    No specific arrival line items tracked for this
+                                                    linked receipt.
+                                                </p>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
             </PageShell>
         </>
     );
