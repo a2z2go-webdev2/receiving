@@ -750,6 +750,7 @@ class GoogleSheetsDataSyncService
         $successful = 0;
         $failed = 0;
         $logs = [];
+        $syncedUploadIds = [];
 
         foreach ($serials as $i => $sn) {
             // Check for cancellation
@@ -771,6 +772,9 @@ class GoogleSheetsDataSyncService
             try {
                 $result = $this->syncSerialNumber($slug, $sn);
                 $successful++;
+                if (! empty($result['upload_id'])) {
+                    $syncedUploadIds[] = (int) $result['upload_id'];
+                }
                 $logs[] = [
                     'id' => $i + 1,
                     'serial_number' => $sn,
@@ -798,6 +802,15 @@ class GoogleSheetsDataSyncService
             ]);
         }
 
+        // Automatically match unlinked documents from this batch against PO sheets
+        if ($job->status !== 'cancelled' && ! empty($syncedUploadIds)) {
+            $job->update([
+                'current_status_text' => "Matching {$successful} synced serial(s) with PO sheets...",
+            ]);
+
+            $this->matchPurchaseOrdersForUploads($syncedUploadIds, $slug);
+        }
+
         $job->update([
             'status' => $job->status === 'cancelled' ? 'cancelled' : ($failed > 0 && $successful === 0 ? 'failed' : 'completed'),
             'completed_at' => now(),
@@ -814,6 +827,94 @@ class GoogleSheetsDataSyncService
             'successful' => $successful,
             'failed' => $failed,
         ];
+    }
+
+    /**
+     * Match and link purchase orders from Google Sheets for the given upload IDs.
+     *
+     * @param  array<int, int>  $uploadIds
+     */
+    public function matchPurchaseOrdersForUploads(array $uploadIds, string $laneSlug): void
+    {
+        if (empty($uploadIds)) {
+            return;
+        }
+
+        $envSheetId = config('services.google.purchase_orders_sheet_id');
+        $hasSheetConfig = ! empty($envSheetId) || GoogleSheetConfig::query()
+            ->where('sheet_type', 'purchase_order')
+            ->whereNotNull('spreadsheet_id')
+            ->where('spreadsheet_id', '!=', '')
+            ->exists();
+
+        if (! $hasSheetConfig) {
+            return;
+        }
+
+        $unlinkedExtractions = AiExtraction::query()
+            ->whereIn('receiving_upload_id', $uploadIds)
+            ->whereDoesntHave('activePurchaseOrderLink')
+            ->get();
+
+        if ($unlinkedExtractions->isEmpty()) {
+            return;
+        }
+
+        $targetPoNumbers = [];
+        foreach ($unlinkedExtractions as $extraction) {
+            $rawNumber = $extraction->po_number;
+            if (empty($rawNumber)) {
+                $data = $extraction->preferredData() ?? $extraction->raw_extracted_json;
+                if (is_array($data)) {
+                    $rawNumber = $this->normalizer->poNumber($data);
+                }
+            }
+            if (! empty($rawNumber)) {
+                $candidates = $this->normalizer->poIdentifierCandidates($rawNumber);
+                $targetPoNumbers = array_merge($targetPoNumbers, $candidates);
+            }
+        }
+
+        $targetPoNumbers = array_values(array_unique(array_filter($targetPoNumbers)));
+
+        if (empty($targetPoNumbers)) {
+            return;
+        }
+
+        /** @var PurchaseOrderSheetSyncService $poSyncService */
+        $poSyncService = app(PurchaseOrderSheetSyncService::class);
+
+        // 1. Sync the primary lane PO tab for these target PO numbers
+        try {
+            $poSyncService->syncLane($laneSlug, targetPoNumbers: $targetPoNumbers);
+        } catch (\Throwable $e) {
+            Log::warning("Batch sync PO sheet sync failed for lane {$laneSlug}: {$e->getMessage()}");
+        }
+
+        // 2. Check if any extractions still remain unlinked
+        $hasUnlinked = AiExtraction::query()
+            ->whereIn('receiving_upload_id', $uploadIds)
+            ->whereDoesntHave('activePurchaseOrderLink')
+            ->whereNotNull('po_number')
+            ->where('po_number', '!=', '')
+            ->exists();
+
+        // 3. Fallback to Master PO sheet (pingcon) if still unlinked and primary lane is not pingcon
+        if ($hasUnlinked && $laneSlug !== 'pingcon') {
+            try {
+                $poSyncService->syncLane('pingcon', targetPoNumbers: $targetPoNumbers);
+            } catch (\Throwable $e) {
+                Log::warning("Batch sync Master PO sheet fallback failed: {$e->getMessage()}");
+            }
+        }
+
+        // 4. Ensure all extractions on these uploads get fresh local resolution
+        foreach ($unlinkedExtractions as $extraction) {
+            $extraction->load('activePurchaseOrderLink');
+            if ($extraction->activePurchaseOrderLink === null) {
+                app(PurchaseOrderLinker::class)->syncExtraction($extraction);
+            }
+        }
     }
 
     /**

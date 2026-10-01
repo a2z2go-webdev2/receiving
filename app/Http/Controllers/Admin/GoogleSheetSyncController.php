@@ -242,8 +242,13 @@ class GoogleSheetSyncController extends Controller
      */
     public function syncSerial(string $slug, int $serialNumber): JsonResponse
     {
+        @set_time_limit(120);
+
         try {
             $result = $this->syncService->syncSerialNumber($slug, $serialNumber);
+            if (! empty($result['upload_id'])) {
+                $this->syncService->matchPurchaseOrdersForUploads([(int) $result['upload_id']], $slug);
+            }
             $sheetConfig = GoogleSheetConfig::query()->where('slug', $slug)->first();
             $overview = $this->syncService->getOverviewStats();
 
@@ -289,6 +294,8 @@ class GoogleSheetSyncController extends Controller
      */
     public function batchSync(Request $request): JsonResponse
     {
+        @set_time_limit(180);
+
         $sheetSlug = $request->input('sheetSlug', 'a2z2go');
         $limit = $request->input('limit') ? (int) $request->input('limit') : null;
         $includeSerials = $request->input('includeSerials');

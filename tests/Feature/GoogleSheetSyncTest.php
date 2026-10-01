@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\PurchaseOrderLinkStatus;
 use App\Features\Receiving\Services\PurchaseOrderDataNormalizer;
 use App\Features\Receiving\Services\UploadSerialNumber;
 use App\Models\AiExtraction;
@@ -15,6 +16,7 @@ use App\Models\UploadType;
 use App\Models\User;
 use App\Services\GoogleSheets\GoogleSheetsDataSyncService;
 use App\Services\GoogleSheets\GoogleSheetsTableParser;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 beforeEach(function () {
@@ -553,4 +555,117 @@ test('GoogleSheetsDataSyncService preserves exact spreadsheet serial numbers and
     // 6. Verify resolve works for 108 and 110
     expect($serials->resolve($pingconType, 108))->toBe($upload108->getKey())
         ->and($serials->resolve($pingconType, 110))->toBe($upload110->getKey());
+});
+
+test('batch sync automatically matches POs from Google Sheets for newly synced serial numbers', function () {
+    config(['services.google.purchase_orders_sheet_id' => 'mock-batch-po-sheet-id']);
+
+    Http::fake([
+        'https://sheets.googleapis.com/v4/spreadsheets/mock-batch-po-sheet-id/values/*' => Http::response([
+            'values' => [
+                ['PO Number', 'Supplier', 'Type', 'Status', 'Date', 'Net Total', 'VAT Total', 'Total Amount', 'Item Code', 'Item Description', 'Qty', 'Unit', 'Unit Price', 'Line Total', 'Notes'],
+                ['716', 'Symmetryplast Enterprises', 'Standard', 'Confirmed', '2026-03-20', '500.00', '60.00', '560.00', 'ITEM-1', 'Test Item 1', '10', 'PCS', '50.00', '500.00', ''],
+                ['800', 'Symmetryplast Enterprises', 'Standard', 'Confirmed', '2026-03-21', '600.00', '72.00', '672.00', 'ITEM-2', 'Test Item 2', '20', 'PCS', '30.00', '600.00', ''],
+            ],
+        ], 200),
+    ]);
+
+    /** @var GoogleSheetsDataSyncService $syncService */
+    $syncService = app(GoogleSheetsDataSyncService::class);
+
+    $logs = [
+        [
+            'Serial Number' => '1',
+            'Timestamp' => 'Aug 17, 2026 11:00:00 AM',
+            'File Count' => '1',
+            'Review Status' => 'Verified',
+            'Reviewed By' => 'jaezelle.benito@pingconmarketing.com',
+        ],
+        [
+            'Serial Number' => '2',
+            'Timestamp' => 'Aug 17, 2026 11:30:00 AM',
+            'File Count' => '1',
+            'Review Status' => 'Verified',
+            'Reviewed By' => 'jaezelle.benito@pingconmarketing.com',
+        ],
+    ];
+
+    $files = [
+        [
+            'serial_number' => 1,
+            'file_name' => 'Invoice_716.pdf',
+            'file_id' => 'file_1',
+            'mime_type' => 'application/pdf',
+        ],
+        [
+            'serial_number' => 2,
+            'file_name' => 'DR_800.pdf',
+            'file_id' => 'file_2',
+            'mime_type' => 'application/pdf',
+        ],
+    ];
+
+    $extractions = [
+        [
+            'serial_number' => 1,
+            'ai_status' => 'Extracted',
+            'corrected_json' => json_encode([
+                'serialNumber' => 1,
+                'documents' => [
+                    [
+                        'documentType' => 'Invoice',
+                        'fileName' => 'Invoice_716.pdf',
+                        'fileId' => 'file_1',
+                        'fields' => [
+                            ['label' => 'PO Number', 'value' => '716'],
+                            ['label' => 'Supplier', 'value' => 'Symmetryplast Enterprises'],
+                        ],
+                        'items' => [],
+                    ],
+                ],
+            ]),
+        ],
+        [
+            'serial_number' => 2,
+            'ai_status' => 'Extracted',
+            'corrected_json' => json_encode([
+                'serialNumber' => 2,
+                'documents' => [
+                    [
+                        'documentType' => 'Delivery Receipt',
+                        'fileName' => 'DR_800.pdf',
+                        'fileId' => 'file_2',
+                        'fields' => [
+                            ['label' => 'PO Number', 'value' => '800'],
+                            ['label' => 'Supplier', 'value' => 'Symmetryplast Enterprises'],
+                        ],
+                        'items' => [],
+                    ],
+                ],
+            ]),
+        ],
+    ];
+
+    $syncService->stageData('keysys', $logs, $files, $extractions);
+
+    $batchResult = $syncService->runBatchSync('keysys', 'test-batch-uuid');
+
+    expect($batchResult['successful'])->toBe(2)
+        ->and($batchResult['failed'])->toBe(0);
+
+    // Verify SN-1 extraction is automatically linked to PO 716
+    $upload1 = ReceivingUpload::query()->where('serial_number', 1)->firstOrFail();
+    $extraction1 = $upload1->extractions()->firstOrFail();
+
+    expect($extraction1->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and($extraction1->activePurchaseOrderLink)->not->toBeNull()
+        ->and($extraction1->activePurchaseOrderLink->poExtraction->po_number)->toBe('716');
+
+    // Verify SN-2 extraction is automatically linked to PO 800
+    $upload2 = ReceivingUpload::query()->where('serial_number', 2)->firstOrFail();
+    $extraction2 = $upload2->extractions()->firstOrFail();
+
+    expect($extraction2->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and($extraction2->activePurchaseOrderLink)->not->toBeNull()
+        ->and($extraction2->activePurchaseOrderLink->poExtraction->po_number)->toBe('800');
 });
