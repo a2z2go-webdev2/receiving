@@ -5,6 +5,8 @@ use App\Features\Receiving\Services\PurchaseOrderDataNormalizer;
 use App\Features\Receiving\Services\UploadSerialNumber;
 use App\Models\AiExtraction;
 use App\Models\GoogleSheetConfig;
+use App\Models\GoogleSheetExtraction;
+use App\Models\GoogleSheetFile;
 use App\Models\GoogleSheetLog;
 use App\Models\PoExtraction;
 use App\Models\PurchaseOrderDocumentLink;
@@ -777,4 +779,72 @@ test('PurchaseOrderSheetSyncService does not overwrite receiving sheet configs w
     expect($freshPingcon->spreadsheet_id)->toBe('1rmFfuhA9mnRefNSt5_6O5yjJqxLUh-YFqQ-03yJmvp-M')
         ->and($freshPingcon->sheet_type)->toBe('receiving')
         ->and($freshPingcon->tab_name)->toBe('Receiving_Log');
+});
+
+test('GoogleSheetsDataSyncService stageData deduplicates logs, files, and extractions with identical serial numbers', function () {
+    /** @var GoogleSheetsDataSyncService $syncService */
+    $syncService = app(GoogleSheetsDataSyncService::class);
+
+    $logs = [
+        [
+            'Serial Number' => '2',
+            'Timestamp' => 'Sep 24, 2026 10:00:00 AM',
+            'File Count' => '2',
+            'Review Status' => 'Verified',
+            'Reviewed By' => 'jaezelle.benito@pingconmarketing.com',
+        ],
+        [
+            'Serial Number' => '2',
+            'Timestamp' => 'Sep 24, 2026 10:05:00 AM',
+            'File Count' => '4',
+            'Review Status' => 'Verified',
+            'Reviewed By' => 'jaezelle.benito@pingconmarketing.com',
+            'Review Token' => 'token_updated_456',
+        ],
+    ];
+
+    $files = [
+        [
+            'serial_number' => 2,
+            'file_name' => 'viber_image_1.jpg',
+            'file_id' => '1MnzAT_rJrMZQd3cCHp47kvXXg5Vnob5E',
+            'file_url' => 'https://drive.google.com/file/1',
+        ],
+        [
+            'serial_number' => 2,
+            'file_name' => 'viber_image_1.jpg',
+            'file_id' => '1MnzAT_rJrMZQd3cCHp47kvXXg5Vnob5E',
+            'file_url' => 'https://drive.google.com/file/1',
+        ],
+    ];
+
+    $extractions = [
+        [
+            'serial_number' => 2,
+            'ai_status' => 'Verified',
+            'raw_ai_json' => json_encode(['serialNumber' => 2, 'supplier' => 'SUY SING']),
+            'corrected_json' => null,
+        ],
+        [
+            'serial_number' => 2,
+            'ai_status' => 'Verified',
+            'raw_ai_json' => null,
+            'corrected_json' => json_encode(['serialNumber' => 2, 'supplier' => 'SUY SING', 'invoice' => '104002074815']),
+        ],
+    ];
+
+    $syncService->stageData('pingcon', $logs, $files, $extractions);
+
+    $storedLogs = GoogleSheetLog::query()->where('sheet_slug', 'pingcon')->where('serial_number', 2)->get();
+    expect($storedLogs)->toHaveCount(1)
+        ->and($storedLogs->first()->file_count)->toBe(4)
+        ->and($storedLogs->first()->review_token)->toBe('token_updated_456');
+
+    $storedFiles = GoogleSheetFile::query()->where('sheet_slug', 'pingcon')->where('serial_number', 2)->get();
+    expect($storedFiles)->toHaveCount(1);
+
+    $storedExtraction = GoogleSheetExtraction::query()->where('sheet_slug', 'pingcon')->where('serial_number', 2)->first();
+    expect($storedExtraction)->not->toBeNull()
+        ->and($storedExtraction->raw_ai_json)->toContain('SUY SING')
+        ->and($storedExtraction->corrected_json)->toContain('104002074815');
 });

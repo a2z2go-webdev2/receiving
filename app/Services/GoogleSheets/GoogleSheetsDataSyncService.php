@@ -153,14 +153,31 @@ class GoogleSheetsDataSyncService
                 $reviewToken = $this->tableParser->getCaseInsensitive($log, ['review token', 'review_token']);
                 $reviewedAt = $this->tableParser->getCaseInsensitive($log, ['reviewed at', 'reviewed_at']);
                 $reviewedBy = $this->tableParser->getCaseInsensitive($log, ['reviewed by', 'reviewed_by']);
-                if (empty($reviewedBy) || strtolower(trim($reviewedBy)) === 'unassigned') {
-                    $reviewedBy = 'jaezelle.benito@pingconmarketing.com';
-                }
                 $tokenCreated = $this->tableParser->getCaseInsensitive($log, ['review token created at', 'review_token_created_at']);
                 $tokenExpires = $this->tableParser->getCaseInsensitive($log, ['review expires at', 'review_expires_at']);
                 $uploaderLoc = $this->tableParser->getCaseInsensitive($log, ['uploader location', 'uploader_location']);
 
-                $logRows[] = [
+                $existingLog = $logRows[$sn] ?? null;
+                if ($existingLog !== null) {
+                    $timestamp = $timestamp ?: $existingLog['timestamp'];
+                    $driveLink = $driveLink ?: $existingLog['drive_folder_link'];
+                    $fileCount = $fileCount > 1 ? $fileCount : $existingLog['file_count'];
+                    $emailStatus = $emailStatus ?: $existingLog['email_status'];
+                    $aiStatus = $aiStatus ?: $existingLog['ai_status'];
+                    $reviewStatus = $reviewStatus ?: $existingLog['review_status'];
+                    $reviewToken = $reviewToken ?: $existingLog['review_token'];
+                    $reviewedAt = $reviewedAt ?: $existingLog['reviewed_at'];
+                    $reviewedBy = $reviewedBy ?: $existingLog['reviewed_by'];
+                    $tokenCreated = $tokenCreated ?: $existingLog['review_token_created_at'];
+                    $tokenExpires = $tokenExpires ?: $existingLog['review_expires_at'];
+                    $uploaderLoc = $uploaderLoc ?: $existingLog['uploader_location'];
+                }
+
+                if (empty($reviewedBy) || strtolower(trim($reviewedBy)) === 'unassigned') {
+                    $reviewedBy = 'jaezelle.benito@pingconmarketing.com';
+                }
+
+                $logRows[$sn] = [
                     'sheet_slug' => $slug,
                     'serial_number' => $sn,
                     'timestamp' => $timestamp,
@@ -175,11 +192,12 @@ class GoogleSheetsDataSyncService
                     'review_token_created_at' => $tokenCreated,
                     'review_expires_at' => $tokenExpires,
                     'uploader_location' => $uploaderLoc,
+                    'created_at' => now(),
                     'updated_at' => now(),
                 ];
             }
 
-            foreach (array_chunk($logRows, 250) as $chunk) {
+            foreach (array_chunk(array_values($logRows), 250) as $chunk) {
                 GoogleSheetLog::query()->upsert(
                     $chunk,
                     ['sheet_slug', 'serial_number'],
@@ -218,8 +236,14 @@ class GoogleSheetsDataSyncService
                             'r2_url' => $f['r2_url'] ?? null,
                             'row_index' => $f['_rowIndex'] ?? null,
                         ]);
+                    } elseif (isset($filesToInsert[$key])) {
+                        $filesToInsert[$key]['file_no'] = $f['file_no'] ?? $filesToInsert[$key]['file_no'];
+                        $filesToInsert[$key]['file_id'] = $fid ?: $filesToInsert[$key]['file_id'];
+                        $filesToInsert[$key]['file_url'] = $f['file_url'] ?? $filesToInsert[$key]['file_url'];
+                        $filesToInsert[$key]['r2_url'] = $f['r2_url'] ?? $filesToInsert[$key]['r2_url'];
+                        $filesToInsert[$key]['row_index'] = $f['_rowIndex'] ?? $filesToInsert[$key]['row_index'];
                     } else {
-                        $filesToInsert[] = [
+                        $filesToInsert[$key] = [
                             'sheet_slug' => $slug,
                             'serial_number' => $sn,
                             'file_name' => $fileName,
@@ -236,7 +260,7 @@ class GoogleSheetsDataSyncService
                 }
             }
 
-            foreach (array_chunk($filesToInsert, 250) as $chunk) {
+            foreach (array_chunk(array_values($filesToInsert), 250) as $chunk) {
                 GoogleSheetFile::query()->insert($chunk);
             }
 
@@ -244,21 +268,39 @@ class GoogleSheetsDataSyncService
             $extractionRows = [];
             foreach ($extractions as $e) {
                 $sn = (int) ($e['serial_number'] ?? 0);
-                if ($sn > 0) {
-                    $extractionRows[] = [
-                        'sheet_slug' => $slug,
-                        'serial_number' => $sn,
-                        'ai_status' => $e['ai_status'] ?? null,
-                        'raw_ai_json' => $e['raw_ai_json'] ?? null,
-                        'corrected_json' => $e['corrected_json'] ?? null,
-                        'extracted_at' => $e['extracted_at'] ?? null,
-                        'error_message' => $e['error_message'] ?? null,
-                        'updated_at' => now(),
-                    ];
+                if ($sn <= 0) {
+                    continue;
                 }
+
+                $existing = $extractionRows[$sn] ?? null;
+                $rawJson = $e['raw_ai_json'] ?? null;
+                $correctedJson = $e['corrected_json'] ?? null;
+                $aiStatus = $e['ai_status'] ?? null;
+                $extractedAt = $e['extracted_at'] ?? null;
+                $errorMessage = $e['error_message'] ?? null;
+
+                if ($existing !== null) {
+                    $rawJson = ! empty($rawJson) ? $rawJson : $existing['raw_ai_json'];
+                    $correctedJson = ! empty($correctedJson) ? $correctedJson : $existing['corrected_json'];
+                    $aiStatus = ! empty($aiStatus) ? $aiStatus : $existing['ai_status'];
+                    $extractedAt = ! empty($extractedAt) ? $extractedAt : $existing['extracted_at'];
+                    $errorMessage = ! empty($errorMessage) ? $errorMessage : $existing['error_message'];
+                }
+
+                $extractionRows[$sn] = [
+                    'sheet_slug' => $slug,
+                    'serial_number' => $sn,
+                    'ai_status' => $aiStatus,
+                    'raw_ai_json' => $rawJson,
+                    'corrected_json' => $correctedJson,
+                    'extracted_at' => $extractedAt,
+                    'error_message' => $errorMessage,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
             }
 
-            foreach (array_chunk($extractionRows, 250) as $chunk) {
+            foreach (array_chunk(array_values($extractionRows), 250) as $chunk) {
                 GoogleSheetExtraction::query()->upsert(
                     $chunk,
                     ['sheet_slug', 'serial_number'],
