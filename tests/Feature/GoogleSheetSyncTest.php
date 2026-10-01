@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Services\GoogleSheets\GoogleSheetsApiService;
 use App\Services\GoogleSheets\GoogleSheetsDataSyncService;
 use App\Services\GoogleSheets\GoogleSheetsTableParser;
+use App\Services\GoogleSheets\PurchaseOrderSheetSyncService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -711,4 +712,69 @@ test('GoogleSheetsApiService fetchAllTabs throws informative error when given a 
 
     expect(fn () => $apiService->fetchAllTabs('po-sheet-id'))
         ->toThrow(RuntimeException::class, 'Purchase Orders sheet');
+});
+
+test('GoogleSheetsDataSyncService self-heals pingcon receiving config when corrupted by PO sheet ID', function () {
+    config(['services.google.purchase_orders_sheet_id' => 'po-sheet-123']);
+
+    $config = GoogleSheetConfig::query()->where('slug', 'pingcon')->firstOrFail();
+    $config->update([
+        'spreadsheet_id' => 'po-sheet-123',
+        'sheet_type' => 'purchase_order',
+        'tab_name' => 'Purchase Orders',
+    ]);
+
+    Http::fake([
+        'https://sheets.googleapis.com/v4/spreadsheets/1rmFfuhA9mnRefNSt5_6O5yjJqxLUh-YFqQ-03yJmvp-M?*' => Http::response([
+            'sheets' => [
+                ['properties' => ['title' => 'Receiving_Log']],
+            ],
+        ], 200),
+        'https://sheets.googleapis.com/v4/spreadsheets/1rmFfuhA9mnRefNSt5_6O5yjJqxLUh-YFqQ-03yJmvp-M/values/*' => Http::response([
+            'values' => [
+                ['Serial Number', 'Timestamp', 'File Count', 'Review Status'],
+                ['512', 'Sep 10, 2026', '1', 'Verified'],
+            ],
+        ], 200),
+    ]);
+
+    /** @var GoogleSheetsDataSyncService $syncService */
+    $syncService = app(GoogleSheetsDataSyncService::class);
+    $result = $syncService->refreshFromApi('pingcon');
+
+    expect($result['logs'])->toBe(1);
+
+    $freshConfig = GoogleSheetConfig::query()->where('slug', 'pingcon')->firstOrFail();
+    expect($freshConfig->spreadsheet_id)->toBe('1rmFfuhA9mnRefNSt5_6O5yjJqxLUh-YFqQ-03yJmvp-M')
+        ->and($freshConfig->sheet_type)->toBe('receiving')
+        ->and($freshConfig->tab_name)->toBe('Receiving_Log');
+});
+
+test('PurchaseOrderSheetSyncService does not overwrite receiving sheet configs with PO spreadsheet ID', function () {
+    config(['services.google.purchase_orders_sheet_id' => 'po-master-sheet-999']);
+
+    $pingconConfig = GoogleSheetConfig::query()->where('slug', 'pingcon')->firstOrFail();
+    $pingconConfig->update([
+        'spreadsheet_id' => '1rmFfuhA9mnRefNSt5_6O5yjJqxLUh-YFqQ-03yJmvp-M',
+        'sheet_type' => 'receiving',
+        'tab_name' => 'Receiving_Log',
+    ]);
+
+    Http::fake([
+        'https://sheets.googleapis.com/v4/spreadsheets/po-master-sheet-999/values/*' => Http::response([
+            'values' => [
+                ['PO Number', 'Supplier', 'Type', 'Status', 'Date', 'Net Total', 'VAT Total', 'Total Amount', 'Item Code', 'Item Description', 'Qty', 'Unit', 'Unit Price', 'Line Total', 'Notes'],
+                ['PO-999-001', 'Test Supplier', 'Standard', 'Confirmed', '2026-03-15', '100.00', '12.00', '112.00', 'SKU-001', 'Widget', '1', 'PCS', '100.00', '100.00', ''],
+            ],
+        ], 200),
+    ]);
+
+    /** @var PurchaseOrderSheetSyncService $poSyncService */
+    $poSyncService = app(PurchaseOrderSheetSyncService::class);
+    $poSyncService->syncLane('pingcon', 'apply');
+
+    $freshPingcon = GoogleSheetConfig::query()->where('slug', 'pingcon')->firstOrFail();
+    expect($freshPingcon->spreadsheet_id)->toBe('1rmFfuhA9mnRefNSt5_6O5yjJqxLUh-YFqQ-03yJmvp-M')
+        ->and($freshPingcon->sheet_type)->toBe('receiving')
+        ->and($freshPingcon->tab_name)->toBe('Receiving_Log');
 });

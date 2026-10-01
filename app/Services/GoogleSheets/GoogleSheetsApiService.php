@@ -213,7 +213,7 @@ class GoogleSheetsApiService
 
                 $tabListStr = implode("', '", array_slice($availableTabs, 0, 6));
                 if ($isPoSheet) {
-                    throw new RuntimeException("Spreadsheet '{$cleanId}' does not contain Receiving Log tabs. It appears to be a Purchase Orders sheet (found tabs: '{$tabListStr}'). In Sheet Settings, please ensure the Pingcon Spreadsheet ID points to the Pingcon Receiving Log spreadsheet (expected tab: Receiving_Log).");
+                    throw new RuntimeException("Spreadsheet '{$cleanId}' does not contain Receiving Log tabs. It appears to be a Purchase Orders sheet (found tabs: '{$tabListStr}'). In Sheet Settings, please ensure the Spreadsheet ID points to the Receiving Log spreadsheet (expected tab: Receiving_Log).");
                 }
 
                 throw new RuntimeException("Unable to find the 'Receiving_Log' tab in spreadsheet '{$cleanId}'. Available tabs in this spreadsheet are: ['{$tabListStr}']. Please ensure the tab is named 'Receiving_Log' or verify the Spreadsheet ID in Settings.");

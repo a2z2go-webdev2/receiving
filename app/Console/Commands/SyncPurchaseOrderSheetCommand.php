@@ -91,7 +91,7 @@ class SyncPurchaseOrderSheetCommand extends Command
                     ]
                 );
             }
-            if ($config !== null && empty($config->spreadsheet_id) && $envSheetId = config('services.google.purchase_orders_sheet_id')) {
+            if ($config !== null && $config->sheet_type === 'purchase_order' && empty($config->spreadsheet_id) && $envSheetId = config('services.google.purchase_orders_sheet_id')) {
                 $config->update(['spreadsheet_id' => $envSheetId]);
             }
             if ($config === null) {

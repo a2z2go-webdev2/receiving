@@ -31,16 +31,45 @@ class GoogleSheetSyncController extends Controller
     {
         $activeSheet = $request->input('sheet', 'a2z2go');
 
-        // Ensure every sheet configuration has an active webhook secret
-        $sheets = GoogleSheetConfig::query()->orderBy('id')->get();
-        foreach ($sheets as $sheet) {
-            if (empty($sheet->webhook_secret)) {
-                $sheet->update([
-                    'webhook_secret' => 'whsec_'.Str::random(32),
-                ]);
+        // Self-heal corrupted receiving configs if they were overwritten by PO sheet ID
+        $poSheetId = config('services.google.purchase_orders_sheet_id');
+        $receivingSlugs = ['a2z2go', 'bonita', 'keysys', 'pingcon'];
+        foreach ($receivingSlugs as $rSlug) {
+            /** @var GoogleSheetConfig|null $rConfig */
+            $rConfig = GoogleSheetConfig::query()->where('slug', $rSlug)->first();
+            if ($rConfig) {
+                $needsUpdate = [];
+                if ($rConfig->sheet_type !== 'receiving') {
+                    $needsUpdate['sheet_type'] = 'receiving';
+                }
+                if ($rConfig->tab_name !== 'Receiving_Log') {
+                    $needsUpdate['tab_name'] = 'Receiving_Log';
+                }
+                if (empty($rConfig->webhook_secret)) {
+                    $needsUpdate['webhook_secret'] = 'whsec_'.Str::random(32);
+                }
+                $isPoSheet = (
+                    (! empty($poSheetId) && $rConfig->spreadsheet_id === $poSheetId)
+                    || ($rConfig->spreadsheet_id === '1tJ_7TZpJDv4hb-BVAvPHswYfxevMHJnQY61zeo9bbys')
+                );
+                if ($isPoSheet) {
+                    if ($rSlug === 'pingcon') {
+                        $needsUpdate['spreadsheet_id'] = '1rmFfuhA9mnRefNSt5_6O5yjJqxLUh-YFqQ-03yJmvp-M';
+                    } else {
+                        $configVal = config('services.google.sheets_'.$rSlug.'_id');
+                        $needsUpdate['spreadsheet_id'] = $configVal ?: null;
+                    }
+                }
+                if (! empty($needsUpdate)) {
+                    $rConfig->update($needsUpdate);
+                }
             }
         }
-        $sheets = GoogleSheetConfig::query()->orderBy('id')->get();
+
+        $sheets = GoogleSheetConfig::query()
+            ->whereIn('slug', ['a2z2go', 'bonita', 'keysys', 'pingcon'])
+            ->orderBy('id')
+            ->get();
         $overview = $this->syncService->getOverviewStats();
 
         return Inertia::render('admin/sheets-sync/index', [

@@ -54,6 +54,10 @@ return [
         'service_account_json' => env('GOOGLE_SERVICE_ACCOUNT_JSON'),
         'purchase_orders_sheet_id' => env('SHEET_ID_PURCHASE_ORDERS'),
         'webhook_secret' => env('GOOGLE_SHEETS_WEBHOOK_SECRET'),
+        'sheets_a2z2go_id' => env('SHEET_ID_A2Z2GO'),
+        'sheets_bonita_id' => env('SHEET_ID_BONITA'),
+        'sheets_keysys_id' => env('SHEET_ID_KEYSYS'),
+        'sheets_pingcon_id' => env('SHEET_ID_PINGCON'),
     ],
 
 ];

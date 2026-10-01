@@ -54,9 +54,32 @@ class GoogleSheetsDataSyncService
             throw new RuntimeException("Config for sheet '{$slug}' not found.");
         }
 
+        $poSheetId = config('services.google.purchase_orders_sheet_id');
+        $isOverwrittenWithPoSheet = (
+            (! empty($poSheetId) && $config->spreadsheet_id === $poSheetId)
+            || ($config->spreadsheet_id === '1tJ_7TZpJDv4hb-BVAvPHswYfxevMHJnQY61zeo9bbys')
+        );
+
+        if ($isOverwrittenWithPoSheet || $config->sheet_type !== 'receiving' || $config->tab_name !== 'Receiving_Log') {
+            $updates = [
+                'sheet_type' => 'receiving',
+                'tab_name' => 'Receiving_Log',
+            ];
+            if ($isOverwrittenWithPoSheet) {
+                if ($slug === 'pingcon') {
+                    $updates['spreadsheet_id'] = '1rmFfuhA9mnRefNSt5_6O5yjJqxLUh-YFqQ-03yJmvp-M';
+                } else {
+                    $configVal = config('services.google.sheets_'.$slug.'_id');
+                    $updates['spreadsheet_id'] = $configVal ?: null;
+                }
+            }
+            $config->update($updates);
+            $config->refresh();
+        }
+
         $sheetId = $config->spreadsheet_id ?: config("services.google.sheets_{$slug}_id");
         if (! $sheetId) {
-            throw new RuntimeException("Spreadsheet ID for {$config->name} is not set. Please configure it in Settings.");
+            throw new RuntimeException("Spreadsheet ID for {$config->name} is not set. Please configure it in Sheet Settings.");
         }
 
         $data = $this->apiService->fetchAllTabs($sheetId);

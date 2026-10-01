@@ -349,13 +349,6 @@ class PurchaseOrderSheetSyncService
         }
 
         if ($configOrSlug instanceof GoogleSheetConfig) {
-            if (! empty($envPoSheetId) && ($configOrSlug->sheet_type !== 'purchase_order' || empty($configOrSlug->spreadsheet_id))) {
-                $configOrSlug->update([
-                    'spreadsheet_id' => $envPoSheetId,
-                    'sheet_type' => 'purchase_order',
-                ]);
-            }
-
             return $configOrSlug;
         }
 
@@ -367,13 +360,6 @@ class PurchaseOrderSheetSyncService
                 'name' => ucfirst(str_replace('_', ' ', $configOrSlug)),
                 'sheet_type' => 'purchase_order',
                 'spreadsheet_id' => $envPoSheetId,
-            ]);
-        }
-
-        if (! empty($envPoSheetId) && ($config->sheet_type !== 'purchase_order' || empty($config->spreadsheet_id))) {
-            $config->update([
-                'spreadsheet_id' => $envPoSheetId,
-                'sheet_type' => 'purchase_order',
             ]);
         }
 
@@ -421,7 +407,12 @@ class PurchaseOrderSheetSyncService
         $normalizedSlug = strtolower(trim($laneSlug));
         $candidates = [];
 
-        if ($config !== null && ! empty($config->tab_name)) {
+        if (
+            $config !== null
+            && ! empty($config->tab_name)
+            && strtolower(trim($config->tab_name)) !== 'receiving_log'
+            && ($config->sheet_type === 'purchase_order' || $this->isPurchaseOrderTab($config->tab_name))
+        ) {
             $candidates[] = $config->tab_name;
         }
 
@@ -474,8 +465,12 @@ class PurchaseOrderSheetSyncService
      */
     public function resolveTabName(GoogleSheetConfig $config, ?array $availableTabs = null): string
     {
-        // 1. Explicit configured tab name
-        if (! empty($config->tab_name)) {
+        // 1. Explicit configured tab name (ignore Receiving_Log since that is for serial sync)
+        if (
+            ! empty($config->tab_name)
+            && strtolower(trim($config->tab_name)) !== 'receiving_log'
+            && ($config->sheet_type === 'purchase_order' || $this->isPurchaseOrderTab($config->tab_name))
+        ) {
             return $config->tab_name;
         }
 
@@ -619,23 +614,24 @@ class PurchaseOrderSheetSyncService
             try {
                 $slug = $this->resolveSlugFromTabName($tabName);
 
-                /** @var GoogleSheetConfig $targetConfig */
-                $targetConfig = GoogleSheetConfig::query()->firstOrCreate(
-                    ['slug' => $slug],
-                    [
+                /** @var GoogleSheetConfig|null $targetConfig */
+                $targetConfig = GoogleSheetConfig::query()->where('slug', $slug)->first();
+
+                if ($targetConfig === null) {
+                    $targetConfig = GoogleSheetConfig::query()->create([
+                        'slug' => $slug,
                         'name' => ucfirst($slug),
                         'sheet_type' => 'purchase_order',
                         'spreadsheet_id' => $spreadsheetId,
                         'tab_name' => $tabName,
-                    ]
-                );
-
-                if ($targetConfig->spreadsheet_id !== $spreadsheetId || $targetConfig->tab_name !== $tabName) {
-                    $targetConfig->update([
-                        'spreadsheet_id' => $spreadsheetId,
-                        'tab_name' => $tabName,
-                        'sheet_type' => 'purchase_order',
                     ]);
+                } elseif ($targetConfig->sheet_type === 'purchase_order') {
+                    if ($targetConfig->spreadsheet_id !== $spreadsheetId || $targetConfig->tab_name !== $tabName) {
+                        $targetConfig->update([
+                            'spreadsheet_id' => $spreadsheetId,
+                            'tab_name' => $tabName,
+                        ]);
+                    }
                 }
 
                 $tabRange = $this->formatRangeWithTab($tabName);
@@ -715,7 +711,7 @@ class PurchaseOrderSheetSyncService
                     $rows = $this->fetchSheetRows($config, $targetRange);
                     $tabName = $candidateTab;
                     $fetched = true;
-                    if ($config->tab_name !== $tabName) {
+                    if ($config->sheet_type === 'purchase_order' && $config->tab_name !== $tabName) {
                         $config->update(['tab_name' => $tabName]);
                     }
                     break;
@@ -731,7 +727,9 @@ class PurchaseOrderSheetSyncService
                     $matchedTab = $this->matchTabFromList($laneSlug, $tabs);
                     if ($matchedTab !== null) {
                         $tabName = $matchedTab;
-                        $config->update(['tab_name' => $tabName]);
+                        if ($config->sheet_type === 'purchase_order' && $config->tab_name !== $tabName) {
+                            $config->update(['tab_name' => $tabName]);
+                        }
                         $targetRange = $this->formatRangeWithTab($tabName);
                         $rows = $this->fetchSheetRows($config, $targetRange);
                         $fetched = true;
@@ -745,11 +743,11 @@ class PurchaseOrderSheetSyncService
                 throw $lastException ?? new RuntimeException("Could not fetch rows for lane '{$laneSlug}' from Google Sheets.");
             }
         } else {
-            $tabName = ! empty($config->tab_name) && $config->tab_name !== 'Purchase Orders'
+            $tabName = ! empty($config->tab_name) && $config->tab_name !== 'Purchase Orders' && strtolower(trim($config->tab_name)) !== 'receiving_log'
                 ? $config->tab_name
                 : ($laneSlug === 'pingcon' ? 'Purchase Orders' : $candidateTabs[0]);
 
-            if ($config->tab_name !== $tabName) {
+            if ($config->sheet_type === 'purchase_order' && $config->tab_name !== $tabName) {
                 $config->update(['tab_name' => $tabName]);
             }
         }
