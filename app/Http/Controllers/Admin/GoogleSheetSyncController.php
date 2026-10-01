@@ -308,13 +308,18 @@ class GoogleSheetSyncController extends Controller
         $includeSerials = $request->input('includeSerials');
         $excludeSerials = $request->input('excludeSerials');
         $sortOrder = $request->input('sortOrder', 'ASC');
+        $syncMode = (string) $request->input('syncMode', 'pending');
+        if (! in_array($syncMode, ['pending', 'updates_available', 'all'], true)) {
+            $syncMode = 'pending';
+        }
 
         $preview = $this->syncService->calculateBatchPreview(
             $sheetSlug,
             $limit,
             $includeSerials,
             $excludeSerials,
-            $sortOrder
+            $sortOrder,
+            $syncMode
         );
 
         return response()->json($preview);
@@ -332,6 +337,10 @@ class GoogleSheetSyncController extends Controller
         $includeSerials = $request->input('includeSerials');
         $excludeSerials = $request->input('excludeSerials');
         $sortOrder = $request->input('sortOrder', 'ASC');
+        $syncMode = (string) $request->input('syncMode', 'pending');
+        if (! in_array($syncMode, ['pending', 'updates_available', 'all'], true)) {
+            $syncMode = 'pending';
+        }
 
         $batchId = (string) Str::uuid();
 
@@ -342,7 +351,8 @@ class GoogleSheetSyncController extends Controller
             $limit,
             $includeSerials,
             $excludeSerials,
-            $sortOrder
+            $sortOrder,
+            $syncMode
         );
 
         $overview = $this->syncService->getOverviewStats();
@@ -365,6 +375,12 @@ class GoogleSheetSyncController extends Controller
         /** @var GoogleSheetSyncJob|null $latestJob */
         $latestJob = GoogleSheetSyncJob::query()->latest('id')->first();
 
+        $sheets = GoogleSheetConfig::query()
+            ->whereIn('slug', ['a2z2go', 'bonita', 'keysys', 'pingcon'])
+            ->orderBy('id')
+            ->get();
+        $overview = $this->syncService->getOverviewStats();
+
         if (! $latestJob) {
             return response()->json([
                 'isRunning' => false,
@@ -377,6 +393,8 @@ class GoogleSheetSyncController extends Controller
                 'percentage' => 0,
                 'statusText' => 'Idle',
                 'logs' => [],
+                'sheets' => $sheets,
+                'overview' => $overview,
             ]);
         }
 
@@ -397,6 +415,8 @@ class GoogleSheetSyncController extends Controller
             'startedAt' => $latestJob->started_at?->toIso8601String(),
             'completedAt' => $latestJob->completed_at?->toIso8601String(),
             'logs' => $latestJob->logs ?? [],
+            'sheets' => $sheets,
+            'overview' => $overview,
         ]);
     }
 

@@ -848,3 +848,90 @@ test('GoogleSheetsDataSyncService stageData deduplicates logs, files, and extrac
         ->and($storedExtraction->raw_ai_json)->toContain('SUY SING')
         ->and($storedExtraction->corrected_json)->toContain('104002074815');
 });
+
+test('GoogleSheetsDataSyncService calculates batch preview and handles syncMode for bulk re-sync', function () {
+    /** @var GoogleSheetsDataSyncService $syncService */
+    $syncService = app(GoogleSheetsDataSyncService::class);
+
+    // Create 1 pending item and 2 synced items, 1 of which has an update available
+    GoogleSheetLog::query()->create([
+        'sheet_slug' => 'a2z2go',
+        'serial_number' => 101,
+        'is_synced_to_db' => false,
+        'file_count' => 1,
+    ]);
+
+    $log2 = GoogleSheetLog::query()->create([
+        'sheet_slug' => 'a2z2go',
+        'serial_number' => 102,
+        'is_synced_to_db' => true,
+        'synced_at' => now()->subDay(),
+        'file_count' => 1,
+    ]);
+    // Force updated_at to be greater than synced_at
+    $log2->update(['updated_at' => now()]);
+
+    GoogleSheetLog::query()->create([
+        'sheet_slug' => 'a2z2go',
+        'serial_number' => 103,
+        'is_synced_to_db' => true,
+        'synced_at' => now(),
+        'updated_at' => now(),
+        'file_count' => 1,
+    ]);
+
+    // Test 'pending' mode preview
+    $pendingPreview = $syncService->calculateBatchPreview('a2z2go', null, null, null, 'ASC', 'pending');
+    expect($pendingPreview['matchedCount'])->toBe(1)
+        ->and($pendingPreview['sampleSerials'])->toBe([101])
+        ->and($pendingPreview['totalUpdatesCount'])->toBe(1);
+
+    // Test 'updates_available' mode preview
+    $updatesPreview = $syncService->calculateBatchPreview('a2z2go', null, null, null, 'ASC', 'updates_available');
+    expect($updatesPreview['matchedCount'])->toBe(1)
+        ->and($updatesPreview['sampleSerials'])->toBe([102])
+        ->and($updatesPreview['syncMode'])->toBe('updates_available');
+
+    // Test 'all' mode preview
+    $allPreview = $syncService->calculateBatchPreview('a2z2go', null, null, null, 'ASC', 'all');
+    expect($allPreview['matchedCount'])->toBe(2)
+        ->and($allPreview['sampleSerials'])->toContain(101, 102);
+});
+
+test('GoogleSheetsDataSyncService runs bulk re-sync for serials with updates available', function () {
+    /** @var GoogleSheetsDataSyncService $syncService */
+    $syncService = app(GoogleSheetsDataSyncService::class);
+
+    // Stage file for serial 55
+    GoogleSheetFile::query()->create([
+        'sheet_slug' => 'bonita',
+        'serial_number' => 55,
+        'file_name' => 'receipt.jpg',
+        'mime_type' => 'image/jpeg',
+    ]);
+
+    // First sync
+    $syncResult = $syncService->syncSerialNumber('bonita', 55);
+    expect($syncResult['success'])->toBeTrue();
+
+    $log = GoogleSheetLog::query()->where('sheet_slug', 'bonita')->where('serial_number', 55)->firstOrFail();
+    expect($log->is_synced_to_db)->toBeTrue()
+        ->and($log->has_update_available)->toBeFalse();
+
+    // Simulate Google Sheet updating with a new timestamp
+    $log->synced_at = now()->subHour();
+    $log->updated_at = now();
+    $log->save();
+    $log->refresh();
+
+    expect($log->has_update_available)->toBeTrue();
+
+    // Execute bulk re-sync
+    $batchResult = $syncService->runBatchSync('bonita', 'test-resync-batch', null, null, null, 'ASC', 'updates_available');
+    expect($batchResult['successful'])->toBe(1)
+        ->and($batchResult['failed'])->toBe(0);
+
+    $log->refresh();
+    expect($log->is_synced_to_db)->toBeTrue()
+        ->and($log->has_update_available)->toBeFalse();
+});

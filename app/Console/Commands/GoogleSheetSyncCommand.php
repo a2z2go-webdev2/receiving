@@ -13,7 +13,9 @@ class GoogleSheetSyncCommand extends Command
                             {--range= : Specific serial number or range (e.g. 1-50)}
                             {--limit= : Limit maximum records to sync}
                             {--exclude= : Serials to exclude (e.g. 4, 12-15)}
-                            {--sort=ASC : Priority order (ASC or DESC)}';
+                            {--sort=ASC : Priority order (ASC or DESC)}
+                            {--mode=pending : Sync mode (pending, updates_available, all)}
+                            {--re-sync : Alias to run in updates_available mode}';
 
     protected $description = 'Synchronize Google Sheets upload data by serial number into database';
 
@@ -24,11 +26,12 @@ class GoogleSheetSyncCommand extends Command
         $limit = $this->option('limit') ? (int) $this->option('limit') : null;
         $exclude = $this->option('exclude');
         $sort = strtoupper((string) ($this->option('sort') ?: 'ASC'));
+        $mode = $this->option('re-sync') ? 'updates_available' : (string) ($this->option('mode') ?: 'pending');
 
-        $this->info("Starting Google Sheets sync for {$sheet}...");
+        $this->info("Starting Google Sheets sync for {$sheet} (mode: {$mode})...");
 
         $batchId = (string) Str::uuid();
-        $result = $syncService->runBatchSync($sheet, $batchId, $limit, $range, $exclude, $sort);
+        $result = $syncService->runBatchSync($sheet, $batchId, $limit, $range, $exclude, $sort, $mode);
 
         $this->info("Sync completed: {$result['successful']} successful, {$result['failed']} failed (Total: {$result['total']}).");
 

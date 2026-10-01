@@ -47,8 +47,22 @@ class GoogleSheetConfig extends Model
         ];
     }
 
+    protected $appends = ['updates_available_serials'];
+
     public function logs(): HasMany
     {
         return $this->hasMany(GoogleSheetLog::class, 'sheet_slug', 'slug');
+    }
+
+    public function getUpdatesAvailableSerialsAttribute(): int
+    {
+        if (array_key_exists('updates_available_serials', $this->attributes)) {
+            return (int) $this->attributes['updates_available_serials'];
+        }
+
+        return (int) $this->logs()
+            ->where('is_synced_to_db', true)
+            ->whereColumn('updated_at', '>', 'synced_at')
+            ->count();
     }
 }

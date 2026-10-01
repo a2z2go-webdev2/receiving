@@ -17,7 +17,7 @@ import {
     Square,
     Zap,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { EmptyState } from '@/components/receiving/empty-state';
 import { PageShell } from '@/components/receiving/page-shell';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +41,7 @@ interface SheetConfig {
     synced_serials: number;
     pending_serials: number;
     failed_serials: number;
+    updates_available_serials?: number;
 }
 
 interface StagedFile {
@@ -96,6 +97,7 @@ interface SyncOverview {
     synced_serials: number;
     pending_serials: number;
     failed_serials: number;
+    updates_available_serials?: number;
     total_files: number;
     files_pending_r2?: number;
     files_synced_r2?: number;
@@ -162,10 +164,20 @@ export default function SheetsSyncPage({
     // Modals state
     const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
     const [batchModalOpen, setBatchModalOpen] = useState<boolean>(false);
+    const [batchModalMode, setBatchModalMode] = useState<'pending' | 'updates_available' | 'all'>(
+        'pending',
+    );
+    const [batchModalIncludeSerials, setBatchModalIncludeSerials] = useState<string>('');
+    const [selectedSerials, setSelectedSerials] = useState<number[]>([]);
     const [rawImportOpen, setRawImportOpen] = useState<boolean>(false);
     const [detailsItem, setDetailsItem] = useState<StagedLogItem | null>(null);
     const [syncingSerial, setSyncingSerial] = useState<number | null>(null);
     const [refreshingApi, setRefreshingApi] = useState<boolean>(false);
+
+    // Clear selection when active sheet or page changes
+    useEffect(() => {
+        setSelectedSerials([]);
+    }, [activeSheet, page]);
 
     const showToast = (text: string, type: 'success' | 'error' = 'success') => {
         setToastMessage({ text, type });
@@ -237,6 +249,14 @@ export default function SheetsSyncPage({
 
         return () => clearInterval(timer);
     }, [pollProgress]);
+
+    const prevRunningRef = useRef<boolean>(false);
+    useEffect(() => {
+        if (prevRunningRef.current && !progress?.isRunning) {
+            loadItems();
+        }
+        prevRunningRef.current = Boolean(progress?.isRunning);
+    }, [progress?.isRunning, loadItems]);
 
     const handleSyncSerial = async (serialNumber: number) => {
         setSyncingSerial(serialNumber);
@@ -335,6 +355,7 @@ export default function SheetsSyncPage({
         includeSerials?: string;
         excludeSerials?: string;
         sortOrder: 'ASC' | 'DESC';
+        syncMode?: 'pending' | 'updates_available' | 'all';
     }) => {
         try {
             const res = await fetch('/admin/sheets-sync/batch-sync', {
@@ -365,13 +386,25 @@ export default function SheetsSyncPage({
             const data = await res.json();
             if (data.success) {
                 showToast(data.message, 'success');
+                setSelectedSerials([]);
                 await pollProgress();
+                loadItems();
             } else {
                 showToast(data.error || 'Failed to launch batch sync', 'error');
             }
         } catch (e) {
             showToast(e instanceof Error ? e.message : 'Batch sync error', 'error');
         }
+    };
+
+    const handleBulkResyncSelected = async () => {
+        if (selectedSerials.length === 0) return;
+        await handleStartBatchSync({
+            sheetSlug: activeSheet,
+            includeSerials: selectedSerials.join(','),
+            sortOrder: 'ASC',
+            syncMode: 'updates_available',
+        });
     };
 
     const handleCancelSync = async () => {
@@ -590,6 +623,21 @@ export default function SheetsSyncPage({
                                                 }`}
                                             >
                                                 {sheet.synced_serials}/{sheet.total_serials} Synced
+                                                {Boolean(
+                                                    sheet.updates_available_serials &&
+                                                        sheet.updates_available_serials > 0,
+                                                ) && (
+                                                    <span
+                                                        className={`ml-1 font-semibold ${
+                                                            active
+                                                                ? 'text-primary-foreground underline decoration-dotted'
+                                                                : 'text-indigo-600 dark:text-indigo-400'
+                                                        }`}
+                                                        title={`${sheet.updates_available_serials} serials have newer updates in Google Sheets`}
+                                                    >
+                                                        • {sheet.updates_available_serials} updates
+                                                    </span>
+                                                )}
                                             </span>
                                         </span>
                                     </span>
@@ -677,11 +725,38 @@ export default function SheetsSyncPage({
                             <span>{refreshingApi ? 'Fetching...' : 'Refresh Sheet'}</span>
                         </Button>
 
+                        {/* Bulk Re-sync Button */}
+                        {(currentSheetConfig?.updates_available_serials || 0) > 0 && (
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={progress?.isRunning}
+                                onClick={() => {
+                                    setBatchModalMode('updates_available');
+                                    setBatchModalIncludeSerials('');
+                                    setBatchModalOpen(true);
+                                }}
+                                className="h-8 gap-1.5 border-indigo-500/30 bg-indigo-500/10 text-xs font-bold text-indigo-600 shadow-sm hover:bg-indigo-500/20 dark:text-indigo-400 dark:hover:bg-indigo-950/50"
+                                title="Bulk re-synchronize all submissions that have newer updates in Google Sheets"
+                            >
+                                <Sparkles className="size-3.5" />
+                                <span>
+                                    Bulk Re-sync (
+                                    {currentSheetConfig?.updates_available_serials || 0})
+                                </span>
+                            </Button>
+                        )}
+
                         <Button
                             type="button"
                             size="sm"
                             disabled={progress?.isRunning}
-                            onClick={() => setBatchModalOpen(true)}
+                            onClick={() => {
+                                setBatchModalMode('pending');
+                                setBatchModalIncludeSerials('');
+                                setBatchModalOpen(true);
+                            }}
                             className="h-8 gap-1.5 bg-emerald-600 text-xs font-bold text-white shadow-sm hover:bg-emerald-500"
                         >
                             <Sliders className="size-3.5" />
@@ -690,12 +765,102 @@ export default function SheetsSyncPage({
                     </div>
                 </div>
 
+                {/* Selected Items Multi-action Bar */}
+                {selectedSerials.length > 0 && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3.5 py-2 text-xs">
+                        <div className="flex items-center gap-2">
+                            <span className="font-semibold text-indigo-700 dark:text-indigo-300">
+                                {selectedSerials.length} serial
+                                {selectedSerials.length > 1 ? 's' : ''} selected
+                            </span>
+                            <span className="text-[11px] text-muted-foreground">
+                                (SN: {selectedSerials.slice(0, 5).join(', ')}
+                                {selectedSerials.length > 5 ? '...' : ''})
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="default"
+                                disabled={progress?.isRunning}
+                                onClick={handleBulkResyncSelected}
+                                className="h-7 gap-1 bg-indigo-600 px-2.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500"
+                            >
+                                <RefreshCw className="size-3" />
+                                <span>Re-sync Selected ({selectedSerials.length})</span>
+                            </Button>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={progress?.isRunning}
+                                onClick={() => {
+                                    setBatchModalMode('all');
+                                    setBatchModalIncludeSerials(selectedSerials.join(', '));
+                                    setBatchModalOpen(true);
+                                }}
+                                className="h-7 gap-1 text-xs"
+                            >
+                                <Sliders className="size-3" />
+                                <span>Configure Batch...</span>
+                            </Button>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setSelectedSerials([])}
+                                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                            >
+                                Deselect All
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Data Table */}
                 <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-xs">
                             <thead className="border-b bg-muted/50 font-medium text-muted-foreground">
                                 <tr>
+                                    <th className="w-8 px-2 py-2 text-center">
+                                        <input
+                                            type="checkbox"
+                                            className="size-3.5 rounded border-muted-foreground/30 accent-primary"
+                                            checked={
+                                                items.length > 0 &&
+                                                items.every((it) =>
+                                                    selectedSerials.includes(it.serial_number),
+                                                )
+                                            }
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    const pageSns = items.map(
+                                                        (it) => it.serial_number,
+                                                    );
+                                                    setSelectedSerials(
+                                                        Array.from(
+                                                            new Set([
+                                                                ...selectedSerials,
+                                                                ...pageSns,
+                                                            ]),
+                                                        ),
+                                                    );
+                                                } else {
+                                                    const pageSns = new Set(
+                                                        items.map((it) => it.serial_number),
+                                                    );
+                                                    setSelectedSerials(
+                                                        selectedSerials.filter(
+                                                            (sn) => !pageSns.has(sn),
+                                                        ),
+                                                    );
+                                                }
+                                            }}
+                                            title="Select all on this page"
+                                        />
+                                    </th>
                                     <th className="px-3 py-2">Serial #</th>
                                     <th className="px-3 py-2">Upload Date & Reviewer</th>
                                     <th className="px-3 py-2">Attached Files (R2)</th>
@@ -707,7 +872,7 @@ export default function SheetsSyncPage({
                             <tbody className="divide-y">
                                 {items.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="py-8">
+                                        <td colSpan={7} className="py-8">
                                             <EmptyState
                                                 title="No upload records found"
                                                 description="Click 'Refresh Sheet' or 'Import Table' to stage Google Sheet rows."
@@ -725,9 +890,42 @@ export default function SheetsSyncPage({
                                         ).length;
                                         const pendingR2Count =
                                             totalFiles > 0 ? Math.max(0, totalFiles - r2Count) : 0;
+                                        const isSelected = selectedSerials.includes(
+                                            item.serial_number,
+                                        );
 
                                         return (
-                                            <tr key={item.id} className="hover:bg-muted/30">
+                                            <tr
+                                                key={item.id}
+                                                className={`hover:bg-muted/30 ${
+                                                    isSelected ? 'bg-indigo-500/5' : ''
+                                                }`}
+                                            >
+                                                {/* Checkbox */}
+                                                <td className="w-8 px-2 py-2 text-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="size-3.5 rounded border-muted-foreground/30 accent-primary"
+                                                        checked={isSelected}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedSerials([
+                                                                    ...selectedSerials,
+                                                                    item.serial_number,
+                                                                ]);
+                                                            } else {
+                                                                setSelectedSerials(
+                                                                    selectedSerials.filter(
+                                                                        (sn) =>
+                                                                            sn !==
+                                                                            item.serial_number,
+                                                                    ),
+                                                                );
+                                                            }
+                                                        }}
+                                                    />
+                                                </td>
+
                                                 {/* Serial Number */}
                                                 <td className="px-3 py-2">
                                                     <div className="flex items-center gap-1.5">
@@ -974,6 +1172,8 @@ export default function SheetsSyncPage({
                     onOpenChange={setBatchModalOpen}
                     sheetSlug={activeSheet}
                     sheetName={currentSheetConfig?.name || activeSheet.toUpperCase()}
+                    initialSyncMode={batchModalMode}
+                    initialIncludeSerials={batchModalIncludeSerials}
                     onStartBatchSync={handleStartBatchSync}
                 />
 

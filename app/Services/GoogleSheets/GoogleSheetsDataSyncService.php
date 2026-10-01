@@ -754,20 +754,33 @@ class GoogleSheetsDataSyncService
     /**
      * Calculate live preview of matching items for batch sync.
      *
-     * @return array{matchedCount: int, totalPendingCount: int, excludedCount: int, sampleSerials: array<int>}
+     * @return array{matchedCount: int, totalPendingCount: int, totalUpdatesCount: int, excludedCount: int, sampleSerials: array<int>, syncMode: string}
      */
     public function calculateBatchPreview(
         string $slug,
         ?int $limit = null,
         ?string $includeSerials = null,
         ?string $excludeSerials = null,
-        string $sortOrder = 'ASC'
+        string $sortOrder = 'ASC',
+        string $syncMode = 'pending'
     ): array {
-        $query = GoogleSheetLog::query()
-            ->where('sheet_slug', $slug)
-            ->where('is_synced_to_db', false);
+        $query = GoogleSheetLog::query()->where('sheet_slug', $slug);
 
-        $totalPendingCount = (clone $query)->count();
+        if ($syncMode === 'updates_available') {
+            $query->where('is_synced_to_db', true)->whereColumn('updated_at', '>', 'synced_at');
+        } elseif ($syncMode === 'all') {
+            $query->where(function ($q) {
+                $q->where('is_synced_to_db', false)
+                    ->orWhere(function ($sq) {
+                        $sq->where('is_synced_to_db', true)->whereColumn('updated_at', '>', 'synced_at');
+                    });
+            });
+        } else {
+            $query->where('is_synced_to_db', false);
+        }
+
+        $totalPendingCount = GoogleSheetLog::query()->where('sheet_slug', $slug)->where('is_synced_to_db', false)->count();
+        $totalUpdatesCount = GoogleSheetLog::query()->where('sheet_slug', $slug)->where('is_synced_to_db', true)->whereColumn('updated_at', '>', 'synced_at')->count();
 
         // Apply Included Serials filter
         if ($includeSerials && trim($includeSerials) !== '') {
@@ -798,8 +811,10 @@ class GoogleSheetsDataSyncService
         return [
             'matchedCount' => count($serials),
             'totalPendingCount' => $totalPendingCount,
+            'totalUpdatesCount' => $totalUpdatesCount,
             'excludedCount' => $excludedCount,
             'sampleSerials' => array_slice($serials, 0, 10),
+            'syncMode' => $syncMode,
         ];
     }
 
@@ -814,11 +829,23 @@ class GoogleSheetsDataSyncService
         ?int $limit = null,
         ?string $includeSerials = null,
         ?string $excludeSerials = null,
-        string $sortOrder = 'ASC'
+        string $sortOrder = 'ASC',
+        string $syncMode = 'pending'
     ): array {
-        $query = GoogleSheetLog::query()
-            ->where('sheet_slug', $slug)
-            ->where('is_synced_to_db', false);
+        $query = GoogleSheetLog::query()->where('sheet_slug', $slug);
+
+        if ($syncMode === 'updates_available') {
+            $query->where('is_synced_to_db', true)->whereColumn('updated_at', '>', 'synced_at');
+        } elseif ($syncMode === 'all') {
+            $query->where(function ($q) {
+                $q->where('is_synced_to_db', false)
+                    ->orWhere(function ($sq) {
+                        $sq->where('is_synced_to_db', true)->whereColumn('updated_at', '>', 'synced_at');
+                    });
+            });
+        } else {
+            $query->where('is_synced_to_db', false);
+        }
 
         if ($includeSerials && trim($includeSerials) !== '') {
             $includedList = $this->parseSerialRanges($includeSerials);
@@ -843,6 +870,8 @@ class GoogleSheetsDataSyncService
         $serials = $query->pluck('serial_number')->all();
         $total = count($serials);
 
+        $modeLabel = $syncMode === 'updates_available' ? 'bulk re-sync' : 'sync';
+
         /** @var GoogleSheetSyncJob $job */
         $job = GoogleSheetSyncJob::query()->create([
             'sheet_slug' => $slug,
@@ -853,7 +882,7 @@ class GoogleSheetsDataSyncService
             'successful_items' => 0,
             'failed_items' => 0,
             'started_at' => now(),
-            'current_status_text' => "Starting sync for {$total} serial numbers...",
+            'current_status_text' => "Starting {$modeLabel} for {$total} serial numbers...",
             'logs' => [],
         ]);
 
@@ -873,10 +902,11 @@ class GoogleSheetsDataSyncService
                 break;
             }
 
+            $actionVerb = $syncMode === 'updates_available' ? 'Re-syncing' : 'Syncing';
             $job->update([
                 'processed_items' => $i + 1,
                 'current_serial' => $sn,
-                'current_status_text' => "Syncing SN-{$sn} (".($i + 1)." of {$total})...",
+                'current_status_text' => "{$actionVerb} SN-{$sn} (".($i + 1)." of {$total})...",
             ]);
 
             try {
@@ -885,11 +915,12 @@ class GoogleSheetsDataSyncService
                 if (! empty($result['upload_id'])) {
                     $syncedUploadIds[] = (int) $result['upload_id'];
                 }
+                $verbPast = $syncMode === 'updates_available' ? 're-synced' : 'synced';
                 $logs[] = [
                     'id' => $i + 1,
                     'serial_number' => $sn,
                     'status' => 'success',
-                    'message' => "SN-{$sn} synced (Upload #{$result['upload_id']})",
+                    'message' => "SN-{$sn} {$verbPast} (Upload #{$result['upload_id']})",
                     'timestamp' => now()->toIso8601String(),
                 ];
             } catch (\Throwable $e) {
@@ -924,7 +955,7 @@ class GoogleSheetsDataSyncService
         $job->update([
             'status' => $job->status === 'cancelled' ? 'cancelled' : ($failed > 0 && $successful === 0 ? 'failed' : 'completed'),
             'completed_at' => now(),
-            'current_status_text' => "Completed batch sync: {$successful} successful, {$failed} failed.",
+            'current_status_text' => "Completed {$modeLabel}: {$successful} successful, {$failed} failed.",
             'logs' => array_slice($logs, -200),
         ]);
 
@@ -997,12 +1028,17 @@ class GoogleSheetsDataSyncService
         })->count();
         $filesSyncedR2 = GoogleSheetFile::query()->whereNotNull('r2_url')->where('r2_url', '!=', '')->count();
         $extractions = GoogleSheetExtraction::query()->count();
+        $updatesAvailable = GoogleSheetLog::query()
+            ->where('is_synced_to_db', true)
+            ->whereColumn('updated_at', '>', 'synced_at')
+            ->count();
         $percentage = $total > 0 ? round(($synced / $total) * 100, 1) : 0;
 
         return [
             'total_serials' => $total,
             'synced_serials' => $synced,
             'pending_serials' => $pending,
+            'updates_available_serials' => $updatesAvailable,
             'total_files' => $files,
             'files_pending_r2' => $filesPendingR2,
             'files_synced_r2' => $filesSyncedR2,

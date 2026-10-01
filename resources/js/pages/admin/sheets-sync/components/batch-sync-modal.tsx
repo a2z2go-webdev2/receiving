@@ -1,4 +1,4 @@
-import { ArrowUpDown, Sliders, Zap } from 'lucide-react';
+import { ArrowUpDown, RefreshCw, Sliders, Sparkles, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,12 +19,15 @@ interface BatchSyncModalProps {
     onOpenChange: (open: boolean) => void;
     sheetSlug: string;
     sheetName: string;
+    initialSyncMode?: 'pending' | 'updates_available' | 'all';
+    initialIncludeSerials?: string;
     onStartBatchSync: (config: {
         sheetSlug: string;
         limit?: number;
         includeSerials?: string;
         excludeSerials?: string;
         sortOrder: 'ASC' | 'DESC';
+        syncMode: 'pending' | 'updates_available' | 'all';
     }) => void;
 }
 
@@ -33,13 +36,18 @@ export function BatchSyncModal({
     onOpenChange,
     sheetSlug,
     sheetName,
+    initialSyncMode = 'pending',
+    initialIncludeSerials = '',
     onStartBatchSync,
 }: BatchSyncModalProps) {
+    const [syncMode, setSyncMode] = useState<'pending' | 'updates_available' | 'all'>(
+        initialSyncMode,
+    );
     const [limitPreset, setLimitPreset] = useState<'50' | '100' | '200' | '500' | 'all' | 'custom'>(
         '100',
     );
     const [customLimit, setCustomLimit] = useState<string>('200');
-    const [includeSerials, setIncludeSerials] = useState<string>('');
+    const [includeSerials, setIncludeSerials] = useState<string>(initialIncludeSerials);
     const [excludeSerials, setExcludeSerials] = useState<string>('');
     const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('ASC');
 
@@ -47,9 +55,21 @@ export function BatchSyncModal({
     const [preview, setPreview] = useState<{
         matchedCount: number;
         totalPendingCount: number;
+        totalUpdatesCount?: number;
         excludedCount: number;
         sampleSerials: number[];
+        syncMode?: string;
     } | null>(null);
+
+    // Synchronize initial props when modal opens
+    useEffect(() => {
+        if (open) {
+            setSyncMode(initialSyncMode);
+            if (initialIncludeSerials) {
+                setIncludeSerials(initialIncludeSerials);
+            }
+        }
+    }, [open, initialSyncMode, initialIncludeSerials]);
 
     // Fetch batch preview
     useEffect(() => {
@@ -79,6 +99,7 @@ export function BatchSyncModal({
                 includeSerials,
                 excludeSerials,
                 sortOrder,
+                syncMode,
             }),
         })
             .then((res) => res.json())
@@ -95,7 +116,16 @@ export function BatchSyncModal({
         return () => {
             active = false;
         };
-    }, [open, sheetSlug, limitPreset, customLimit, includeSerials, excludeSerials, sortOrder]);
+    }, [
+        open,
+        sheetSlug,
+        limitPreset,
+        customLimit,
+        includeSerials,
+        excludeSerials,
+        sortOrder,
+        syncMode,
+    ]);
 
     const handleStart = () => {
         const limitVal =
@@ -111,31 +141,94 @@ export function BatchSyncModal({
             includeSerials,
             excludeSerials,
             sortOrder,
+            syncMode,
         });
         onOpenChange(false);
     };
+
+    const isReSyncMode = syncMode === 'updates_available';
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-h-[90vh] w-full max-w-full overflow-y-auto bg-card text-foreground sm:max-w-xl">
                 <DialogHeader className="border-b pb-3">
                     <div className="flex items-center gap-2">
-                        <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                            <Sliders className="size-4" />
+                        <div
+                            className={`flex size-8 items-center justify-center rounded-lg ${
+                                isReSyncMode
+                                    ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
+                                    : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                            }`}
+                        >
+                            {isReSyncMode ? (
+                                <Sparkles className="size-4" />
+                            ) : (
+                                <Sliders className="size-4" />
+                            )}
                         </div>
                         <div>
                             <DialogTitle className="text-base font-semibold">
-                                Configure Batch Sync: {sheetName}
+                                {isReSyncMode
+                                    ? `Bulk Re-sync: ${sheetName}`
+                                    : `Configure Batch Sync: ${sheetName}`}
                             </DialogTitle>
                             <DialogDescription className="text-xs">
-                                Ingest pending Google Sheet submissions into the database with
-                                custom filters.
+                                {isReSyncMode
+                                    ? 'Re-synchronize submissions that have newer updates in Google Sheets.'
+                                    : 'Ingest Google Sheet submissions into the database with custom filters.'}
                             </DialogDescription>
                         </div>
                     </div>
                 </DialogHeader>
 
                 <div className="space-y-4 py-2">
+                    {/* 0. Sync Target / Mode Segmented Selector */}
+                    <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold">Sync Target</Label>
+                        <div className="grid grid-cols-3 gap-1.5">
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant={syncMode === 'pending' ? 'default' : 'outline'}
+                                onClick={() => setSyncMode('pending')}
+                                className={`h-8 gap-1.5 text-xs font-semibold ${
+                                    syncMode === 'pending'
+                                        ? 'bg-emerald-600 text-white hover:bg-emerald-500'
+                                        : ''
+                                }`}
+                            >
+                                <Zap className="size-3.5" />
+                                <span>Pending ({preview?.totalPendingCount ?? '...'})</span>
+                            </Button>
+
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant={syncMode === 'updates_available' ? 'default' : 'outline'}
+                                onClick={() => setSyncMode('updates_available')}
+                                className={`h-8 gap-1.5 text-xs font-semibold ${
+                                    syncMode === 'updates_available'
+                                        ? 'bg-indigo-600 text-white hover:bg-indigo-500'
+                                        : 'border-indigo-500/30 text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/50'
+                                }`}
+                            >
+                                <Sparkles className="size-3.5" />
+                                <span>Updates ({preview?.totalUpdatesCount ?? '...'})</span>
+                            </Button>
+
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant={syncMode === 'all' ? 'default' : 'outline'}
+                                onClick={() => setSyncMode('all')}
+                                className="h-8 gap-1.5 text-xs font-semibold"
+                            >
+                                <ArrowUpDown className="size-3.5" />
+                                <span>All Targetable</span>
+                            </Button>
+                        </div>
+                    </div>
+
                     {/* 1. Limit Preset */}
                     <div className="space-y-1.5">
                         <Label className="text-xs">Batch Row Limit</Label>
@@ -179,7 +272,7 @@ export function BatchSyncModal({
                         <Input
                             id="batch-include-input"
                             type="text"
-                            placeholder="e.g. 1-50 or 100-200 (Leave empty to include all pending)"
+                            placeholder="e.g. 1-50 or 189-195 (Leave empty to include all targetable)"
                             value={includeSerials}
                             onChange={(e) => setIncludeSerials(e.target.value)}
                             className="font-mono text-xs"
@@ -230,11 +323,17 @@ export function BatchSyncModal({
                     </div>
 
                     {/* Live Preview Card */}
-                    <Card className="border bg-muted/40">
+                    <Card
+                        className={`border ${
+                            isReSyncMode ? 'border-indigo-500/20 bg-indigo-500/5' : 'bg-muted/40'
+                        }`}
+                    >
                         <CardContent className="flex items-center justify-between p-3.5">
                             <div>
                                 <div className="text-[11px] font-medium text-muted-foreground">
-                                    Batch Preview Summary
+                                    {isReSyncMode
+                                        ? 'Bulk Re-sync Preview'
+                                        : 'Batch Preview Summary'}
                                 </div>
                                 <div className="text-sm font-semibold">
                                     {previewLoading ? (
@@ -243,8 +342,16 @@ export function BatchSyncModal({
                                         </span>
                                     ) : (
                                         <>
-                                            Ready to ingest{' '}
-                                            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                            {isReSyncMode
+                                                ? 'Ready to re-sync '
+                                                : 'Ready to ingest '}
+                                            <span
+                                                className={`font-mono font-bold ${
+                                                    isReSyncMode
+                                                        ? 'text-indigo-600 dark:text-indigo-400'
+                                                        : 'text-emerald-600 dark:text-emerald-400'
+                                                }`}
+                                            >
                                                 {preview?.matchedCount || 0}
                                             </span>{' '}
                                             submissions
@@ -253,13 +360,21 @@ export function BatchSyncModal({
                                 </div>
                                 {preview && (
                                     <div className="mt-0.5 font-mono text-[10px] text-muted-foreground">
-                                        Total Pending: {preview.totalPendingCount} | Excluded:{' '}
+                                        Pending: {preview.totalPendingCount} | Updates Available:{' '}
+                                        {preview.totalUpdatesCount ?? 0} | Excluded:{' '}
                                         {preview.excludedCount}
                                     </div>
                                 )}
                             </div>
 
-                            <Badge variant="outline" className="font-mono text-xs">
+                            <Badge
+                                variant="outline"
+                                className={`font-mono text-xs ${
+                                    isReSyncMode
+                                        ? 'border-indigo-500/30 text-indigo-600 dark:text-indigo-400'
+                                        : ''
+                                }`}
+                            >
                                 {sheetName}
                             </Badge>
                         </CardContent>
@@ -281,10 +396,23 @@ export function BatchSyncModal({
                         size="sm"
                         disabled={previewLoading || !preview || preview.matchedCount === 0}
                         onClick={handleStart}
-                        className="gap-1.5 bg-emerald-600 text-xs font-bold text-white hover:bg-emerald-500"
+                        className={`gap-1.5 text-xs font-bold text-white shadow-sm ${
+                            isReSyncMode
+                                ? 'bg-indigo-600 hover:bg-indigo-500'
+                                : 'bg-emerald-600 hover:bg-emerald-500'
+                        }`}
                     >
-                        <Zap className="size-3.5" />
-                        <span>Start Batch Sync ({preview?.matchedCount || 0})</span>
+                        {isReSyncMode ? (
+                            <>
+                                <RefreshCw className="size-3.5" />
+                                <span>Start Bulk Re-sync ({preview?.matchedCount || 0})</span>
+                            </>
+                        ) : (
+                            <>
+                                <Zap className="size-3.5" />
+                                <span>Start Batch Sync ({preview?.matchedCount || 0})</span>
+                            </>
+                        )}
                     </Button>
                 </DialogFooter>
             </DialogContent>
