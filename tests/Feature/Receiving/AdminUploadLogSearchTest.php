@@ -122,10 +122,30 @@ it('shows only searchable purchase order uploads on the dedicated admin page', f
         ],
         'items' => [],
     ]);
-    makeSearchableUpload($standardType, 'invoice.pdf', [
+    $poExtraction = PoExtraction::query()->create([
+        'ai_extraction_id' => $purchaseOrder->extractions->first()->getKey(),
+        'receiving_upload_id' => $purchaseOrder->getKey(),
+        'po_number' => 'PO-SEARCH-0042',
+        'po_number_normalized' => 'POSEARCH0042',
+        'vendor_name' => 'Acme Supplies',
+        'source_type' => 'upload',
+        'arrival_status' => PurchaseOrderArrivalStatus::Arrived,
+    ]);
+    $invoiceUpload = makeSearchableUpload($standardType, 'invoice.pdf', [
         'document_type' => 'Invoice',
         'fields' => [['label' => 'PO Number', 'value' => 'PO-SEARCH-0042']],
         'items' => [],
+    ]);
+    $invoiceExtraction = $invoiceUpload->extractions->first();
+    $invoiceExtraction->forceFill([
+        'po_number' => 'PO-SEARCH-0042',
+        'po_number_normalized' => 'POSEARCH0042',
+        'po_link_status' => PurchaseOrderLinkStatus::Linked,
+    ])->save();
+    PurchaseOrderDocumentLink::query()->create([
+        'po_extraction_id' => $poExtraction->getKey(),
+        'ai_extraction_id' => $invoiceExtraction->getKey(),
+        'source' => PurchaseOrderLinkSource::Automatic,
     ]);
 
     $this->actingAs($admin)

@@ -41,11 +41,14 @@ class PurchaseOrderController extends Controller
             'ai_status' => ['nullable', Rule::in(['waiting', 'in_progress', 'completed', 'failed'])],
             'source_status' => ['nullable', Rule::enum(PurchaseOrderSourceStatus::class)],
             'source_type' => ['nullable', Rule::in(['upload', 'google_sheet'])],
+            'upload_type_id' => ['nullable', 'integer', 'exists:upload_types,id'],
         ]);
 
         $search = trim((string) ($validated['search'] ?? ''));
         $canRetryOperations = $request->user()?->can(Permission::RetryOperations->value) ?? false;
         $sourceType = $validated['source_type'] ?? null;
+        $selectedUploadTypeId = isset($validated['upload_type_id']) ? (int) $validated['upload_type_id'] : null;
+        $selectedUploadType = $selectedUploadTypeId ? UploadType::query()->find($selectedUploadTypeId) : null;
 
         $poUploadType = UploadType::query()
             ->where('workflow', UploadWorkflow::PurchaseOrder)
@@ -59,11 +62,18 @@ class PurchaseOrderController extends Controller
         if ($sourceType === 'google_sheet') {
             $sheetQuery = PoExtraction::query()
                 ->where('source_type', 'google_sheet')
+                ->whereHas('activeDocumentLinks')
                 ->with([
                     'sheetSource',
                     'activeDocumentLinks.aiExtraction.upload.uploadType',
                     'purchaseOrderItemArrivals',
                 ])
+                ->when($selectedUploadType !== null, function (Builder $q) use ($selectedUploadType) {
+                    $q->where(function (Builder $sub) use ($selectedUploadType) {
+                        $sub->where('sheet_slug', $selectedUploadType->slug)
+                            ->orWhereHas('activeDocumentLinks.aiExtraction.upload', fn (Builder $u) => $u->where('upload_type_id', $selectedUploadType->id));
+                    });
+                })
                 ->when($search !== '', function (Builder $q) use ($search) {
                     $q->where(function (Builder $sub) use ($search) {
                         $sub->where('po_number', 'LIKE', "%{$search}%")
@@ -81,7 +91,7 @@ class PurchaseOrderController extends Controller
             return $this->renderIndex($items, $search, $validated);
         }
 
-        // 2. Query PO Uploads
+        // 2. Query PO Uploads (only linked)
         $uploadQuery = ReceivingUpload::query()
             ->with([
                 'uploadType:id,name,workflow',
@@ -93,6 +103,10 @@ class PurchaseOrderController extends Controller
                 'purchaseOrderItemArrivals:id,receiving_upload_id,arrival_date',
             ])
             ->whereHas('uploadType', fn (Builder $type) => $type->where('workflow', UploadWorkflow::PurchaseOrder))
+            ->whereHas('poExtractions.activeDocumentLinks')
+            ->when($selectedUploadType !== null, function (Builder $query) use ($selectedUploadType) {
+                $query->whereHas('poExtractions.activeDocumentLinks.aiExtraction.upload', fn (Builder $u) => $u->where('upload_type_id', $selectedUploadType->id));
+            })
             ->when($search !== '', fn (Builder $query) => $this->applySearch($query, $search, $resolvedPoUploadId))
             ->when(isset($validated['ai_status']), fn (Builder $query) => $query->whereIn(
                 'ai_status',
@@ -107,7 +121,16 @@ class PurchaseOrderController extends Controller
             ->latest('id');
 
         // Check if there are also Google Sheet POs to include (when not filtered to upload only)
-        $hasSheetPos = $sourceType !== 'upload' && PoExtraction::query()->where('source_type', 'google_sheet')->exists();
+        $hasSheetPos = $sourceType !== 'upload' && PoExtraction::query()
+            ->where('source_type', 'google_sheet')
+            ->whereHas('activeDocumentLinks')
+            ->when($selectedUploadType !== null, function (Builder $q) use ($selectedUploadType) {
+                $q->where(function (Builder $sub) use ($selectedUploadType) {
+                    $sub->where('sheet_slug', $selectedUploadType->slug)
+                        ->orWhereHas('activeDocumentLinks.aiExtraction.upload', fn (Builder $u) => $u->where('upload_type_id', $selectedUploadType->id));
+                });
+            })
+            ->exists();
 
         if (! $hasSheetPos) {
             $uploads = $uploadQuery->paginate(25)->withQueryString();
@@ -119,14 +142,21 @@ class PurchaseOrderController extends Controller
         }
 
         // When both exist and no source_type filter was set:
-        // Combine uploads and sheet POs
+        // Combine uploads and sheet POs (both filtered to only linked)
         $sheetQuery = PoExtraction::query()
             ->where('source_type', 'google_sheet')
+            ->whereHas('activeDocumentLinks')
             ->with([
                 'sheetSource',
                 'activeDocumentLinks.aiExtraction.upload.uploadType',
                 'purchaseOrderItemArrivals',
             ])
+            ->when($selectedUploadType !== null, function (Builder $q) use ($selectedUploadType) {
+                $q->where(function (Builder $sub) use ($selectedUploadType) {
+                    $sub->where('sheet_slug', $selectedUploadType->slug)
+                        ->orWhereHas('activeDocumentLinks.aiExtraction.upload', fn (Builder $u) => $u->where('upload_type_id', $selectedUploadType->id));
+                });
+            })
             ->when($search !== '', function (Builder $q) use ($search) {
                 $q->where(function (Builder $sub) use ($search) {
                     $sub->where('po_number', 'LIKE', "%{$search}%")
@@ -307,11 +337,12 @@ class PurchaseOrderController extends Controller
                 'ai_status' => (string) ($validated['ai_status'] ?? ''),
                 'source_status' => (string) ($validated['source_status'] ?? ''),
                 'source_type' => (string) ($validated['source_type'] ?? ''),
+                'upload_type_id' => isset($validated['upload_type_id']) ? (string) $validated['upload_type_id'] : '',
             ],
             'uploadTypes' => fn () => UploadType::query()
-                ->where('workflow', UploadWorkflow::PurchaseOrder)
+                ->where('workflow', '!=', UploadWorkflow::PurchaseOrder)
                 ->orderBy('name')
-                ->get(['id', 'name']),
+                ->get(['id', 'name', 'slug']),
             'sheetSources' => fn () => GoogleSheetConfig::query()
                 ->orderBy('name')
                 ->get(['id', 'name', 'slug', 'tab_name', 'spreadsheet_id', 'transition_mode', 'last_synced_at']),
@@ -335,6 +366,10 @@ class PurchaseOrderController extends Controller
             'serial_number' => $serialNumbers[$upload->getKey()] ?? $upload->getKey(),
             'serial_prefix' => $serials->prefix($upload->uploadType),
             'upload_type' => $upload->uploadType->name,
+            'vendor_name' => $po?->vendor_name,
+            'supplier_name' => $po?->vendor_name,
+            'po_date' => $po?->po_date,
+            'po_date_value' => $po?->po_date_value?->toDateString(),
             'uploader_email' => $upload->uploader_email,
             'created_at' => $upload->created_at->toISOString(),
             'r2_prefix' => $upload->r2_prefix,
@@ -383,6 +418,10 @@ class PurchaseOrderController extends Controller
             'serial_number' => $po->po_number,
             'serial_prefix' => 'PO',
             'upload_type' => 'Google Sheet ('.($sheetSource instanceof GoogleSheetConfig ? $sheetSource->name : 'Sync').')',
+            'vendor_name' => $po->vendor_name,
+            'supplier_name' => $po->vendor_name,
+            'po_date' => $po->po_date,
+            'po_date_value' => $po->po_date_value?->toDateString(),
             'uploader_email' => 'Google Sheet Sync',
             'created_at' => ($po->synced_at?->toISOString() ?? $po->created_at->toISOString()),
             'r2_prefix' => '',

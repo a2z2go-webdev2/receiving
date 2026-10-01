@@ -79,6 +79,10 @@ type Upload = {
     source_type?: string;
     source_status?: string;
     po_id?: number;
+    vendor_name?: string | null;
+    supplier_name?: string | null;
+    po_date?: string | null;
+    po_date_value?: string | null;
     detail_url?: string;
     linked_receipts?: LinkedReceipt[];
     po_link_details?: PoLinkDetails | null;
@@ -327,66 +331,66 @@ export default function UploadsIndex({
             >
                 <FlashMessage />
 
-                {!purchaseOrderView && (
-                    <div className="mb-4 overflow-hidden rounded-xl border bg-card p-1 shadow-sm">
-                        <div
-                            className="flex w-full gap-1 overflow-x-auto p-1"
-                            role="tablist"
-                            aria-label="Upload types"
+                <div className="mb-4 overflow-hidden rounded-xl border bg-card p-1 shadow-sm">
+                    <div
+                        className="flex w-full gap-1 overflow-x-auto p-1"
+                        role="tablist"
+                        aria-label={purchaseOrderView ? 'Purchase order sources' : 'Upload types'}
+                    >
+                        <Button
+                            type="button"
+                            role="tab"
+                            aria-selected={filterValues.upload_type_id === ''}
+                            variant={filterValues.upload_type_id === '' ? 'default' : 'ghost'}
+                            onClick={() => handleTabChange('')}
+                            className="h-auto shrink-0 justify-start rounded-lg px-3 py-2 sm:flex-1"
                         >
-                            <Button
-                                type="button"
-                                role="tab"
-                                aria-selected={filterValues.upload_type_id === ''}
-                                variant={filterValues.upload_type_id === '' ? 'default' : 'ghost'}
-                                onClick={() => handleTabChange('')}
-                                className="h-auto shrink-0 justify-start rounded-lg px-3 py-2 sm:flex-1"
-                            >
-                                <span className="flex items-center gap-2">
-                                    <Inbox className="size-4 shrink-0" />
-                                    <span className="text-left">
-                                        <span className="block font-semibold text-sm leading-tight">
-                                            All
-                                        </span>
-                                        <span
-                                            className={`block text-[10px] leading-tight ${filterValues.upload_type_id === '' ? 'text-primary-foreground/75' : 'text-muted-foreground'}`}
-                                        >
-                                            All upload types
-                                        </span>
+                            <span className="flex items-center gap-2">
+                                <Inbox className="size-4 shrink-0" />
+                                <span className="text-left">
+                                    <span className="block font-semibold text-sm leading-tight">
+                                        All
+                                    </span>
+                                    <span
+                                        className={`block text-[10px] leading-tight ${filterValues.upload_type_id === '' ? 'text-primary-foreground/75' : 'text-muted-foreground'}`}
+                                    >
+                                        {purchaseOrderView ? 'All sources' : 'All upload types'}
                                     </span>
                                 </span>
-                            </Button>
-                            {uploadTypes.map((type) => {
-                                const active = filterValues.upload_type_id === String(type.id);
-                                return (
-                                    <Button
-                                        key={type.id}
-                                        type="button"
-                                        role="tab"
-                                        aria-selected={active}
-                                        variant={active ? 'default' : 'ghost'}
-                                        onClick={() => handleTabChange(String(type.id))}
-                                        className="h-auto shrink-0 justify-start rounded-lg px-3 py-2 sm:flex-1"
-                                    >
-                                        <span className="flex items-center gap-2">
-                                            <Inbox className="size-4 shrink-0" />
-                                            <span className="text-left">
-                                                <span className="block truncate font-semibold text-sm leading-tight">
-                                                    {type.name}
-                                                </span>
-                                                <span
-                                                    className={`block text-[10px] leading-tight ${active ? 'text-primary-foreground/75' : 'text-muted-foreground'}`}
-                                                >
-                                                    Receive logs
-                                                </span>
+                            </span>
+                        </Button>
+                        {uploadTypes.map((type) => {
+                            const active = filterValues.upload_type_id === String(type.id);
+                            return (
+                                <Button
+                                    key={type.id}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={active}
+                                    variant={active ? 'default' : 'ghost'}
+                                    onClick={() => handleTabChange(String(type.id))}
+                                    className="h-auto shrink-0 justify-start rounded-lg px-3 py-2 sm:flex-1"
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <Inbox className="size-4 shrink-0" />
+                                        <span className="text-left">
+                                            <span className="block truncate font-semibold text-sm leading-tight">
+                                                {type.name}
+                                            </span>
+                                            <span
+                                                className={`block text-[10px] leading-tight ${active ? 'text-primary-foreground/75' : 'text-muted-foreground'}`}
+                                            >
+                                                {purchaseOrderView
+                                                    ? 'Purchase orders'
+                                                    : 'Receive logs'}
                                             </span>
                                         </span>
-                                    </Button>
-                                );
-                            })}
-                        </div>
+                                    </span>
+                                </Button>
+                            );
+                        })}
                     </div>
-                )}
+                </div>
 
                 <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <form onSubmit={applyFilters} className="flex flex-1 items-center gap-1.5">
@@ -461,7 +465,7 @@ export default function UploadsIndex({
                                             }))
                                         }
                                         options={[
-                                            { value: 'waiting', label: 'Pending' },
+                                            { value: 'waiting', label: 'Waiting' },
                                             { value: 'in_progress', label: 'In progress' },
                                             { value: 'completed', label: 'Completed' },
                                             { value: 'failed', label: 'Failed' },
@@ -535,7 +539,9 @@ export default function UploadsIndex({
                             <p className="text-muted-foreground text-xs">
                                 Showing{' '}
                                 {purchaseOrderView
-                                    ? 'purchase orders'
+                                    ? filterValues.upload_type_id === ''
+                                        ? 'purchase orders'
+                                        : `${uploadTypes.find((t) => String(t.id) === filterValues.upload_type_id)?.name.toLowerCase()} purchase orders`
                                     : filterValues.upload_type_id === ''
                                       ? 'all receive logs'
                                       : `${uploadTypes.find((t) => String(t.id) === filterValues.upload_type_id)?.name.toLowerCase()} receive logs`}
@@ -549,16 +555,25 @@ export default function UploadsIndex({
                         <thead className="border-b bg-muted/50">
                             <tr>
                                 <th className="px-3 py-2">Serial / type</th>
-                                <th className="px-3 py-2">Uploader</th>
-                                <th className="px-3 py-2">Files</th>
-                                {!purchaseOrderView && <th className="px-3 py-2">Review email</th>}
+                                {purchaseOrderView ? (
+                                    <>
+                                        <th className="px-3 py-2">Supplier name</th>
+                                        <th className="px-3 py-2">PO date</th>
+                                    </>
+                                ) : (
+                                    <>
+                                        <th className="px-3 py-2">Uploader</th>
+                                        <th className="px-3 py-2">Files</th>
+                                        <th className="px-3 py-2">Review email</th>
+                                    </>
+                                )}
                                 <th className="px-3 py-2">AI extraction</th>
                                 <th className="px-3 py-2">
                                     {purchaseOrderView ? 'Linked receipts / Arrival' : 'PO link'}
                                 </th>
                                 {purchaseOrderView && <th className="px-3 py-2">Waiting time</th>}
                                 {!purchaseOrderView && <th className="px-3 py-2">Review status</th>}
-                                <th className="px-3 py-2">Uploaded</th>
+                                {!purchaseOrderView && <th className="px-3 py-2">Uploaded</th>}
                                 <th className="px-3 py-2">
                                     <span className="sr-only">Actions</span>
                                 </th>
@@ -582,12 +597,27 @@ export default function UploadsIndex({
                                             {upload.upload_type}
                                         </p>
                                     </td>
-                                    <td className="px-3 py-2">{upload.uploader_email}</td>
-                                    <td className="px-3 py-2">{upload.file_count}</td>
-                                    {!purchaseOrderView && (
-                                        <td className="px-3 py-2">
-                                            <StatusBadge value={upload.review_email_status} />
-                                        </td>
+                                    {purchaseOrderView ? (
+                                        <>
+                                            <td className="px-3 py-2 font-medium">
+                                                {upload.supplier_name || upload.vendor_name || '—'}
+                                            </td>
+                                            <td className="px-3 py-2 text-muted-foreground">
+                                                {upload.po_date_value || upload.po_date || '—'}
+                                            </td>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <td className="px-3 py-2">{upload.uploader_email}</td>
+                                            <td className="px-3 py-2">{upload.file_count}</td>
+                                            {!purchaseOrderView && (
+                                                <td className="px-3 py-2">
+                                                    <StatusBadge
+                                                        value={upload.review_email_status}
+                                                    />
+                                                </td>
+                                            )}
+                                        </>
                                     )}
                                     <td className="px-3 py-2">
                                         <StatusBadge
@@ -686,9 +716,11 @@ export default function UploadsIndex({
                                             <StatusBadge value={upload.review_status} />
                                         </td>
                                     )}
-                                    <td className="px-3 py-2 text-muted-foreground">
-                                        {new Date(upload.created_at).toLocaleString()}
-                                    </td>
+                                    {!purchaseOrderView && (
+                                        <td className="px-3 py-2 text-muted-foreground">
+                                            {new Date(upload.created_at).toLocaleString()}
+                                        </td>
+                                    )}
                                     <td className="px-3 py-2">
                                         <div className="flex items-center justify-end gap-1">
                                             <Button
@@ -703,16 +735,23 @@ export default function UploadsIndex({
                                                         `/admin/uploads/${upload.id}`
                                                     }
                                                     aria-label={`View details for ${upload.serial_prefix}-${upload.serial_number}`}
+                                                    title={
+                                                        purchaseOrderView
+                                                            ? 'View purchase order details'
+                                                            : 'View receive log details'
+                                                    }
                                                 >
                                                     <Eye className="size-4" />
                                                 </Link>
                                             </Button>
-                                            <UploadActions
-                                                upload={upload}
-                                                purchaseOrderView={purchaseOrderView}
-                                                onReprocess={() => setReprocessing(upload)}
-                                                onDelete={() => setDeleting(upload)}
-                                            />
+                                            {!purchaseOrderView && (
+                                                <UploadActions
+                                                    upload={upload}
+                                                    purchaseOrderView={purchaseOrderView}
+                                                    onReprocess={() => setReprocessing(upload)}
+                                                    onDelete={() => setDeleting(upload)}
+                                                />
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -720,10 +759,12 @@ export default function UploadsIndex({
                             {uploads.data.length === 0 && (
                                 <tr>
                                     <td
-                                        colSpan={purchaseOrderView ? 8 : 9}
+                                        colSpan={purchaseOrderView ? 7 : 9}
                                         className="px-3 py-10 text-center text-muted-foreground"
                                     >
-                                        No uploads match this search and filter combination.
+                                        {purchaseOrderView
+                                            ? 'No purchase orders match this search and filter combination.'
+                                            : 'No uploads match this search and filter combination.'}
                                     </td>
                                 </tr>
                             )}

@@ -245,6 +245,11 @@ class PurchaseOrderSheetSyncService
                 $poExtraction->forceFill([
                     'po_number' => $order['po_number'],
                     'vendor_name' => $order['supplier'],
+                    'buyer_company' => $order['buyer_company'] ?? $poExtraction->buyer_company,
+                    'buyer_address' => $order['buyer_address'] ?? $poExtraction->buyer_address,
+                    'payment_terms' => $order['payment_terms'] ?? $poExtraction->payment_terms,
+                    'po_reference' => $order['po_reference'] ?? $poExtraction->po_reference,
+                    'contact_person' => $order['contact_person'] ?? $poExtraction->contact_person,
                     'source_status' => $order['raw_status'],
                     'status_normalized' => $order['status_normalized'],
                     'arrival_status' => match ($order['status_normalized']) {
