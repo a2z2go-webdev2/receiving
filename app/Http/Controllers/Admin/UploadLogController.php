@@ -466,6 +466,7 @@ class UploadLogController extends Controller
         Request $request,
         PurchaseOrderLinker $linker,
         PurchaseOrderSheetSyncService $syncService,
+        PurchaseOrderDataNormalizer $normalizer,
     ): RedirectResponse {
         abort_unless($request->user()?->can('operations.retry'), 403);
 
@@ -477,43 +478,30 @@ class UploadLogController extends Controller
         }
 
         $masterConfig = $this->resolveMasterSheetConfig();
-        $syncNote = '';
+
+        $uploadsQuery = ReceivingUpload::query()
+            ->whereHas('uploadType', fn (Builder $type) => $type->where('workflow', UploadWorkflow::Standard->value))
+            ->with(['uploadType', 'extractions.upload.uploadType', 'extractions.activePurchaseOrderLink.poExtraction']);
 
         if ($uploadType !== null) {
-            $laneSlug = $uploadType->slug;
-            if ($masterConfig !== null) {
-                try {
-                    $syncService->syncLane($laneSlug);
-                    $syncNote = " ({$uploadType->name} PO sheet synced).";
-                } catch (\Throwable $e) {
-                    Log::warning("Direct Google Sheet sync failed for lane {$laneSlug}: {$e->getMessage()}");
-                    SyncPurchaseOrderSheet::dispatch($laneSlug, null, 'apply');
-                    $syncNote = " ({$uploadType->name} PO sheet background sync queued).";
-                }
-            } else {
-                $syncNote = ' Note: Google Sheet ID is not configured in settings or SHEET_ID_PURCHASE_ORDERS.';
-            }
-
-            $stats = $linker->resyncAll((int) $uploadType->getKey());
-
-            $message = "Re-matched receive logs for {$uploadType->name} against purchase orders ({$stats['processed']} documents checked, {$stats['linked']} linked).{$syncNote}";
-        } else {
-            if ($masterConfig !== null) {
-                $lock = Cache::lock('sync_po_sheet_queue_lock', 60);
-                if ($lock->get()) {
-                    SyncPurchaseOrderSheet::dispatch('all', null, 'apply');
-                    $syncNote = ' (Google Sheet background sync queued to refresh POs).';
-                } else {
-                    $syncNote = ' (Google Sheet sync is running in background).';
-                }
-            } else {
-                $syncNote = ' Note: Google Sheet ID is not configured in settings or SHEET_ID_PURCHASE_ORDERS.';
-            }
-
-            $stats = $linker->resyncAll();
-
-            $message = "Re-matched receive logs against purchase orders ({$stats['processed']} documents checked, {$stats['linked']} linked).{$syncNote}";
+            $uploadsQuery->where('upload_type_id', $uploadType->getKey());
         }
+
+        $uploads = $uploadsQuery->get();
+
+        $result = $this->rematchUploadsWithPoSheets(
+            $uploads,
+            $uploadType,
+            $linker,
+            $syncService,
+            $normalizer,
+            $masterConfig,
+        );
+
+        $stats = $linker->resyncAll($uploadType !== null ? (int) $uploadType->getKey() : null);
+
+        $sourceLabel = $uploadType !== null ? "for {$uploadType->name}" : '';
+        $message = trim("Re-matched receive logs {$sourceLabel} against purchase orders ({$stats['processed']} documents checked, {$stats['linked']} linked).{$result['sync_note']}");
 
         return back()->with('status', $message);
     }
@@ -530,26 +518,67 @@ class UploadLogController extends Controller
 
         $upload->load(['uploadType', 'extractions.upload.uploadType', 'extractions.activePurchaseOrderLink.poExtraction']);
 
-        $linkedCount = 0;
-        foreach ($upload->extractions as $extraction) {
-            $status = $linker->syncExtraction($extraction);
-            if ($status === PurchaseOrderLinkStatus::Linked) {
-                $linkedCount++;
+        $masterConfig = $this->resolveMasterSheetConfig();
+
+        $result = $this->rematchUploadsWithPoSheets(
+            collect([$upload]),
+            $upload->uploadType,
+            $linker,
+            $syncService,
+            $normalizer,
+            $masterConfig,
+        );
+
+        $upload->load('extractions.activePurchaseOrderLink.poExtraction');
+        $linkedPoNumbers = $upload->extractions
+            ->map(fn ($e) => $e->activePurchaseOrderLink?->poExtraction?->po_number)
+            ->filter()
+            ->unique()
+            ->values();
+
+        $linkedCount = $upload->extractions->filter(
+            fn ($e) => $e->activePurchaseOrderLink !== null
+        )->count();
+
+        $serial = $serials->prefix($upload->uploadType).'-'.$serials->number($upload);
+        $poList = $linkedPoNumbers->isNotEmpty() ? ' to PO '.implode(', ', $linkedPoNumbers->all()) : '';
+        $message = "Re-matched purchase order for {$serial} ({$linkedCount} document(s) linked{$poList}).{$result['sync_note']}";
+
+        return back()->with('status', $message);
+    }
+
+    /**
+     * Re-match all invoices and delivery receipts in the given uploads against PO sheets.
+     *
+     * @param  Collection<int, ReceivingUpload>  $uploads
+     * @return array{sync_note: string}
+     */
+    private function rematchUploadsWithPoSheets(
+        Collection $uploads,
+        ?UploadType $uploadType,
+        PurchaseOrderLinker $linker,
+        PurchaseOrderSheetSyncService $syncService,
+        PurchaseOrderDataNormalizer $normalizer,
+        ?GoogleSheetConfig $masterConfig,
+    ): array {
+        // 1. Initial pass: re-sync all extractions locally first to link against any POs already in the DB
+        foreach ($uploads as $upload) {
+            foreach ($upload->extractions as $extraction) {
+                $linker->syncExtraction($extraction);
             }
         }
 
-        $serial = $serials->prefix($upload->uploadType).'-'.$serials->number($upload);
-        $masterConfig = $this->resolveMasterSheetConfig();
-        $syncNote = '';
+        // 2. Identify all unlinked extractions across every upload and collect their candidate PO numbers
+        $targetPoNumbers = [];
+        $unlinkedExtractions = [];
 
-        if ($linkedCount < $upload->extractions->count() && $masterConfig !== null) {
-            $laneSlug = $upload->uploadType->slug ?? 'pingcon';
-
-            $targetPoNumbers = [];
+        foreach ($uploads as $upload) {
+            $upload->load(['uploadType', 'extractions.upload.uploadType', 'extractions.activePurchaseOrderLink.poExtraction']);
             foreach ($upload->extractions as $extraction) {
                 if ($extraction->activePurchaseOrderLink !== null) {
                     continue;
                 }
+
                 $rawNumber = $extraction->po_number;
                 if (empty($rawNumber)) {
                     $data = $extraction->preferredData() ?? $extraction->raw_extracted_json;
@@ -560,97 +589,125 @@ class UploadLogController extends Controller
                 if (! empty($rawNumber)) {
                     $candidates = $normalizer->poIdentifierCandidates($rawNumber);
                     $targetPoNumbers = array_merge($targetPoNumbers, $candidates);
+                    $unlinkedExtractions[] = $extraction;
                 }
             }
-            $targetPoNumbers = array_values(array_unique(array_filter($targetPoNumbers)));
+        }
 
-            try {
-                if (! empty($targetPoNumbers)) {
-                    $syncedLanes = [];
+        $targetPoNumbers = array_values(array_unique(array_filter($targetPoNumbers)));
+        $syncNote = '';
 
-                    // 1. Sync the upload's own lane first
+        if ($masterConfig !== null) {
+            $syncedLanes = [];
+
+            if (! empty($targetPoNumbers)) {
+                // 3a. If a specific source is selected, sync its lane first with the target PO numbers
+                if ($uploadType !== null) {
+                    $primaryLane = $uploadType->slug ?? 'pingcon';
                     try {
-                        $syncService->syncLane($laneSlug, targetPoNumbers: $targetPoNumbers);
-                        $syncedLanes[] = $laneSlug;
+                        $syncService->syncLane($primaryLane, targetPoNumbers: $targetPoNumbers);
+                        $syncedLanes[] = $primaryLane;
+                        $syncNote = " ({$uploadType->name} PO sheet synced).";
                     } catch (\Throwable $e) {
-                        Log::warning("Direct Google Sheet sync failed for upload {$serial} (lane {$laneSlug}): {$e->getMessage()}");
+                        Log::warning("Direct Google Sheet sync failed for source {$uploadType->name} (lane {$primaryLane}): {$e->getMessage()}");
                     }
 
-                    $upload->load(['uploadType', 'extractions.upload.uploadType', 'extractions.activePurchaseOrderLink.poExtraction']);
-                    foreach ($upload->extractions as $extraction) {
+                    // Re-sync unlinked extractions after primary lane sync
+                    foreach ($unlinkedExtractions as $extraction) {
                         $linker->syncExtraction($extraction);
                     }
+                }
 
-                    // 2. If any extractions still have unlinked PO numbers, search other PO lanes (keysys, a2z2go, bonita, pingcon)
-                    $poLanes = ['keysys', 'a2z2go', 'bonita', 'pingcon'];
-                    foreach ($poLanes as $otherLane) {
-                        $upload->load('extractions.activePurchaseOrderLink.poExtraction');
-                        $hasUnlinked = $upload->extractions->contains(fn ($e) => $e->activePurchaseOrderLink === null);
-                        if (! $hasUnlinked) {
+                // 3b. Search across all PO lanes for any still unlinked extractions
+                $poLanes = ['keysys', 'a2z2go', 'bonita', 'pingcon'];
+                foreach ($poLanes as $otherLane) {
+                    if (in_array($otherLane, $syncedLanes, true)) {
+                        continue;
+                    }
+
+                    // Check if any extractions still remain unlinked
+                    $hasUnlinked = false;
+                    foreach ($unlinkedExtractions as $extraction) {
+                        $extraction->load('activePurchaseOrderLink');
+                        if ($extraction->activePurchaseOrderLink === null) {
+                            $hasUnlinked = true;
                             break;
                         }
-                        if (in_array($otherLane, $syncedLanes, true)) {
-                            continue;
-                        }
-                        $syncedLanes[] = $otherLane;
+                    }
 
-                        try {
-                            $syncService->syncLane($otherLane, targetPoNumbers: $targetPoNumbers);
-                            $upload->load(['uploadType', 'extractions.upload.uploadType', 'extractions.activePurchaseOrderLink.poExtraction']);
-                            foreach ($upload->extractions as $extraction) {
-                                $linker->syncExtraction($extraction);
-                            }
-                        } catch (\Throwable $e) {
-                            Log::warning("Cross-lane Google Sheet sync failed for upload {$serial} (lane {$otherLane}): {$e->getMessage()}");
+                    if (! $hasUnlinked) {
+                        break;
+                    }
+
+                    $syncedLanes[] = $otherLane;
+
+                    try {
+                        $syncService->syncLane($otherLane, targetPoNumbers: $targetPoNumbers);
+                        foreach ($unlinkedExtractions as $extraction) {
+                            $linker->syncExtraction($extraction);
                         }
+                    } catch (\Throwable $e) {
+                        Log::warning("Cross-lane Google Sheet sync failed (lane {$otherLane}): {$e->getMessage()}");
+                    }
+                }
+
+                if ($syncNote === '' && ! empty($syncedLanes)) {
+                    $syncNote = ' (PO sheets synced: '.implode(', ', $syncedLanes).').';
+                }
+            } else {
+                // No specific PO numbers extracted: fallback to whole-lane sync or background queue
+                if ($uploadType !== null) {
+                    $laneSlug = $uploadType->slug;
+                    try {
+                        $syncService->syncLane($laneSlug);
+                        $syncNote = " ({$uploadType->name} PO sheet synced).";
+                    } catch (\Throwable $e) {
+                        Log::warning("Direct Google Sheet sync failed for lane {$laneSlug}: {$e->getMessage()}");
+                        SyncPurchaseOrderSheet::dispatch($laneSlug, null, 'apply');
+                        $syncNote = " ({$uploadType->name} PO sheet background sync queued).";
                     }
                 } else {
                     $lock = Cache::lock('sync_po_sheet_queue_lock', 60);
                     if ($lock->get()) {
                         SyncPurchaseOrderSheet::dispatch('all', null, 'apply');
-                        $syncNote .= ' Google Sheet background sync has been queued to search for matching POs.';
+                        $syncNote = ' (Google Sheet background sync queued to refresh POs).';
+                    } else {
+                        $syncNote = ' (Google Sheet sync is running in background).';
                     }
                 }
+            }
 
-                $upload->load(['uploadType', 'extractions.upload.uploadType', 'extractions.activePurchaseOrderLink.poExtraction']);
-                $linkedCount = 0;
-                foreach ($upload->extractions as $extraction) {
-                    $status = $linker->syncExtraction($extraction);
-                    if ($status === PurchaseOrderLinkStatus::Linked) {
-                        $linkedCount++;
-                    }
+            // If any extraction still has an unlinked PO number after all attempts, queue background sync
+            $stillUnlinked = false;
+            foreach ($uploads as $upload) {
+                $upload->load('extractions.activePurchaseOrderLink');
+                if ($upload->extractions->contains(fn ($e) => $e->activePurchaseOrderLink === null && ! empty($e->po_number))) {
+                    $stillUnlinked = true;
+                    break;
                 }
+            }
 
-                if ($linkedCount < $upload->extractions->count()) {
-                    $lock = Cache::lock('sync_po_sheet_queue_lock', 60);
-                    if ($lock->get()) {
-                        SyncPurchaseOrderSheet::dispatch('all', null, 'apply');
-                        $syncNote .= ' Google Sheet background sync has been queued to search for matching POs.';
-                    }
-                }
-            } catch (\Throwable $e) {
-                Log::warning("Google Sheet sync failed for upload {$serial}: {$e->getMessage()}");
+            if ($stillUnlinked) {
                 $lock = Cache::lock('sync_po_sheet_queue_lock', 60);
                 if ($lock->get()) {
-                    SyncPurchaseOrderSheet::dispatch('all', null, 'apply');
+                    $dispatchLane = $uploadType !== null ? $uploadType->slug : 'all';
+                    SyncPurchaseOrderSheet::dispatch($dispatchLane, null, 'apply');
                     $syncNote .= ' Google Sheet background sync has been queued to search for matching POs.';
                 }
             }
-        } elseif ($masterConfig === null) {
+        } else {
             $syncNote = ' Note: Google Sheet ID is not configured in settings or SHEET_ID_PURCHASE_ORDERS.';
         }
 
-        $upload->load('extractions.activePurchaseOrderLink.poExtraction');
-        $linkedPoNumbers = $upload->extractions
-            ->map(fn ($e) => $e->activePurchaseOrderLink?->poExtraction?->po_number)
-            ->filter()
-            ->unique()
-            ->values();
+        // 4. Final pass: re-sync all extractions for every upload in scope to ensure completely fresh state
+        foreach ($uploads as $upload) {
+            $upload->load(['uploadType', 'extractions.upload.uploadType', 'extractions.activePurchaseOrderLink.poExtraction']);
+            foreach ($upload->extractions as $extraction) {
+                $linker->syncExtraction($extraction);
+            }
+        }
 
-        $poList = $linkedPoNumbers->isNotEmpty() ? ' to PO '.implode(', ', $linkedPoNumbers->all()) : '';
-        $message = "Re-matched purchase order for {$serial} ({$linkedCount} document(s) linked{$poList}).{$syncNote}";
-
-        return back()->with('status', $message);
+        return ['sync_note' => $syncNote];
     }
 
     private function resolveMasterSheetConfig(): ?GoogleSheetConfig

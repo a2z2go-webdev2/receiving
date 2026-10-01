@@ -457,6 +457,200 @@ it('synchronously syncs lane PO tab from google sheets and links invoice immedia
         ->and($extraction->activePurchaseOrderLink->poExtraction->po_number)->toBe('716');
 });
 
+it('synchronously syncs google sheets and links all invoices and DRs under every serial number when matching in receive logs page', function (): void {
+    [$admin, $upload1, $file1, $extractionInvoice1] = adminUploadActionFixture();
+    $type = $upload1->uploadType;
+    config(['services.google.purchase_orders_sheet_id' => 'mock-po-sheet-id']);
+
+    Http::fake([
+        'https://sheets.googleapis.com/v4/spreadsheets/mock-po-sheet-id/values/*' => Http::response([
+            'values' => [
+                ['PO Number', 'Supplier', 'Type', 'Status', 'Date', 'Net Total', 'VAT Total', 'Total Amount', 'Item Code', 'Item Description', 'Qty', 'Unit', 'Unit Price', 'Line Total', 'Notes'],
+                ['716', 'Symmetryplast Enterprises', 'Standard', 'Confirmed', '2026-03-20', '500.00', '60.00', '560.00', 'ITEM-1', 'Test Item 1', '10', 'PCS', '50.00', '500.00', ''],
+                ['800', 'Symmetryplast Enterprises', 'Standard', 'Confirmed', '2026-03-21', '600.00', '72.00', '672.00', 'ITEM-2', 'Test Item 2', '20', 'PCS', '30.00', '600.00', ''],
+            ],
+        ], 200),
+    ]);
+
+    // Upload 1 (SN 1) has an Invoice for PO 716 and a Delivery Receipt (DR) for PO 716
+    $dataInvoice1 = [
+        'document_type' => 'Invoice',
+        'fields' => [
+            ['label' => 'Company Name', 'value' => 'Symmetryplast Enterprises'],
+            ['label' => 'PO Number', 'value' => '716'],
+        ],
+        'items' => [],
+    ];
+    $extractionInvoice1->forceFill([
+        'raw_extracted_json' => $dataInvoice1,
+        'corrected_json' => $dataInvoice1,
+        'po_number' => '716',
+        'po_number_normalized' => '716',
+        'po_link_status' => PurchaseOrderLinkStatus::AwaitingPurchaseOrder,
+    ])->save();
+
+    $fileDr1 = UploadedFile::query()->create([
+        'receiving_upload_id' => $upload1->getKey(),
+        'original_file_name' => 'dr.pdf',
+        'sanitized_file_name' => 'dr.pdf',
+        'stored_file_name' => 'dr.pdf',
+        'file_extension' => 'pdf',
+        'r2_bucket' => 'test',
+        'r2_object_key' => 'receiving/dr.pdf',
+        'r2_staging_object_key' => 'staging/dr.pdf',
+        'original_file_size' => 100,
+        'final_file_size' => 100,
+        'declared_content_type' => 'application/pdf',
+        'content_type' => 'application/pdf',
+        'ai_status' => AiStatus::Extracted,
+    ]);
+
+    $extractionDr1 = AiExtraction::query()->create([
+        'receiving_upload_id' => $upload1->getKey(),
+        'uploaded_file_id' => $fileDr1->getKey(),
+        'document_type' => 'Delivery Receipt',
+        'po_number' => '716',
+        'po_number_normalized' => '716',
+        'po_link_status' => PurchaseOrderLinkStatus::AwaitingPurchaseOrder,
+        'raw_extracted_json' => [
+            'document_type' => 'Delivery Receipt',
+            'fields' => [
+                ['label' => 'Company Name', 'value' => 'Symmetryplast Enterprises'],
+                ['label' => 'PO Number', 'value' => '716'],
+            ],
+            'items' => [],
+        ],
+        'ai_status' => AiStatus::Extracted,
+        'extracted_at' => now(),
+    ]);
+
+    // Upload 2 (SN 2) has an Invoice for PO 800
+    $upload2 = ReceivingUpload::query()->create([
+        'submission_id' => fake()->uuid(),
+        'upload_type_id' => $type->getKey(),
+        'uploader_user_id' => $upload1->uploader_user_id,
+        'uploader_email' => $upload1->uploader_email,
+        'latitude' => 14.5995123,
+        'longitude' => 120.9842234,
+        'location_accuracy_meters' => 149,
+        'location_captured_at' => now(),
+        'r2_bucket' => 'test',
+        'r2_prefix' => 'receiving/test',
+        'file_count' => 1,
+        'serial_number' => 2,
+        'email_status' => EmailStatus::Sent,
+        'ai_status' => AiStatus::Extracted,
+        'review_status' => ReviewStatus::Pending,
+        'review_email_status' => EmailStatus::Pending,
+    ]);
+    $file2 = UploadedFile::query()->create([
+        'receiving_upload_id' => $upload2->getKey(),
+        'original_file_name' => 'doc2.pdf',
+        'sanitized_file_name' => 'doc2.pdf',
+        'stored_file_name' => 'doc2.pdf',
+        'file_extension' => 'pdf',
+        'r2_bucket' => 'test',
+        'r2_object_key' => 'receiving/doc2.pdf',
+        'r2_staging_object_key' => 'staging/doc2.pdf',
+        'original_file_size' => 100,
+        'final_file_size' => 100,
+        'declared_content_type' => 'application/pdf',
+        'content_type' => 'application/pdf',
+        'ai_status' => AiStatus::Extracted,
+    ]);
+    $extractionInvoice2 = AiExtraction::query()->create([
+        'receiving_upload_id' => $upload2->getKey(),
+        'uploaded_file_id' => $file2->getKey(),
+        'document_type' => 'Invoice',
+        'po_number' => '800',
+        'po_number_normalized' => '800',
+        'po_link_status' => PurchaseOrderLinkStatus::AwaitingPurchaseOrder,
+        'raw_extracted_json' => [
+            'document_type' => 'Invoice',
+            'fields' => [
+                ['label' => 'Company Name', 'value' => 'Symmetryplast Enterprises'],
+                ['label' => 'PO Number', 'value' => '800'],
+            ],
+            'items' => [],
+        ],
+        'ai_status' => AiStatus::Extracted,
+        'extracted_at' => now(),
+    ]);
+
+    // Execute match for this specific upload type from receive logs page
+    $this->actingAs($admin)
+        ->withSession(['admin.otp_verified_at' => now()->getTimestamp()])
+        ->post(route('admin.uploads.rematch-all-po'), [
+            'upload_type_id' => $type->getKey(),
+        ])
+        ->assertRedirect()
+        ->assertSessionHas('status', fn ($msg) => str_contains((string) $msg, '3 documents checked, 3 linked'));
+
+    // Check that every invoice and DR in SN 1 is linked to PO 716
+    expect($extractionInvoice1->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and($extractionInvoice1->activePurchaseOrderLink)->not->toBeNull()
+        ->and($extractionInvoice1->activePurchaseOrderLink->poExtraction->po_number)->toBe('716');
+
+    expect($extractionDr1->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and($extractionDr1->activePurchaseOrderLink)->not->toBeNull()
+        ->and($extractionDr1->activePurchaseOrderLink->poExtraction->po_number)->toBe('716');
+
+    // Check that invoice in SN 2 is linked to PO 800
+    expect($extractionInvoice2->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and($extractionInvoice2->activePurchaseOrderLink)->not->toBeNull()
+        ->and($extractionInvoice2->activePurchaseOrderLink->poExtraction->po_number)->toBe('800');
+});
+
+it('cross-lane syncs google sheets when matching in receive logs page and PO is in another lane tab', function (): void {
+    [$admin, $upload, $file, $extraction] = adminUploadActionFixture();
+    $keysysType = UploadType::query()->where('slug', 'keysys')->firstOrFail();
+    $upload->update(['upload_type_id' => $keysysType->getKey()]);
+
+    config(['services.google.purchase_orders_sheet_id' => 'mock-po-sheet-id']);
+
+    Http::fake([
+        'https://sheets.googleapis.com/v4/spreadsheets/mock-po-sheet-id/values/*KEYSYS*' => Http::response([
+            'values' => [
+                ['PO Number', 'Supplier', 'Type', 'Status', 'Date', 'Net Total', 'VAT Total', 'Total Amount', 'Item Code', 'Item Description', 'Qty', 'Unit', 'Unit Price', 'Line Total', 'Notes'],
+            ],
+        ], 200),
+        'https://sheets.googleapis.com/v4/spreadsheets/mock-po-sheet-id/values/*' => Http::response([
+            'values' => [
+                ['PO Number', 'Supplier', 'Type', 'Status', 'Date', 'Net Total', 'VAT Total', 'Total Amount', 'Item Code', 'Item Description', 'Qty', 'Unit', 'Unit Price', 'Line Total', 'Notes'],
+                ['716', 'Symmetryplast Enterprises', 'Standard', 'Confirmed', '2026-03-20', '500.00', '60.00', '560.00', 'ITEM-1', 'Test Item 1', '10', 'PCS', '50.00', '500.00', ''],
+            ],
+        ], 200),
+    ]);
+
+    $data = [
+        'document_type' => 'Invoice',
+        'fields' => [
+            ['label' => 'Company Name', 'value' => 'Symmetryplast Enterprises'],
+            ['label' => 'PO Number', 'value' => '716'],
+        ],
+        'items' => [],
+    ];
+    $extraction->forceFill([
+        'raw_extracted_json' => $data,
+        'corrected_json' => $data,
+        'po_number' => '716',
+        'po_number_normalized' => '716',
+        'po_link_status' => PurchaseOrderLinkStatus::AwaitingPurchaseOrder,
+    ])->save();
+
+    $this->actingAs($admin)
+        ->withSession(['admin.otp_verified_at' => now()->getTimestamp()])
+        ->post(route('admin.uploads.rematch-all-po'), [
+            'upload_type_id' => $keysysType->getKey(),
+        ])
+        ->assertRedirect()
+        ->assertSessionHas('status', fn ($msg) => str_contains((string) $msg, '1 documents checked, 1 linked'));
+
+    expect($extraction->refresh()->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and($extraction->activePurchaseOrderLink)->not->toBeNull()
+        ->and($extraction->activePurchaseOrderLink->poExtraction->po_number)->toBe('716');
+});
+
 it('includes note in rematch status when google sheet id is not configured', function (): void {
     [$admin, $upload] = adminUploadActionFixture();
     config(['services.google.purchase_orders_sheet_id' => '']);
