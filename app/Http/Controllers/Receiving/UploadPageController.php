@@ -15,14 +15,17 @@ use App\Features\Receiving\Services\UploadSerialNumber;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Receiving\VerifyReceivingReviewRequest;
 use App\Http\Requests\Receiving\VerifyUploadOtpRequest;
+use App\Models\AiExtraction;
 use App\Models\ReceivingUpload;
 use App\Models\UploadedFile;
 use App\Models\UploadType;
 use App\Models\User;
+use App\Services\GoogleSheets\PurchaseOrderSheetSyncService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -316,6 +319,15 @@ class UploadPageController extends Controller
 
             $upload->forceFill(['review_status' => ReviewStatus::Verified])->save();
         });
+
+        $unlinked = $upload->extractions->filter(fn (AiExtraction $ext): bool => $ext->fresh()->activePurchaseOrderLink === null);
+        if ($unlinked->isNotEmpty()) {
+            try {
+                app(PurchaseOrderSheetSyncService::class)->matchExtractions($unlinked);
+            } catch (Throwable $e) {
+                Log::warning("Auto PO matching failed in UploadPageController updateVerified: {$e->getMessage()}");
+            }
+        }
 
         $activity->record('review', 'scanned_data_corrected_by_uploader', 'success', "Verified scanned data was updated by uploader {$user->email}.", $user, $upload, $request);
 

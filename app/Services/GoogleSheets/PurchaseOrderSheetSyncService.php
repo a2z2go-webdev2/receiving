@@ -3,7 +3,9 @@
 namespace App\Services\GoogleSheets;
 
 use App\Enums\PurchaseOrderArrivalStatus;
+use App\Features\Receiving\Services\PurchaseOrderDataNormalizer;
 use App\Features\Receiving\Services\PurchaseOrderLinker;
+use App\Models\AiExtraction;
 use App\Models\GoogleSheetConfig;
 use App\Models\GoogleSheetSyncRecord;
 use App\Models\PoExtraction;
@@ -18,12 +20,16 @@ class PurchaseOrderSheetSyncService
 {
     private readonly PurchaseOrderLinker $linker;
 
+    private readonly PurchaseOrderDataNormalizer $normalizer;
+
     public function __construct(
         private readonly GoogleSheetsApiService $apiService,
         private readonly PurchaseOrderSheetParser $parser,
         ?PurchaseOrderLinker $linker = null,
+        ?PurchaseOrderDataNormalizer $normalizer = null,
     ) {
         $this->linker = $linker ?? app(PurchaseOrderLinker::class);
+        $this->normalizer = $normalizer ?? app(PurchaseOrderDataNormalizer::class);
     }
 
     /**
@@ -823,5 +829,99 @@ class PurchaseOrderSheetSyncService
         }
 
         return null;
+    }
+
+    /**
+     * Synchronize and link matching POs from Google Sheets for the given unlinked extractions.
+     *
+     * @param  iterable<mixed>  $extractions
+     */
+    public function matchExtractions(iterable $extractions): void
+    {
+        $envSheetId = config('services.google.purchase_orders_sheet_id');
+        $hasSheetConfig = ! empty($envSheetId) || GoogleSheetConfig::query()
+            ->where('sheet_type', 'purchase_order')
+            ->whereNotNull('spreadsheet_id')
+            ->where('spreadsheet_id', '!=', '')
+            ->exists();
+
+        if (! $hasSheetConfig) {
+            return;
+        }
+
+        $targetPoNumbers = [];
+        $laneSlugs = [];
+        $unlinked = [];
+
+        foreach ($extractions as $extraction) {
+            if (! $extraction instanceof AiExtraction) {
+                continue;
+            }
+
+            $extraction->loadMissing(['upload.uploadType', 'activePurchaseOrderLink']);
+            if ($extraction->activePurchaseOrderLink !== null) {
+                continue;
+            }
+
+            $rawNumber = $extraction->po_number;
+            if (empty($rawNumber)) {
+                $data = $extraction->preferredData() ?? $extraction->raw_extracted_json;
+                if (is_array($data)) {
+                    $rawNumber = $this->normalizer->poNumber($data);
+                }
+            }
+
+            if (! empty($rawNumber)) {
+                $candidates = $this->normalizer->poIdentifierCandidates($rawNumber);
+                $targetPoNumbers = array_merge($targetPoNumbers, $candidates);
+                $laneSlug = $extraction->upload->uploadType->slug;
+                if (! empty($laneSlug)) {
+                    $laneSlugs[$laneSlug] = true;
+                }
+                $unlinked[] = $extraction;
+            }
+        }
+
+        $targetPoNumbers = array_values(array_unique(array_filter($targetPoNumbers)));
+
+        if (empty($targetPoNumbers) || empty($unlinked)) {
+            return;
+        }
+
+        // 1. Sync the primary lane PO tabs for these target PO numbers
+        foreach (array_keys($laneSlugs) as $laneSlug) {
+            try {
+                $this->syncLane($laneSlug, targetPoNumbers: $targetPoNumbers);
+            } catch (\Throwable $e) {
+                Log::warning("Auto PO sheet sync failed for lane {$laneSlug}: {$e->getMessage()}");
+            }
+        }
+
+        // 2. Check if any extractions still remain unlinked
+        $hasStillUnlinked = false;
+        foreach ($unlinked as $extraction) {
+            $extraction->load('activePurchaseOrderLink');
+            if ($extraction->activePurchaseOrderLink === null) {
+                $hasStillUnlinked = true;
+                break;
+            }
+        }
+
+        // 3. Fallback to Master PO sheet (pingcon) if still unlinked and pingcon was not already synced
+        if ($hasStillUnlinked && ! isset($laneSlugs['pingcon'])) {
+            try {
+                $this->syncLane('pingcon', targetPoNumbers: $targetPoNumbers);
+            } catch (\Throwable $e) {
+                Log::warning("Auto Master PO sheet fallback sync failed: {$e->getMessage()}");
+            }
+        }
+
+        // 4. Ensure all extractions get fresh local resolution
+        foreach ($unlinked as $extraction) {
+            $extraction->load('activePurchaseOrderLink');
+            if ($extraction->activePurchaseOrderLink === null) {
+                $this->linker->syncExtraction($extraction);
+            }
+        }
     }
 }

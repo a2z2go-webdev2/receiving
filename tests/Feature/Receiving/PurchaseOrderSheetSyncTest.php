@@ -2,14 +2,27 @@
 
 namespace Tests\Feature\Receiving;
 
+use App\Enums\AiStatus;
+use App\Enums\PurchaseOrderLinkStatus;
+use App\Enums\ReviewStatus;
+use App\Enums\UploadWorkflow;
+use App\Features\Receiving\Contracts\DocumentExtractor;
+use App\Features\Receiving\Jobs\ExtractReceivingBatch;
+use App\Models\AiExtraction;
 use App\Models\GoogleSheetConfig;
 use App\Models\GoogleSheetSyncRecord;
 use App\Models\PoExtraction;
 use App\Models\PoExtractionItem;
+use App\Models\ReceivingUpload;
+use App\Models\UploadedFile;
+use App\Models\UploadType;
+use App\Models\User;
 use App\Services\GoogleSheets\GoogleSheetsApiService;
 use App\Services\GoogleSheets\PurchaseOrderSheetSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
+use Mockery;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -366,5 +379,234 @@ class PurchaseOrderSheetSyncTest extends TestCase
             ->where('po_number', 'PO-2026-002')
             ->first();
         $this->assertNull($po2);
+    }
+
+    public function test_match_extractions_syncs_and_links_sheet_po_for_unlinked_documents(): void
+    {
+        config(['services.google.purchase_orders_sheet_id' => 'mock-spreadsheet-id']);
+
+        $user = User::factory()->create();
+        $type = UploadType::query()->firstOrCreate(
+            ['slug' => 'bonita'],
+            [
+                'name' => 'BONITA',
+                'r2_prefix' => 'bonita',
+                'workflow' => UploadWorkflow::Standard,
+                'is_active' => true,
+            ]
+        );
+        $upload = ReceivingUpload::query()->create([
+            'submission_id' => 'sub-1',
+            'upload_type_id' => $type->getKey(),
+            'uploader_user_id' => $user->getKey(),
+            'uploader_email' => $user->email,
+            'r2_bucket' => 'test',
+            'r2_prefix' => 'test',
+            'file_count' => 1,
+        ]);
+        $file = UploadedFile::query()->create([
+            'receiving_upload_id' => $upload->getKey(),
+            'original_file_name' => 'bonita-invoice.pdf',
+            'sanitized_file_name' => 'bonita-invoice.pdf',
+            'stored_file_name' => 'bonita-invoice.pdf',
+            'file_extension' => 'pdf',
+            'r2_bucket' => 'test',
+            'r2_object_key' => 'receiving/bonita-invoice.pdf',
+            'r2_staging_object_key' => 'staging/1/bonita-invoice.pdf',
+            'original_file_size' => 100,
+            'final_file_size' => 100,
+            'declared_content_type' => 'application/pdf',
+            'content_type' => 'application/pdf',
+        ]);
+        $extraction = AiExtraction::query()->create([
+            'receiving_upload_id' => $upload->getKey(),
+            'uploaded_file_id' => $file->getKey(),
+            'document_type' => 'Invoice',
+            'raw_extracted_json' => [
+                'document_type' => 'Invoice',
+                'fields' => [
+                    ['label' => 'PO Number', 'value' => 'PO-2026-001'],
+                ],
+                'items' => [
+                    ['description' => 'Widget A', 'quantity' => '10'],
+                ],
+            ],
+            'po_number' => 'PO-2026-001',
+        ]);
+
+        $mockApi = Mockery::mock(GoogleSheetsApiService::class);
+        $mockApi->shouldReceive('fetchRange')
+            ->once()
+            ->andReturn($this->sampleRows);
+        $this->app->instance(GoogleSheetsApiService::class, $mockApi);
+
+        /** @var PurchaseOrderSheetSyncService $syncService */
+        $syncService = app(PurchaseOrderSheetSyncService::class);
+        $syncService->matchExtractions([$extraction]);
+
+        $extraction->refresh();
+        $this->assertSame(PurchaseOrderLinkStatus::Linked, $extraction->po_link_status);
+        $this->assertNotNull($extraction->activePurchaseOrderLink);
+        $this->assertSame('PO-2026-001', $extraction->activePurchaseOrderLink->poExtraction->po_number);
+        $this->assertSame('bonita', $extraction->activePurchaseOrderLink->poExtraction->sheet_slug);
+    }
+
+    public function test_match_extractions_falls_back_to_pingcon_when_not_in_primary_lane(): void
+    {
+        config(['services.google.purchase_orders_sheet_id' => 'mock-spreadsheet-id']);
+
+        $user = User::factory()->create();
+        $type = UploadType::query()->firstOrCreate(
+            ['slug' => 'keysys'],
+            [
+                'name' => 'KEYSYS',
+                'r2_prefix' => 'keysys',
+                'workflow' => UploadWorkflow::Standard,
+                'is_active' => true,
+            ]
+        );
+        $upload = ReceivingUpload::query()->create([
+            'submission_id' => 'sub-keysys',
+            'upload_type_id' => $type->getKey(),
+            'uploader_user_id' => $user->getKey(),
+            'uploader_email' => $user->email,
+            'r2_bucket' => 'test',
+            'r2_prefix' => 'test',
+            'file_count' => 1,
+        ]);
+        $file = UploadedFile::query()->create([
+            'receiving_upload_id' => $upload->getKey(),
+            'original_file_name' => 'keysys-invoice.pdf',
+            'sanitized_file_name' => 'keysys-invoice.pdf',
+            'stored_file_name' => 'keysys-invoice.pdf',
+            'file_extension' => 'pdf',
+            'r2_bucket' => 'test',
+            'r2_object_key' => 'receiving/keysys-invoice.pdf',
+            'r2_staging_object_key' => 'staging/1/keysys-invoice.pdf',
+            'original_file_size' => 100,
+            'final_file_size' => 100,
+            'declared_content_type' => 'application/pdf',
+            'content_type' => 'application/pdf',
+        ]);
+        $extraction = AiExtraction::query()->create([
+            'receiving_upload_id' => $upload->getKey(),
+            'uploaded_file_id' => $file->getKey(),
+            'document_type' => 'Invoice',
+            'raw_extracted_json' => [
+                'document_type' => 'Invoice',
+                'fields' => [
+                    ['label' => 'PO Number', 'value' => 'PO-2026-001'],
+                ],
+                'items' => [
+                    ['description' => 'Widget A', 'quantity' => '10'],
+                ],
+            ],
+            'po_number' => 'PO-2026-001',
+        ]);
+
+        $mockApi = Mockery::mock(GoogleSheetsApiService::class);
+        // First call for keysys returns empty table (headers only)
+        $mockApi->shouldReceive('fetchRange')
+            ->once()
+            ->with('mock-spreadsheet-id', Mockery::on(fn (string $range): bool => str_contains($range, 'KEYSYS')))
+            ->andReturn([$this->sampleRows[0]]);
+        // Second call for pingcon fallback returns sampleRows containing PO-2026-001
+        $mockApi->shouldReceive('fetchRange')
+            ->once()
+            ->with('mock-spreadsheet-id', Mockery::on(fn (string $range): bool => str_contains($range, 'PINGCON')))
+            ->andReturn($this->sampleRows);
+        $this->app->instance(GoogleSheetsApiService::class, $mockApi);
+
+        /** @var PurchaseOrderSheetSyncService $syncService */
+        $syncService = app(PurchaseOrderSheetSyncService::class);
+        $syncService->matchExtractions([$extraction]);
+
+        $extraction->refresh();
+        $this->assertSame(PurchaseOrderLinkStatus::Linked, $extraction->po_link_status);
+        $this->assertNotNull($extraction->activePurchaseOrderLink);
+        $this->assertSame('PO-2026-001', $extraction->activePurchaseOrderLink->poExtraction->po_number);
+        $this->assertSame('pingcon', $extraction->activePurchaseOrderLink->poExtraction->sheet_slug);
+    }
+
+    public function test_extract_receiving_batch_auto_matches_unlinked_po_from_google_sheets(): void
+    {
+        Storage::fake('r2');
+        config([
+            'receiving.disk' => 'r2',
+            'services.google.purchase_orders_sheet_id' => 'mock-spreadsheet-id',
+        ]);
+
+        $user = User::factory()->create();
+        $type = UploadType::query()->firstOrCreate(
+            ['slug' => 'bonita'],
+            [
+                'name' => 'BONITA',
+                'r2_prefix' => 'bonita',
+                'workflow' => UploadWorkflow::Standard,
+                'is_active' => true,
+            ]
+        );
+        $upload = ReceivingUpload::query()->create([
+            'submission_id' => 'sub-batch-test',
+            'upload_type_id' => $type->getKey(),
+            'uploader_user_id' => $user->getKey(),
+            'uploader_email' => $user->email,
+            'r2_bucket' => 'test',
+            'r2_prefix' => 'test',
+            'file_count' => 1,
+        ]);
+        $file = UploadedFile::query()->create([
+            'receiving_upload_id' => $upload->getKey(),
+            'original_file_name' => 'batch-invoice.pdf',
+            'sanitized_file_name' => 'batch-invoice.pdf',
+            'stored_file_name' => 'batch-invoice.pdf',
+            'file_extension' => 'pdf',
+            'r2_bucket' => 'test',
+            'r2_object_key' => 'receiving/batch-invoice.pdf',
+            'r2_staging_object_key' => 'staging/1/batch-invoice.pdf',
+            'original_file_size' => 10,
+            'final_file_size' => 10,
+            'declared_content_type' => 'application/pdf',
+            'content_type' => 'application/pdf',
+        ]);
+        Storage::disk('r2')->put('receiving/batch-invoice.pdf', '%PDF-test');
+
+        AiExtraction::query()->create([
+            'receiving_upload_id' => $upload->getKey(),
+            'uploaded_file_id' => $file->getKey(),
+            'ai_status' => AiStatus::Pending,
+            'review_status' => ReviewStatus::Pending,
+            'document_type' => 'Invoice',
+        ]);
+
+        $mockExtractor = Mockery::mock(DocumentExtractor::class);
+        $mockExtractor->shouldReceive('extract')
+            ->once()
+            ->andReturn([
+                'document_type' => 'Invoice',
+                'fields' => [
+                    ['label' => 'PO Number', 'value' => 'PO-2026-001'],
+                ],
+                'items' => [
+                    ['description' => 'Widget A', 'quantity' => '10'],
+                ],
+            ]);
+        $this->app->instance(DocumentExtractor::class, $mockExtractor);
+
+        $mockApi = Mockery::mock(GoogleSheetsApiService::class);
+        $mockApi->shouldReceive('fetchRange')
+            ->once()
+            ->andReturn($this->sampleRows);
+        $this->app->instance(GoogleSheetsApiService::class, $mockApi);
+
+        app()->call([new ExtractReceivingBatch([$file->getKey()]), 'handle']);
+
+        $file->refresh();
+        $this->assertSame(AiStatus::Extracted, $file->ai_status);
+        $extraction = $file->extraction;
+        $this->assertNotNull($extraction);
+        $this->assertSame(PurchaseOrderLinkStatus::Linked, $extraction->po_link_status);
+        $this->assertNotNull($extraction->activePurchaseOrderLink);
+        $this->assertSame('PO-2026-001', $extraction->activePurchaseOrderLink->poExtraction->po_number);
     }
 }

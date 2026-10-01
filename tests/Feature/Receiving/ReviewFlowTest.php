@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\AiStatus;
+use App\Enums\PurchaseOrderLinkStatus;
 use App\Enums\ReviewStatus;
 use App\Models\ActivityLog;
 use App\Models\AiExtraction;
@@ -9,6 +10,7 @@ use App\Models\ReviewLink;
 use App\Models\UploadedFile;
 use App\Models\UploadType;
 use App\Models\User;
+use App\Services\GoogleSheets\GoogleSheetsApiService;
 use Database\Seeders\UploadTypeSeeder;
 
 beforeEach(fn () => $this->seed(UploadTypeSeeder::class));
@@ -120,6 +122,36 @@ it('rejects expired and already consumed review bearer tokens', function (string
 
     $this->get(route('receiving.review.show', ['token' => $token]))->assertGone();
 })->with(['expired', 'used']);
+
+it('automatically matches and links PO from Google Sheets when corrections contain sheet PO number', function (): void {
+    config(['services.google.purchase_orders_sheet_id' => 'mock-spreadsheet-id']);
+    [$upload, $extraction, $token] = structuredReviewFixture();
+
+    $mockApi = Mockery::mock(GoogleSheetsApiService::class);
+    $mockApi->shouldReceive('fetchRange')
+        ->once()
+        ->andReturn([
+            ['PO Number', 'Supplier', 'Type', 'Status', 'Date', 'Net Total', 'VAT Total', 'Total Amount', 'Item Code', 'Item Description', 'Qty', 'Unit', 'Unit Price', 'Line Total', 'Notes'],
+            ['PO-REV-001', 'Acme Corp', 'Standard', 'Confirmed', '2026-03-15', '1000.00', '120.00', '1120.00', 'SKU-001', 'Widget A', '10', 'PCS', '50.00', '500.00', ''],
+        ]);
+    app()->instance(GoogleSheetsApiService::class, $mockApi);
+
+    $this->put(route('receiving.review.update', ['token' => $token, 'extraction' => $extraction]), [
+        'corrected_data' => [
+            'document_type' => 'Invoice',
+            'fields' => [
+                ['label' => 'PO Number', 'value' => 'PO-REV-001'],
+                ['label' => 'Company Name', 'value' => 'Acme Corp'],
+            ],
+            'items' => [],
+        ],
+    ])->assertRedirect();
+
+    $extraction->refresh();
+    expect($extraction->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
+        ->and($extraction->activePurchaseOrderLink)->not->toBeNull()
+        ->and($extraction->activePurchaseOrderLink->poExtraction->po_number)->toBe('PO-REV-001');
+});
 
 /** @return array{ReceivingUpload, AiExtraction, string, ReviewLink} */
 function structuredReviewFixture(): array

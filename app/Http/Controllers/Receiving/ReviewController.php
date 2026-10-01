@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Receiving;
 
 use App\Enums\AiStatus;
+use App\Enums\PurchaseOrderLinkStatus;
 use App\Enums\ReviewStatus;
 use App\Features\Receiving\Services\ActivityLogger;
 use App\Features\Receiving\Services\InvoiceReviewValidator;
@@ -16,9 +17,11 @@ use App\Models\AiExtraction;
 use App\Models\ReceivingUpload;
 use App\Models\ReviewLink;
 use App\Models\UploadedFile;
+use App\Services\GoogleSheets\PurchaseOrderSheetSyncService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -90,7 +93,14 @@ class ReviewController extends Controller
         ])->save();
         $extraction->file->forceFill(['review_status' => ReviewStatus::Revision])->save();
         $extraction->upload->forceFill(['review_status' => ReviewStatus::Revision])->save();
-        $purchaseOrderLinks->syncExtraction($extraction);
+        $status = $purchaseOrderLinks->syncExtraction($extraction);
+        if ($status !== PurchaseOrderLinkStatus::Linked) {
+            try {
+                app(PurchaseOrderSheetSyncService::class)->matchExtractions([$extraction]);
+            } catch (Throwable $e) {
+                Log::warning("Auto PO matching failed in ReviewController updateCorrections: {$e->getMessage()}");
+            }
+        }
         $activity->record('review', 'review_corrections_saved', 'success', "{$link->email} saved corrections for {$extraction->file->sanitized_file_name}.", null, $extraction->upload, $request);
 
         return back()->with('status', 'Corrections saved.');
@@ -161,6 +171,16 @@ class ReviewController extends Controller
             $upload->forceFill(['review_status' => ReviewStatus::Verified])->save();
             $upload->reviewLinks()->whereNull('used_at')->update(['used_at' => now()]);
         });
+
+        $unlinked = $upload->extractions->filter(fn (AiExtraction $ext): bool => $ext->fresh()->activePurchaseOrderLink === null);
+        if ($unlinked->isNotEmpty()) {
+            try {
+                app(PurchaseOrderSheetSyncService::class)->matchExtractions($unlinked);
+            } catch (Throwable $e) {
+                Log::warning("Auto PO matching failed in ReviewController verify: {$e->getMessage()}");
+            }
+        }
+
         $activity->record('review', 'scanned_data_verified', 'success', "Scanned data was reviewed and verified by {$link->email}. The verified data is ready for reporting.", null, $upload, $request);
 
         return redirect()->route('receiving.review.completed');

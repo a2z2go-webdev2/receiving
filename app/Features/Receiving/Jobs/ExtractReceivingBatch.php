@@ -3,13 +3,16 @@
 namespace App\Features\Receiving\Jobs;
 
 use App\Enums\AiStatus;
+use App\Enums\PurchaseOrderLinkStatus;
 use App\Enums\UploadWorkflow;
 use App\Features\Receiving\Contracts\DocumentExtractor;
 use App\Features\Receiving\Services\ActivityLogger;
 use App\Features\Receiving\Services\PoExtractionStore;
 use App\Features\Receiving\Services\PurchaseOrderDataIntegrator;
 use App\Features\Receiving\Services\PurchaseOrderLinker;
+use App\Models\AiExtraction;
 use App\Models\UploadedFile;
+use App\Services\GoogleSheets\PurchaseOrderSheetSyncService;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -17,6 +20,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Throwable;
@@ -55,6 +59,8 @@ class ExtractReceivingBatch implements ShouldQueue
         PurchaseOrderLinker $purchaseOrderLinks,
     ): void {
         $failed = false;
+        /** @var array<int, AiExtraction> $unlinkedExtractions */
+        $unlinkedExtractions = [];
 
         foreach (UploadedFile::query()->with(['upload.uploadType', 'extraction'])->whereKey($this->fileIds)->get() as $file) {
             if ($file->ai_status === AiStatus::Extracted) {
@@ -103,7 +109,10 @@ class ExtractReceivingBatch implements ShouldQueue
                     if ($file->upload->uploadType->workflow === UploadWorkflow::PurchaseOrder) {
                         $poExtractionStore->store($aiExtraction, $data);
                     } elseif ($file->upload->uploadType->workflow === UploadWorkflow::Standard) {
-                        $purchaseOrderLinks->syncExtraction($aiExtraction);
+                        $status = $purchaseOrderLinks->syncExtraction($aiExtraction);
+                        if ($status !== PurchaseOrderLinkStatus::Linked) {
+                            $unlinkedExtractions[] = $aiExtraction;
+                        }
                     }
                 }
                 $file->forceFill(['ai_status' => AiStatus::Extracted, 'failure_reason' => null])->save();
@@ -115,6 +124,15 @@ class ExtractReceivingBatch implements ShouldQueue
                 $activity->record('ai', 'ai_extraction_failed', 'error', "AI processing failed for {$file->sanitized_file_name}.", null, $file->upload, null, $error);
             } finally {
                 @unlink($path);
+            }
+        }
+
+        // Automatically match unlinked documents from this upload batch against PO Google Sheets
+        if (! empty($unlinkedExtractions)) {
+            try {
+                app(PurchaseOrderSheetSyncService::class)->matchExtractions($unlinkedExtractions);
+            } catch (Throwable $e) {
+                Log::warning("Auto PO matching failed in ExtractReceivingBatch: {$e->getMessage()}");
             }
         }
 
