@@ -108,6 +108,8 @@ class GoogleSheetsApiService
             $candidates[] = "'{$encodedTab}'";
             // 3. Unquoted sheet with coordinates
             $candidates[] = "{$encodedTab}!{$cellPart}";
+            // 4. Unquoted sheet alone
+            $candidates[] = $encodedTab;
         } else {
             $clean = trim($range, "'\"");
             $escaped = str_replace("'", "''", $clean);
@@ -189,18 +191,118 @@ class GoogleSheetsApiService
             throw new RuntimeException('Spreadsheet ID is not configured.');
         }
 
+        $availableTabs = null;
+        try {
+            $availableTabs = $this->fetchSpreadsheetTabs($cleanId);
+        } catch (\Throwable $e) {
+            Log::info("Could not fetch spreadsheet tab metadata for {$cleanId}: {$e->getMessage()}");
+        }
+
+        $logTab = 'Receiving_Log';
+        $filesTab = 'receive_files';
+        $extractionsTab = 'ai_extraction';
+
+        if (! empty($availableTabs)) {
+            $matchedLogTab = $this->resolveReceivingTabName('Receiving_Log', $availableTabs);
+            if ($matchedLogTab !== null) {
+                $logTab = $matchedLogTab;
+            } else {
+                $isPoSheet = collect($availableTabs)->contains(
+                    fn ($t): bool => str_contains(strtolower((string) $t), 'purchase order') || str_contains(strtolower((string) $t), 'po')
+                );
+
+                $tabListStr = implode("', '", array_slice($availableTabs, 0, 6));
+                if ($isPoSheet) {
+                    throw new RuntimeException("Spreadsheet '{$cleanId}' does not contain Receiving Log tabs. It appears to be a Purchase Orders sheet (found tabs: '{$tabListStr}'). In Sheet Settings, please ensure the Pingcon Spreadsheet ID points to the Pingcon Receiving Log spreadsheet (expected tab: Receiving_Log).");
+                }
+
+                throw new RuntimeException("Unable to find the 'Receiving_Log' tab in spreadsheet '{$cleanId}'. Available tabs in this spreadsheet are: ['{$tabListStr}']. Please ensure the tab is named 'Receiving_Log' or verify the Spreadsheet ID in Settings.");
+            }
+
+            $filesTab = $this->resolveReceivingTabName('receive_files', $availableTabs);
+            $extractionsTab = $this->resolveReceivingTabName('ai_extraction', $availableTabs);
+        }
+
         // Fetch Receiving_Log
-        $rawLogs = $this->fetchRange($cleanId, 'Receiving_Log!A1:Z2000');
-        // Fetch receive_files
-        $rawFiles = $this->fetchRange($cleanId, 'receive_files!A1:Z5000');
-        // Fetch ai_extraction
-        $rawExtractions = $this->fetchRange($cleanId, 'ai_extraction!A1:Z2000');
+        $rawLogs = $this->fetchRange($cleanId, "'{$logTab}'!A1:Z2000");
+
+        // Fetch receive_files (gracefully fallback to empty array if tab is missing or unparseable)
+        $rawFiles = [];
+        if ($filesTab !== null) {
+            try {
+                $rawFiles = $this->fetchRange($cleanId, "'{$filesTab}'!A1:Z5000");
+            } catch (\Throwable $e) {
+                Log::warning("Could not fetch receive_files tab '{$filesTab}': {$e->getMessage()}");
+            }
+        }
+
+        // Fetch ai_extraction (gracefully fallback to empty array if tab is missing or unparseable)
+        $rawExtractions = [];
+        if ($extractionsTab !== null) {
+            try {
+                $rawExtractions = $this->fetchRange($cleanId, "'{$extractionsTab}'!A1:Z2000");
+            } catch (\Throwable $e) {
+                Log::warning("Could not fetch ai_extraction tab '{$extractionsTab}': {$e->getMessage()}");
+            }
+        }
 
         return [
             'logs' => $this->mapRows($rawLogs),
             'files' => $this->mapFileRows($rawFiles),
             'extractions' => $this->mapExtractionRows($rawExtractions),
         ];
+    }
+
+    /**
+     * Resolve a flexible match for receiving tabs from available sheet titles.
+     *
+     * @param  array<int, string>  $availableTabs
+     */
+    public function resolveReceivingTabName(string $type, array $availableTabs): ?string
+    {
+        // 1. Exact match
+        foreach ($availableTabs as $tab) {
+            if ($tab === $type) {
+                return $tab;
+            }
+        }
+
+        // 2. Case-insensitive trimmed match
+        $lowerType = strtolower(trim($type));
+        foreach ($availableTabs as $tab) {
+            if (strtolower(trim($tab)) === $lowerType) {
+                return $tab;
+            }
+        }
+
+        // 3. Alphanumeric match (ignoring spaces, underscores, hyphens)
+        $alphaType = (string) preg_replace('/[^a-z0-9]/', '', $lowerType);
+        foreach ($availableTabs as $tab) {
+            $alphaTab = (string) preg_replace('/[^a-z0-9]/', '', strtolower($tab));
+            if ($alphaTab === $alphaType) {
+                return $tab;
+            }
+        }
+
+        // 4. Common synonyms
+        $synonyms = match ($type) {
+            'Receiving_Log' => ['receiving_log', 'receiving log', 'receive_log', 'receive log', 'receivinglog', 'receivelog', 'receiving'],
+            'receive_files' => ['receive_files', 'receive files', 'receive_file', 'receive file', 'received_files', 'received files', 'files'],
+            'ai_extraction' => ['ai_extraction', 'ai extraction', 'ai_extractions', 'ai extractions', 'extractions', 'extraction'],
+            default => [],
+        };
+
+        foreach ($synonyms as $synonym) {
+            $alphaSyn = (string) preg_replace('/[^a-z0-9]/', '', $synonym);
+            foreach ($availableTabs as $tab) {
+                $alphaTab = (string) preg_replace('/[^a-z0-9]/', '', strtolower($tab));
+                if ($alphaTab === $alphaSyn) {
+                    return $tab;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**

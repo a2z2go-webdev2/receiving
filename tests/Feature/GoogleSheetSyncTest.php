@@ -14,6 +14,7 @@ use App\Models\ReceivingUpload;
 use App\Models\UploadedFile;
 use App\Models\UploadType;
 use App\Models\User;
+use App\Services\GoogleSheets\GoogleSheetsApiService;
 use App\Services\GoogleSheets\GoogleSheetsDataSyncService;
 use App\Services\GoogleSheets\GoogleSheetsTableParser;
 use Illuminate\Support\Facades\Http;
@@ -668,4 +669,46 @@ test('batch sync automatically matches POs from Google Sheets for newly synced s
     expect($extraction2->po_link_status)->toBe(PurchaseOrderLinkStatus::Linked)
         ->and($extraction2->activePurchaseOrderLink)->not->toBeNull()
         ->and($extraction2->activePurchaseOrderLink->poExtraction->po_number)->toBe('800');
+});
+
+test('GoogleSheetsApiService fetchAllTabs resolves tab names with spaces or variations', function () {
+    Http::fake([
+        'https://sheets.googleapis.com/v4/spreadsheets/mock-sheet-id?*' => Http::response([
+            'sheets' => [
+                ['properties' => ['title' => 'Receiving Log']],
+                ['properties' => ['title' => 'Receive Files']],
+                ['properties' => ['title' => 'AI Extraction']],
+            ],
+        ], 200),
+        'https://sheets.googleapis.com/v4/spreadsheets/mock-sheet-id/values/*' => Http::response([
+            'values' => [
+                ['Serial Number', 'Timestamp', 'File Count', 'Review Status'],
+                ['1', 'Aug 17, 2026', '1', 'Verified'],
+            ],
+        ], 200),
+    ]);
+
+    /** @var GoogleSheetsApiService $apiService */
+    $apiService = app(GoogleSheetsApiService::class);
+    $result = $apiService->fetchAllTabs('mock-sheet-id');
+
+    expect($result['logs'])->toHaveCount(1)
+        ->and($result['logs'][0]['Serial Number'])->toBe('1');
+});
+
+test('GoogleSheetsApiService fetchAllTabs throws informative error when given a PO sheet', function () {
+    Http::fake([
+        'https://sheets.googleapis.com/v4/spreadsheets/po-sheet-id?*' => Http::response([
+            'sheets' => [
+                ['properties' => ['title' => 'Purchase Orders PINGCON']],
+                ['properties' => ['title' => 'Purchase Orders BONITA']],
+            ],
+        ], 200),
+    ]);
+
+    /** @var GoogleSheetsApiService $apiService */
+    $apiService = app(GoogleSheetsApiService::class);
+
+    expect(fn () => $apiService->fetchAllTabs('po-sheet-id'))
+        ->toThrow(RuntimeException::class, 'Purchase Orders sheet');
 });
