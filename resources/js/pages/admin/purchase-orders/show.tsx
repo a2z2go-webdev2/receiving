@@ -1,7 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import {
     ArrowLeft,
-    Building2,
     Calendar,
     CheckCircle2,
     Clock,
@@ -15,7 +14,7 @@ import { PageShell } from '@/components/receiving/page-shell';
 import { StatusBadge } from '@/components/receiving/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 type PurchaseOrderItem = {
     id: number;
@@ -131,7 +130,6 @@ function formatMoney(amount: string | number | null | undefined): string {
 
 export default function PurchaseOrderShow({ purchaseOrder }: { purchaseOrder: PurchaseOrder }) {
     const isSheet = purchaseOrder.source_type === 'google_sheet';
-    const hasFinancialBreakdown = purchaseOrder.subtotal !== null || purchaseOrder.vat !== null;
 
     return (
         <>
@@ -165,360 +163,358 @@ export default function PurchaseOrderShow({ purchaseOrder }: { purchaseOrder: Pu
                     </div>
                 }
             >
-                {/* Header status bar */}
-                {isSheet ? (
-                    <div
-                        className={`mb-6 grid gap-4 sm:grid-cols-2 ${
-                            hasFinancialBreakdown
-                                ? purchaseOrder.subtotal !== null && purchaseOrder.vat !== null
-                                    ? 'lg:grid-cols-5'
-                                    : 'lg:grid-cols-4'
-                                : 'lg:grid-cols-3'
-                        }`}
-                    >
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-muted-foreground text-xs font-medium">
-                                    Status
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex items-center justify-between">
-                                <StatusBadge value={purchaseOrder.source_status} />
-                                <Badge
-                                    variant="outline"
-                                    className="text-[10px] font-normal uppercase"
-                                >
-                                    {purchaseOrder.sheet_source?.name ?? 'Google Sheet'}
-                                </Badge>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-muted-foreground text-xs font-medium">
-                                    PO date
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex items-center gap-2 text-sm font-semibold">
-                                <Calendar className="size-4 text-muted-foreground" />
-                                {purchaseOrder.po_date_value ??
-                                    purchaseOrder.po_date ??
-                                    'Not recorded'}
-                            </CardContent>
-                        </Card>
-
-                        {purchaseOrder.subtotal !== null && (
-                            <Card>
-                                <CardHeader className="pb-2">
-                                    <CardTitle className="text-muted-foreground text-xs font-medium">
-                                        Net total
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="text-base font-bold text-foreground">
-                                    {formatMoney(purchaseOrder.subtotal)}
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        {purchaseOrder.vat !== null && (
-                            <Card>
-                                <CardHeader className="pb-2">
-                                    <CardTitle className="text-muted-foreground text-xs font-medium">
-                                        VAT total
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="text-base font-bold text-foreground">
-                                    {formatMoney(purchaseOrder.vat)}
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-muted-foreground text-xs font-medium">
-                                    Total amount
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="text-base font-bold text-foreground">
-                                {formatMoney(purchaseOrder.total_amount)}
-                            </CardContent>
-                        </Card>
+                {/* Details List Form (replacing cards) */}
+                <div className="mb-8 overflow-hidden rounded-lg border bg-card">
+                    <div className="border-b bg-muted/40 px-4 py-3">
+                        <h2 className="flex items-center gap-2 font-semibold text-sm">
+                            {isSheet ? (
+                                <FileSpreadsheet className="size-4 text-primary" />
+                            ) : (
+                                <FileText className="size-4 text-primary" />
+                            )}
+                            Purchase Order Details
+                        </h2>
                     </div>
-                ) : (
-                    <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-muted-foreground text-xs font-medium">
-                                    Arrival status
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex items-center justify-between">
-                                <StatusBadge value={purchaseOrder.arrival_status} />
-                                {purchaseOrder.waiting_time.days !== null && (
-                                    <span className="text-xs text-muted-foreground">
-                                        {purchaseOrder.waiting_time.days}d waiting
-                                    </span>
-                                )}
-                            </CardContent>
-                        </Card>
 
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-muted-foreground text-xs font-medium">
-                                    Source status
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex items-center justify-between">
-                                <StatusBadge value={purchaseOrder.source_status} />
-                                <Badge
-                                    variant="outline"
-                                    className="text-[10px] font-normal uppercase"
-                                >
-                                    PDF Upload
-                                </Badge>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-muted-foreground text-xs font-medium">
-                                    PO date
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex items-center gap-2 text-sm font-semibold">
-                                <Calendar className="size-4 text-muted-foreground" />
-                                {purchaseOrder.po_date_value ??
-                                    purchaseOrder.po_date ??
-                                    'Not recorded'}
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-muted-foreground text-xs font-medium">
-                                    Total amount
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="text-base font-bold text-foreground">
-                                {formatMoney(purchaseOrder.total_amount)}
-                            </CardContent>
-                        </Card>
-                    </div>
-                )}
-
-                {/* Details grid */}
-                {isSheet ? (
-                    <div className="mb-6 grid gap-6 md:grid-cols-2">
-                        {/* Vendor details */}
-                        <Card>
-                            <CardHeader className="pb-3 border-b">
-                                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                                    <Building2 className="size-4 text-primary" />
-                                    Vendor / Supplier
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="pt-3 text-xs space-y-2">
-                                <div className="flex justify-between py-1 border-b border-muted">
-                                    <span className="text-muted-foreground">Supplier:</span>
-                                    <span className="font-medium text-foreground">
-                                        {purchaseOrder.vendor_name ?? '—'}
-                                    </span>
-                                </div>
-                                {purchaseOrder.contact_person && (
-                                    <div className="flex justify-between py-1 border-b border-muted">
-                                        <span className="text-muted-foreground">
-                                            Contact person:
-                                        </span>
-                                        <span>{purchaseOrder.contact_person}</span>
-                                    </div>
-                                )}
-                                {purchaseOrder.buyer_company && (
-                                    <div className="flex justify-between py-1 border-b border-muted">
-                                        <span className="text-muted-foreground">
-                                            Buyer company:
-                                        </span>
-                                        <span>{purchaseOrder.buyer_company}</span>
-                                    </div>
-                                )}
-                                {purchaseOrder.buyer_address && (
-                                    <div className="flex justify-between py-1 border-b border-muted">
-                                        <span className="text-muted-foreground">
-                                            Delivery address:
-                                        </span>
-                                        <span
-                                            className="text-right max-w-[240px] truncate"
-                                            title={purchaseOrder.buyer_address}
+                    {isSheet ? (
+                        <dl className="grid grid-cols-1 divide-y text-xs md:grid-cols-2 md:divide-y-0">
+                            {/* Left Column: Order & Financial Details */}
+                            <div className="divide-y">
+                                <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                    <dt className="font-medium text-muted-foreground">Status:</dt>
+                                    <dd className="flex items-center gap-2 font-medium">
+                                        <StatusBadge value={purchaseOrder.source_status} />
+                                        <Badge
+                                            variant="outline"
+                                            className="text-[10px] uppercase font-normal"
                                         >
-                                            {purchaseOrder.buyer_address}
-                                        </span>
-                                    </div>
-                                )}
-                                {purchaseOrder.buyer_contact_numbers && (
-                                    <div className="flex justify-between py-1">
-                                        <span className="text-muted-foreground">
-                                            Buyer contact:
-                                        </span>
-                                        <span>{purchaseOrder.buyer_contact_numbers}</span>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                                            {purchaseOrder.sheet_source?.name ?? 'Google Sheet'}
+                                        </Badge>
+                                    </dd>
+                                </div>
 
-                        {/* Order & Sheet Details */}
-                        <Card>
-                            <CardHeader className="pb-3 border-b">
-                                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                                    <FileSpreadsheet className="size-4 text-primary" />
-                                    Order & Sheet Details
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="pt-3 text-xs space-y-2">
-                                <div className="flex justify-between py-1 border-b border-muted">
-                                    <span className="text-muted-foreground">PO Number:</span>
-                                    <span className="font-mono font-medium text-foreground">
+                                <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                    <dt className="font-medium text-muted-foreground">
+                                        PO Number:
+                                    </dt>
+                                    <dd className="font-mono font-medium text-foreground">
                                         {purchaseOrder.po_number ?? '—'}
-                                    </span>
+                                    </dd>
                                 </div>
-                                {purchaseOrder.po_reference && (
-                                    <div className="flex justify-between py-1 border-b border-muted">
-                                        <span className="text-muted-foreground">PO Reference:</span>
-                                        <span>{purchaseOrder.po_reference}</span>
+
+                                <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                    <dt className="font-medium text-muted-foreground">PO Date:</dt>
+                                    <dd className="flex items-center gap-1.5 font-medium text-foreground">
+                                        <Calendar className="size-3.5 text-muted-foreground" />
+                                        {purchaseOrder.po_date_value ??
+                                            purchaseOrder.po_date ??
+                                            'Not recorded'}
+                                    </dd>
+                                </div>
+
+                                {purchaseOrder.subtotal !== null && (
+                                    <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                        <dt className="font-medium text-muted-foreground">
+                                            Net Total (Subtotal):
+                                        </dt>
+                                        <dd className="font-medium text-foreground">
+                                            {formatMoney(purchaseOrder.subtotal)}
+                                        </dd>
                                     </div>
                                 )}
-                                {purchaseOrder.payment_terms && (
-                                    <div className="flex justify-between py-1 border-b border-muted">
-                                        <span className="text-muted-foreground">
-                                            Payment terms:
-                                        </span>
-                                        <span>{purchaseOrder.payment_terms}</span>
+
+                                {purchaseOrder.vat !== null && (
+                                    <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                        <dt className="font-medium text-muted-foreground">
+                                            VAT Total:
+                                        </dt>
+                                        <dd className="font-medium text-foreground">
+                                            {formatMoney(purchaseOrder.vat)}
+                                        </dd>
                                     </div>
                                 )}
-                                <div className="flex justify-between py-1 border-b border-muted">
-                                    <span className="text-muted-foreground">Source channel:</span>
-                                    <span>
+
+                                <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5 bg-muted/20">
+                                    <dt className="font-semibold text-foreground">Total Amount:</dt>
+                                    <dd className="font-bold text-foreground">
+                                        {formatMoney(purchaseOrder.total_amount)}
+                                    </dd>
+                                </div>
+
+                                <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                    <dt className="font-medium text-muted-foreground">
+                                        Source Channel:
+                                    </dt>
+                                    <dd className="text-foreground">
                                         Google Sheet ({purchaseOrder.sheet_source?.name ?? 'Sync'})
-                                    </span>
+                                    </dd>
                                 </div>
+
                                 {purchaseOrder.snapshot_timestamp && (
-                                    <div className="flex justify-between py-1 border-b border-muted">
-                                        <span className="text-muted-foreground">
-                                            Last synchronized:
-                                        </span>
-                                        <span>
+                                    <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                        <dt className="font-medium text-muted-foreground">
+                                            Last Synchronized:
+                                        </dt>
+                                        <dd className="text-muted-foreground">
                                             {new Date(
                                                 purchaseOrder.snapshot_timestamp,
                                             ).toLocaleString()}
-                                        </span>
+                                        </dd>
                                     </div>
                                 )}
-                                {purchaseOrder.notes && (
-                                    <div className="py-1">
-                                        <span className="text-muted-foreground block mb-0.5">
-                                            Notes / Remarks:
-                                        </span>
-                                        <p className="rounded bg-muted/50 p-2 text-foreground/80 whitespace-pre-wrap">
-                                            {purchaseOrder.notes}
-                                        </p>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
-                ) : (
-                    <div className="mb-6 grid gap-6 md:grid-cols-2">
-                        {/* Vendor details */}
-                        <Card>
-                            <CardHeader className="pb-3 border-b">
-                                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                                    <Building2 className="size-4 text-primary" />
-                                    Vendor / Supplier
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="pt-3 text-xs space-y-2">
-                                <div className="flex justify-between py-1 border-b border-muted">
-                                    <span className="text-muted-foreground">Name:</span>
-                                    <span className="font-medium text-foreground">
+                            </div>
+
+                            {/* Right Column: Supplier & Order Information */}
+                            <div className="divide-y md:border-l">
+                                <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                    <dt className="font-medium text-muted-foreground">Supplier:</dt>
+                                    <dd className="font-medium text-foreground">
                                         {purchaseOrder.vendor_name ?? '—'}
-                                    </span>
+                                    </dd>
                                 </div>
+
+                                {purchaseOrder.contact_person && (
+                                    <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                        <dt className="font-medium text-muted-foreground">
+                                            Contact Person:
+                                        </dt>
+                                        <dd className="text-foreground">
+                                            {purchaseOrder.contact_person}
+                                        </dd>
+                                    </div>
+                                )}
+
+                                {purchaseOrder.buyer_company && (
+                                    <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                        <dt className="font-medium text-muted-foreground">
+                                            Buyer Company:
+                                        </dt>
+                                        <dd className="text-foreground">
+                                            {purchaseOrder.buyer_company}
+                                        </dd>
+                                    </div>
+                                )}
+
+                                {purchaseOrder.buyer_address && (
+                                    <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                        <dt className="font-medium text-muted-foreground">
+                                            Delivery Address:
+                                        </dt>
+                                        <dd
+                                            className="text-foreground truncate"
+                                            title={purchaseOrder.buyer_address}
+                                        >
+                                            {purchaseOrder.buyer_address}
+                                        </dd>
+                                    </div>
+                                )}
+
+                                {purchaseOrder.buyer_contact_numbers && (
+                                    <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                        <dt className="font-medium text-muted-foreground">
+                                            Buyer Contact:
+                                        </dt>
+                                        <dd className="text-foreground">
+                                            {purchaseOrder.buyer_contact_numbers}
+                                        </dd>
+                                    </div>
+                                )}
+
+                                {purchaseOrder.po_reference && (
+                                    <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                        <dt className="font-medium text-muted-foreground">
+                                            PO Reference:
+                                        </dt>
+                                        <dd className="text-foreground">
+                                            {purchaseOrder.po_reference}
+                                        </dd>
+                                    </div>
+                                )}
+
+                                {purchaseOrder.payment_terms && (
+                                    <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                        <dt className="font-medium text-muted-foreground">
+                                            Payment Terms:
+                                        </dt>
+                                        <dd className="text-foreground">
+                                            {purchaseOrder.payment_terms}
+                                        </dd>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Full-width bottom row for Notes/Remarks if present */}
+                            {purchaseOrder.notes && (
+                                <div className="col-span-full border-t px-4 py-3">
+                                    <dt className="mb-1 font-medium text-muted-foreground">
+                                        Notes / Remarks:
+                                    </dt>
+                                    <dd className="whitespace-pre-wrap rounded bg-muted/40 p-2.5 font-mono text-xs text-foreground">
+                                        {purchaseOrder.notes}
+                                    </dd>
+                                </div>
+                            )}
+                        </dl>
+                    ) : (
+                        <dl className="grid grid-cols-1 divide-y text-xs md:grid-cols-2 md:divide-y-0">
+                            {/* Left Column: Upload Order Details */}
+                            <div className="divide-y">
+                                <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                    <dt className="font-medium text-muted-foreground">
+                                        Arrival Status:
+                                    </dt>
+                                    <dd className="flex items-center gap-2">
+                                        <StatusBadge value={purchaseOrder.arrival_status} />
+                                        {purchaseOrder.waiting_time.days !== null && (
+                                            <span className="text-xs text-muted-foreground">
+                                                {purchaseOrder.waiting_time.days}d waiting
+                                            </span>
+                                        )}
+                                    </dd>
+                                </div>
+
+                                <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                    <dt className="font-medium text-muted-foreground">
+                                        Source Status:
+                                    </dt>
+                                    <dd className="flex items-center gap-2">
+                                        <StatusBadge value={purchaseOrder.source_status} />
+                                        <Badge
+                                            variant="outline"
+                                            className="text-[10px] uppercase font-normal"
+                                        >
+                                            PDF Upload
+                                        </Badge>
+                                    </dd>
+                                </div>
+
+                                <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                    <dt className="font-medium text-muted-foreground">
+                                        PO Number:
+                                    </dt>
+                                    <dd className="font-mono font-medium text-foreground">
+                                        {purchaseOrder.po_number ?? '—'}
+                                    </dd>
+                                </div>
+
+                                <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                    <dt className="font-medium text-muted-foreground">PO Date:</dt>
+                                    <dd className="flex items-center gap-1.5 font-medium text-foreground">
+                                        <Calendar className="size-3.5 text-muted-foreground" />
+                                        {purchaseOrder.po_date_value ??
+                                            purchaseOrder.po_date ??
+                                            'Not recorded'}
+                                    </dd>
+                                </div>
+
+                                <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5 bg-muted/20">
+                                    <dt className="font-semibold text-foreground">Total Amount:</dt>
+                                    <dd className="font-bold text-foreground">
+                                        {formatMoney(purchaseOrder.total_amount)}
+                                    </dd>
+                                </div>
+
+                                <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                    <dt className="font-medium text-muted-foreground">
+                                        Source Channel:
+                                    </dt>
+                                    <dd className="text-foreground">Uploaded Document</dd>
+                                </div>
+                            </div>
+
+                            {/* Right Column: Upload Party Details */}
+                            <div className="divide-y md:border-l">
+                                <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                    <dt className="font-medium text-muted-foreground">
+                                        Supplier Name:
+                                    </dt>
+                                    <dd className="font-medium text-foreground">
+                                        {purchaseOrder.vendor_name ?? '—'}
+                                    </dd>
+                                </div>
+
                                 {purchaseOrder.vendor_raw &&
                                     purchaseOrder.vendor_raw !== purchaseOrder.vendor_name && (
-                                        <div className="flex justify-between py-1 border-b border-muted">
-                                            <span className="text-muted-foreground">
-                                                Source raw:
-                                            </span>
-                                            <span className="font-mono text-[11px]">
+                                        <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                            <dt className="font-medium text-muted-foreground">
+                                                Source Raw:
+                                            </dt>
+                                            <dd className="font-mono text-[11px]">
                                                 {purchaseOrder.vendor_raw}
-                                            </span>
+                                            </dd>
                                         </div>
                                     )}
-                                <div className="flex justify-between py-1 border-b border-muted">
-                                    <span className="text-muted-foreground">Contact person:</span>
-                                    <span>{purchaseOrder.contact_person ?? '—'}</span>
-                                </div>
-                                <div className="flex justify-between py-1 border-b border-muted">
-                                    <span className="text-muted-foreground">Email:</span>
-                                    <span>{purchaseOrder.vendor_email ?? '—'}</span>
-                                </div>
-                                <div className="flex justify-between py-1 border-b border-muted">
-                                    <span className="text-muted-foreground">Mobile:</span>
-                                    <span>{purchaseOrder.vendor_mobile ?? '—'}</span>
-                                </div>
-                                <div className="flex justify-between py-1">
-                                    <span className="text-muted-foreground">Address:</span>
-                                    <span className="text-right max-w-[240px] truncate">
-                                        {purchaseOrder.vendor_address ?? '—'}
-                                    </span>
-                                </div>
-                            </CardContent>
-                        </Card>
 
-                        {/* Order & Source Info */}
-                        <Card>
-                            <CardHeader className="pb-3 border-b">
-                                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                                    <FileText className="size-4 text-primary" />
-                                    Order & Provenance
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="pt-3 text-xs space-y-2">
-                                <div className="flex justify-between py-1 border-b border-muted">
-                                    <span className="text-muted-foreground">PO Number:</span>
-                                    <span className="font-mono font-medium text-foreground">
-                                        {purchaseOrder.po_number ?? '—'}
-                                    </span>
+                                <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                    <dt className="font-medium text-muted-foreground">
+                                        Contact Person:
+                                    </dt>
+                                    <dd className="text-foreground">
+                                        {purchaseOrder.contact_person ?? '—'}
+                                    </dd>
                                 </div>
-                                <div className="flex justify-between py-1 border-b border-muted">
-                                    <span className="text-muted-foreground">PO Reference:</span>
-                                    <span>{purchaseOrder.po_reference ?? '—'}</span>
+
+                                <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                    <dt className="font-medium text-muted-foreground">Email:</dt>
+                                    <dd className="text-foreground">
+                                        {purchaseOrder.vendor_email ?? '—'}
+                                    </dd>
                                 </div>
-                                <div className="flex justify-between py-1 border-b border-muted">
-                                    <span className="text-muted-foreground">Payment terms:</span>
-                                    <span>{purchaseOrder.payment_terms ?? '—'}</span>
+
+                                <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                    <dt className="font-medium text-muted-foreground">Mobile:</dt>
+                                    <dd className="text-foreground">
+                                        {purchaseOrder.vendor_mobile ?? '—'}
+                                    </dd>
                                 </div>
-                                <div className="flex justify-between py-1 border-b border-muted">
-                                    <span className="text-muted-foreground">Source channel:</span>
-                                    <span>Uploaded Document</span>
+
+                                <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                    <dt className="font-medium text-muted-foreground">Address:</dt>
+                                    <dd
+                                        className="text-foreground truncate"
+                                        title={purchaseOrder.vendor_address ?? ''}
+                                    >
+                                        {purchaseOrder.vendor_address ?? '—'}
+                                    </dd>
                                 </div>
-                                {purchaseOrder.notes && (
-                                    <div className="py-1">
-                                        <span className="text-muted-foreground block mb-0.5">
-                                            Notes:
-                                        </span>
-                                        <p className="rounded bg-muted/50 p-2 text-foreground/80">
-                                            {purchaseOrder.notes}
-                                        </p>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
-                )}
+
+                                <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                    <dt className="font-medium text-muted-foreground">
+                                        PO Reference:
+                                    </dt>
+                                    <dd className="text-foreground">
+                                        {purchaseOrder.po_reference ?? '—'}
+                                    </dd>
+                                </div>
+
+                                <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-4 py-2.5">
+                                    <dt className="font-medium text-muted-foreground">
+                                        Payment Terms:
+                                    </dt>
+                                    <dd className="text-foreground">
+                                        {purchaseOrder.payment_terms ?? '—'}
+                                    </dd>
+                                </div>
+                            </div>
+
+                            {purchaseOrder.notes && (
+                                <div className="col-span-full border-t px-4 py-3">
+                                    <dt className="mb-1 font-medium text-muted-foreground">
+                                        Notes:
+                                    </dt>
+                                    <dd className="whitespace-pre-wrap rounded bg-muted/40 p-2 text-foreground">
+                                        {purchaseOrder.notes}
+                                    </dd>
+                                </div>
+                            )}
+                        </dl>
+                    )}
+                </div>
 
                 {/* Ordered Items Table */}
                 <div className="mb-8">
                     <div className="mb-2 flex items-center justify-between">
-                        <h2 className="text-sm font-semibold flex items-center gap-2">
+                        <h2 className="flex items-center gap-2 font-semibold text-sm">
                             <Package className="size-4 text-primary" />
                             Ordered Items ({purchaseOrder.items.length})
                         </h2>
@@ -527,7 +523,7 @@ export default function PurchaseOrderShow({ purchaseOrder }: { purchaseOrder: Pu
                         <table className="w-full whitespace-nowrap text-left text-xs">
                             <thead className="border-b bg-muted/50">
                                 <tr>
-                                    <th className="px-3 py-2 w-12 text-center">#</th>
+                                    <th className="w-12 px-3 py-2 text-center">#</th>
                                     <th className="px-3 py-2">Item Code</th>
                                     <th className="px-3 py-2">Description</th>
                                     <th className="px-3 py-2">Quantity</th>
@@ -550,18 +546,18 @@ export default function PurchaseOrderShow({ purchaseOrder }: { purchaseOrder: Pu
                                         <td className="px-3 py-2 text-center text-muted-foreground">
                                             {idx + 1}
                                         </td>
-                                        <td className="px-3 py-2 font-mono text-foreground font-medium">
+                                        <td className="font-mono font-medium text-foreground px-3 py-2">
                                             {item.item_code ?? '—'}
                                         </td>
                                         <td
-                                            className="px-3 py-2 max-w-xs truncate"
+                                            className="max-w-xs truncate px-3 py-2"
                                             title={item.product_description ?? ''}
                                         >
                                             {item.product_description ?? '—'}
                                             {item.is_financial_adjustment && (
                                                 <Badge
                                                     variant="outline"
-                                                    className="ml-2 text-[10px] text-amber-600 border-amber-300"
+                                                    className="ml-2 border-amber-300 text-[10px] text-amber-600"
                                                 >
                                                     Adjustment
                                                 </Badge>
@@ -614,7 +610,7 @@ export default function PurchaseOrderShow({ purchaseOrder }: { purchaseOrder: Pu
                 {!isSheet && (
                     <div className="mb-8">
                         <div className="mb-2 flex items-center justify-between">
-                            <h2 className="text-sm font-semibold flex items-center gap-2">
+                            <h2 className="flex items-center gap-2 font-semibold text-sm">
                                 <Receipt className="size-4 text-primary" />
                                 Linked Receipts & Warehouse Stock (
                                 {purchaseOrder.linked_receipts.length})
@@ -623,8 +619,8 @@ export default function PurchaseOrderShow({ purchaseOrder }: { purchaseOrder: Pu
 
                         {purchaseOrder.linked_receipts.length === 0 ? (
                             <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-xs">
-                                <Clock className="size-8 mx-auto mb-2 text-muted-foreground/60" />
-                                <p className="font-medium text-sm text-foreground">
+                                <Clock className="mx-auto mb-2 size-8 text-muted-foreground/60" />
+                                <p className="font-medium text-foreground text-sm">
                                     No receiving uploads linked yet
                                 </p>
                                 <p className="mt-1">
@@ -637,7 +633,7 @@ export default function PurchaseOrderShow({ purchaseOrder }: { purchaseOrder: Pu
                             <div className="space-y-4">
                                 {purchaseOrder.linked_receipts.map((receipt) => (
                                     <Card key={receipt.id} className="overflow-hidden">
-                                        <CardHeader className="bg-muted/30 py-2.5 px-4 flex flex-row items-center justify-between">
+                                        <CardHeader className="flex flex-row items-center justify-between bg-muted/30 px-4 py-2.5">
                                             <div className="flex items-center gap-2">
                                                 <Badge
                                                     variant="outline"
@@ -645,7 +641,7 @@ export default function PurchaseOrderShow({ purchaseOrder }: { purchaseOrder: Pu
                                                 >
                                                     {receipt.serial_prefix}-{receipt.serial_number}
                                                 </Badge>
-                                                <span className="text-xs font-medium text-foreground">
+                                                <span className="font-medium text-foreground text-xs">
                                                     {receipt.upload_type}{' '}
                                                     {receipt.document_type
                                                         ? `· ${receipt.document_type}`
@@ -706,7 +702,7 @@ export default function PurchaseOrderShow({ purchaseOrder }: { purchaseOrder: Pu
                                                                             arrival.item_code}
                                                                     </span>
                                                                     {arrival.item_code && (
-                                                                        <span className="block text-[10px] font-mono text-muted-foreground">
+                                                                        <span className="block font-mono text-[10px] text-muted-foreground">
                                                                             {arrival.item_code}
                                                                         </span>
                                                                     )}
@@ -730,7 +726,7 @@ export default function PurchaseOrderShow({ purchaseOrder }: { purchaseOrder: Pu
                                                                     {arrival.stock_lot ? (
                                                                         <div className="flex items-center gap-1.5">
                                                                             <Layers className="size-3.5 text-emerald-600" />
-                                                                            <span className="font-mono text-xs font-medium">
+                                                                            <span className="font-mono font-medium text-xs">
                                                                                 Lot #
                                                                                 {
                                                                                     arrival
@@ -749,7 +745,7 @@ export default function PurchaseOrderShow({ purchaseOrder }: { purchaseOrder: Pu
                                                                             </span>
                                                                         </div>
                                                                     ) : (
-                                                                        <span className="text-muted-foreground text-[11px]">
+                                                                        <span className="text-[11px] text-muted-foreground">
                                                                             —
                                                                         </span>
                                                                     )}
