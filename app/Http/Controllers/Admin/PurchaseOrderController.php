@@ -202,7 +202,7 @@ class PurchaseOrderController extends Controller
         $purchaseOrder->load([
             'upload.uploadType',
             'sheetSource',
-            'items.schedule',
+            'items.fulfillments.schedule',
             'activeDocumentLinks.aiExtraction.upload.uploadType',
             'activeDocumentLinks.arrivals.stockLot',
             'purchaseOrderItemArrivals.stockLot',
@@ -291,7 +291,7 @@ class PurchaseOrderController extends Controller
                         'serial_number' => $serialNumbers[$up->getKey()] ?? $up->getKey(),
                         'serial_prefix' => $serials->prefix($up->uploadType),
                         'upload_type' => $up->uploadType->name,
-                        'document_type' => $ext->document_type,
+                        'document_type' => $ext->document_type ?? 'Document',
                         'source' => $link->source->value,
                         'linked_at' => $link->created_at->toISOString(),
                         'arrivals' => $link->arrivals->map(fn (PurchaseOrderItemArrival $a): array => [
