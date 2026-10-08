@@ -8,6 +8,7 @@ use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\UploadTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -43,6 +44,31 @@ class PermissionDashboardAccessTest extends TestCase
         $this->actingAs($uploader)
             ->get(route('uploader.dashboard'))
             ->assertRedirect(route('receiving.upload.show', $type));
+    }
+
+    public function test_uploader_dashboard_renders_card_list_when_user_has_multiple_assigned_upload_pages(): void
+    {
+        $this->seed([RolePermissionSeeder::class, UploadTypeSeeder::class]);
+
+        $uploader = User::factory()->create();
+        $uploader->assignRole('uploader');
+        $types = UploadType::query()->where('is_active', true)->take(2)->get();
+        $this->assertCount(2, $types);
+
+        foreach ($types as $type) {
+            $uploader->uploadAccesses()->create([
+                'upload_type_id' => $type->getKey(),
+                'is_active' => true,
+            ]);
+        }
+
+        $this->actingAs($uploader)
+            ->get(route('uploader.dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('uploader/dashboard')
+                ->has('uploadTypes', 2)
+            );
     }
 
     public function test_direct_admin_permission_can_visit_admin_dashboard_without_admin_role(): void

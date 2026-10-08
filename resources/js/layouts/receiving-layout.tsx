@@ -40,10 +40,17 @@ export default function ReceivingLayout({ children }: { children: React.ReactNod
     const isOtpPage = page.component === 'upload/otp' || page.component === 'admin/otp';
     const isUnavailablePage = page.component === 'upload/unavailable';
     const showHeader = !isOtpPage;
+    const isUploader = Boolean(
+        (page.props.auth as { user?: { permissions?: string[] } })?.user?.permissions?.includes(
+            'uploader.access',
+        ),
+    );
     const isHistory = uploadType
         ? page.url.startsWith(`/upload/${uploadType.slug}/uploads`)
         : false;
+    const isUploadsPage = page.url.startsWith('/uploader/uploads') || isHistory;
     const laneUrl = uploadType ? `/upload/${uploadType.slug}` : '/dashboard';
+    const showUploadNav = !isUnavailablePage && (uploadType !== null || isUploader);
 
     return (
         <ReceivingLayoutContext.Provider value={{ setHeaderContent }}>
@@ -71,15 +78,15 @@ export default function ReceivingLayout({ children }: { children: React.ReactNod
                             )}
 
                             <div className="ml-auto flex items-center gap-2">
-                                {uploadType && !isUnavailablePage && (
+                                {showUploadNav && (
                                     <Button asChild variant="outline" size="sm" className="h-10">
-                                        <Link href={isHistory ? laneUrl : `${laneUrl}/uploads`}>
-                                            {isHistory ? <UploadCloud /> : <Files />}
+                                        <Link href={isUploadsPage ? laneUrl : '/uploader/uploads'}>
+                                            {isUploadsPage ? <UploadCloud /> : <Files />}
                                             <span className="hidden sm:inline">
-                                                {isHistory ? 'Upload files' : 'My uploads'}
+                                                {isUploadsPage ? 'Upload files' : 'My uploads'}
                                             </span>
                                             <span className="sm:hidden">
-                                                {isHistory ? 'Upload' : 'Uploads'}
+                                                {isUploadsPage ? 'Upload' : 'Uploads'}
                                             </span>
                                         </Link>
                                     </Button>

@@ -35,6 +35,7 @@ createInertiaApp({
             case name === 'admin/otp':
                 return ReceivingLayout;
             case name.startsWith('upload/'):
+            case name.startsWith('uploader/'):
                 return ReceivingLayout;
             case name.startsWith('warehouse/'):
                 return ReceivingLayout;

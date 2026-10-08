@@ -43,6 +43,18 @@ class UploadRecordController extends Controller
         return $this->renderDetails($request, $upload, $settings, $validator, $serials, 'admin/uploads/show');
     }
 
+    public function showUploader(
+        Request $request,
+        ReceivingUpload $upload,
+        ReceivingSettings $settings,
+        InvoiceReviewValidator $validator,
+        UploadSerialNumber $serials,
+    ): Response {
+        abort_unless($upload->uploader_user_id === $request->user()?->getKey(), 403);
+
+        return $this->renderDetails($request, $upload, $settings, $validator, $serials, 'uploader/uploads/show');
+    }
+
     private function renderDetails(
         Request $request,
         ReceivingUpload $upload,

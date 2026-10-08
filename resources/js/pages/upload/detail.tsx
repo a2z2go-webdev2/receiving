@@ -159,7 +159,10 @@ export default function UploadDetail({
     async function openFile(file: FileRow) {
         setOpening(file.id);
         try {
-            const response = await fetch(`/receiving/files/${file.id}/url`, {
+            const endpoint = adminView
+                ? `/receiving/files/${file.id}/url`
+                : `/uploader/files/${file.id}/url`;
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: { Accept: 'application/json', 'X-XSRF-TOKEN': csrfToken() },

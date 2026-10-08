@@ -22,11 +22,11 @@ type Upload = {
 };
 
 export default function UploaderDashboard({
-    uploadTypes,
-    uploads,
+    uploadTypes = [],
+    uploads = [],
 }: {
     uploadTypes: UploadType[];
-    uploads: Upload[];
+    uploads?: Upload[];
 }) {
     return (
         <>
@@ -53,8 +53,13 @@ export default function UploaderDashboard({
                             {uploadTypes.map((type) => (
                                 <Card
                                     key={type.id}
-                                    className="group border-primary/15 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+                                    className="group relative flex flex-col justify-between border-primary/15 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
                                 >
+                                    <Link
+                                        href={`/upload/${type.slug}`}
+                                        className="absolute inset-0 z-10"
+                                        aria-label={`Open ${type.name} receiving page`}
+                                    />
                                     <CardHeader>
                                         <div className="mb-2 flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                                             <UploadCloud className="size-5" />
@@ -64,10 +69,11 @@ export default function UploaderDashboard({
                                             Upload invoices, receipts, IDs, and delivery documents.
                                         </CardDescription>
                                     </CardHeader>
-                                    <CardContent>
-                                        <Button asChild className="w-full">
+                                    <CardContent className="pt-0">
+                                        <Button asChild className="relative z-20 w-full">
                                             <Link href={`/upload/${type.slug}`}>
-                                                Open upload page <ArrowRight />
+                                                Open upload page{' '}
+                                                <ArrowRight className="ml-1 size-4" />
                                             </Link>
                                         </Button>
                                     </CardContent>
@@ -77,19 +83,14 @@ export default function UploaderDashboard({
                     )}
                 </section>
 
-                <section aria-labelledby="recent-uploads" className="space-y-3">
-                    <div className="flex items-center gap-2">
-                        <FileClock className="size-5 text-primary" />
-                        <h2 id="recent-uploads" className="font-semibold text-lg">
-                            My recent uploads
-                        </h2>
-                    </div>
-                    {uploads.length === 0 ? (
-                        <EmptyState
-                            title="Your upload history starts here"
-                            description="Open an assigned receiving lane above to submit the first document set."
-                        />
-                    ) : (
+                {uploads.length > 0 && (
+                    <section aria-labelledby="recent-uploads" className="space-y-3">
+                        <div className="flex items-center gap-2">
+                            <FileClock className="size-5 text-primary" />
+                            <h2 id="recent-uploads" className="font-semibold text-lg">
+                                My recent uploads
+                            </h2>
+                        </div>
                         <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
                             <table className="w-full text-left text-sm">
                                 <thead className="border-b bg-muted/50 text-muted-foreground">
@@ -101,9 +102,6 @@ export default function UploaderDashboard({
                                         <th className="px-4 py-3">AI</th>
                                         <th className="px-4 py-3">Review status</th>
                                         <th className="px-4 py-3">Uploaded</th>
-                                        <th className="px-4 py-3">
-                                            <span className="sr-only">Actions</span>
-                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
@@ -129,20 +127,13 @@ export default function UploaderDashboard({
                                             <td className="px-4 py-3 text-muted-foreground">
                                                 {new Date(upload.created_at).toLocaleString()}
                                             </td>
-                                            <td className="px-4 py-3 text-right">
-                                                <Button asChild variant="outline" size="sm">
-                                                    <Link href={`/receiving/uploads/${upload.id}`}>
-                                                        View
-                                                    </Link>
-                                                </Button>
-                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
-                    )}
-                </section>
+                    </section>
+                )}
             </PageShell>
         </>
     );

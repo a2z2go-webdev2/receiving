@@ -27,6 +27,7 @@ use App\Http\Controllers\Receiving\UploadPageController;
 use App\Http\Controllers\Receiving\UploadRecordController;
 use App\Http\Controllers\Receiving\UploadTransactionController;
 use App\Http\Controllers\Uploader\DashboardController as UploaderDashboardController;
+use App\Http\Controllers\Uploader\UploadHistoryController;
 use App\Http\Controllers\Warehouse\WarehouseAccessOtpController;
 use App\Http\Controllers\Warehouse\WarehouseArrivalsController;
 use App\Http\Controllers\Warehouse\WarehouseDashboardController;
@@ -49,6 +50,15 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::get('uploader/dashboard', UploaderDashboardController::class)
         ->middleware('starter.permission:'.Permission::AccessUploader->value)
         ->name('uploader.dashboard');
+
+    Route::prefix('uploader')->name('uploader.')->middleware(
+        'starter.permission:'.Permission::AccessUploader->value,
+    )->group(function (): void {
+        Route::get('uploads', [UploadHistoryController::class, 'index'])->name('uploads');
+        Route::get('uploads/{upload}', [UploadHistoryController::class, 'show'])->name('uploads.show');
+        Route::post('files/{file}/url', [UploadHistoryController::class, 'fileUrl'])->name('files.url');
+        Route::get('files/{file}/preview', [UploadHistoryController::class, 'filePreview'])->name('files.preview');
+    });
 
     Route::get('warehouse', fn () => redirect()->route('warehouse.dashboard'))
         ->middleware('starter.permission:'.Permission::AccessWarehouse->value)
